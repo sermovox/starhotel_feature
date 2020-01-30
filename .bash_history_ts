@@ -1,0 +1,78 @@
+ls .
+ls -la
+cd '/home/luigi/Scaricati' 
+./eduroam-linux-UoT-eduroam_UniTS_Android_4.3-7.0.py 
+openssl x509 -in digicert.pem -inform PEM -out digicert.crt
+cd Documenti/
+touch df
+touch bot.js
+touch conversation.js
+touch conn_events.js
+touch skill_prenotazione.js
+touch server.js
+touch incoming-webhook.js
+cd ..
+ls
+ping 79.51.191.144
+touch server.js
+pippollll
+ping 79.25.236.102
+ssh luigi@79.25.236.102
+ping 79.25.236.102
+ssh luigi@79.25.236.102
+cd ..llll
+pippo
+ping 79.25.236.102
+pippollllllll
+pippo
+ls
+sudo apt-get update
+su enzo
+exit
+ls
+lynx www.units.it &
+ps
+kill -9 11001
+ps
+exit
+lynx
+lynx http://www.units.it
+md5
+md5sum
+md5sum '/media/luigi/F0AA-965D/3560A20.exe' 
+ls
+sudo npm install -g yo generator-botkit
+sudo nano /etc/sudoers
+groups luigi
+sudo npm install -g yo generator-botkit
+groups luigi
+sudo npm install -g yo generator-botkit
+mkdir mybot
+cd mybot
+
+npm start
+cd ..
+mkdir mybot1
+cd mybot1
+yo botkit
+npm start
+cd mybot
+npm start
+cd ..
+cd mybot1
+npm start
+ssh luigi@82.48.217.202
+cd  mybot1
+ls
+npm start
+apt-get install sshfs fuse
+sudo apt-get install sshfs fuse
+sudo dpkg --configure -a
+sudo apt-get install sshfs fuse
+ls
+cd Documenti/
+ls
+mkdir remote
+sudo sshfs -o allow_other,defer_permissions,IdentityFile=~/.ssh/id_rsa luigi@82.48.217.202:/Documents/wrkcopy/ ./remote
+sudo sshfs -o allow_other,IdentityFile=~/.ssh/id_rsa luigi@82.48.217.202:/Documents/wrkcopy/ ./remote
+sudo sshfs -o allow_other,IdentityFile=~/.ssh/id_rsa luigi@82.48.217.202:/home/luigi/Documents/wrkcopy/ ./remote
