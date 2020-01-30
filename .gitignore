@@ -1,2 +1,7 @@
 .env
-node_modules/
+/node_modules/*
+!/node_modules/botkit
+/node_modules/botkit/*
+!/node_modules/botkit/lib
+/node_modules/botkit/lib/*
+!/node_modules/botkit/lib/*.js
