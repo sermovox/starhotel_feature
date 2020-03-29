@@ -144,7 +144,7 @@ var testFunc =  // onChange template
                     console.log(' querying entity  with where clauses got cursor : ');
                  }
             });// test each item in data entity 
-            if(rows.length>0)return rows;else return null;
+            if(rows.length>0)return rows;else return mydata[0];// anyway returns first
        }
        cond(5,mat.colazione_luogo);// add a intersect/where  on col n 5 with value mat.colazione_luogo
        cond(6,mat.colazione_menu);
@@ -365,7 +365,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
         */
         console.log(' query running  cq is : ',cq);
-
            let rows=[],ind=[];// rows matching where clauses cQ
            let nd=cq.ccol.length;
            function iterc(val,n){// iterate intersection with n-esima col/values in cq arrays till : add val in rows if match or do nothing  
@@ -382,11 +381,11 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
                     console.log(' querying cur  entity:  row ',i,' satisfy the where clauses cQ  ');
                  }
             });// test each item in data entity 
-            if(rows.length>0)return {ind,rows};else return null;
+            if(rows.length>0)return {ind,rows};else return rows[0];// anyway returns a default
        }
 
 
- 
+
 
        /* STATUS MNG 
        > put in appSt. in this impl we keep the user status in state 
@@ -675,13 +674,13 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
                 // debug . to semplify a  match must exist ! > in future manage the event
        if(matches.mod_loc)loc=matches.mod_loc.match;else loc='piano terra';
        cond(5,loc,cQ);// add a intersect/where clause on col n 5 with instance id/value loc
-       if(matches.colazione_menu)cond(6,matches.colazione_menu,cQ);// future use
+       if(matches.colazione_menu)cond(6,matches.colazione_menu.match,cQ);// future use
        // anyway we must select a group resource ( colazione , ristorante ,,,,):
        cond(13,matches.mod_Serv.match,cQ);
 
        // 2502 return null ??
 
-      let res=runQuery(mydata,cQ);// res={ind,rows}// must be not nulll because in any case we set a location default
+      let res=runQuery(mydata,cQ);// res={ind[3,7],rows[row1[],row2[]]}// must be not nulll because in any case we set a location default
       //console.log(' querying entity  with where clauses ',cQ,' got cursor : ',res);
 
 
@@ -693,8 +692,11 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
        if(res&&(nres=res.rows.length)>0)
 
         {//desire entity should be not null  , set anyway a default 
+
+            // resNam is the array containing the col name of matrix rows 
         let resNam=res.rows.map(function(v,i){return v[iD]});// calc matching [rows], then returns rows [] with just some cols (1:name)
-         console.log(' querying entity  with where clauses ',cQ,' got cursor rows : ',res);
+ 
+        console.log(' querying entity  with where clauses ',cQ,' got cursor rows : ',res);
 
          let blRes=res.ind[0],
          blResItem=res.rows[0];// just take first index (in mydata matrix)
@@ -870,7 +872,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
           console.log(' and app status update   values.appSt=state.appstatus,  state.appstatus.dyn_match.dyn_rest : ',state.appstatus.dyn_match.dyn_rest);
         }// ends desire entity 
         else{// no desire entity got , error ,(a def must anyway exists)
-            console.error(' a query can not find even a default row , lease manage with an exit error');
+            console.error(' ERROR : a query can not find even a default row , lease manage with an exit error');
 
     }
             }// ends No QEA
@@ -950,25 +952,14 @@ mustacheF.qeA=function(qstring){
 
 }
 
-mustacheF.out= function () {// this=step , bound in conversation.parseTemplatesRecursive() BUT reset by mustache to its context 
-    // this function (returning) register a handler function called by mustache when finds {{#out}}ttt{{/out}} 
-    //  then moustache call immediately the handler passing (ttt,render) whre render is a cb that will render a template that 
-    //  is built filtering ttt 
-    //  as we thought mustache do not bind the out function (found in context already bound to step) 
-    // we use it to pass step to handler using the out closure var step_ or ........
 
-    // here handler=myBooundF , does :
-    // myBooundF receives a ttt template that will be transformed in a final template that can be rendered using render(template)
-    // as we thought mustache do not bind the myBooundF handler (found in context) we have bound bind out to step
-    // so here this should be this=step 
-    // when the handler function will be called it will build in excel context some status obj and set new function 
-    // to be available to the template ttt ....................
 
-    // let step_=this;// can be used in returned function 
-    // so :
-    let step_=this.step;
 
-    myBoundF=function (text, render) {// {{#vars.excel.out}} staff !
+
+
+
+    myBoundF=function (text, render,stepp_) {// {{#vars.excel.out}} staff !
+// is clear what is the context ??? mustache will overwrite what we did ?
         // >> to be bound to this=step before returning !
         // calle with : {{#vars.excel.out}}$$xxx&usualhandlebar {{/vars.excel.out}}  
         /// xxx is the param , usualhandlebar is mustache template used here to compose the template 
@@ -977,7 +968,8 @@ mustacheF.out= function () {// this=step , bound in conversation.parseTemplatesR
         // check this 
 
         // we need to extract steps
-        let stepp=this.step;// ????
+        let stepp=stepp_||this.step;// ???? only if is in root ctx this contains step
+
 
 
 
@@ -986,7 +978,7 @@ mustacheF.out= function () {// this=step , bound in conversation.parseTemplatesR
         let oplength=0;
         if (text.substring(0, 2) == '$$') { // $$param&param2&template
             template=text.substring( 2) ;
-            itr1=template.split('&');// first are param the last is texttemplate max param 2 for now 
+            itr1=template.split('&');// 
             oplenght=itr1.length;
             if(itr1.length>4&&template.substring(0, 2) == 'if'){// 4 param only x if 
                 param=itr1[0]; param2=itr1[1];param3=itr1[2];param4=itr1[3];
@@ -1016,14 +1008,19 @@ mustacheF.out= function () {// this=step , bound in conversation.parseTemplatesR
 
  /*           example of template execution(passing current context )  on askA msg :
             {{#mustacheF.out}}$$if&vars.excel.avar&==&pippo&
-              <template >
+                <template >
+                </template>
+                 {{/mustacheF.out}}
 
-          {{/mustacheF.out}}
-</template>
-*/  ;
+*/ 
+
+// 25032020 : instead of if : TODO idea out can be like in condition pattern a regex or a even a function or a code to eval 
 
         let value_,vs={vars:stepp.values};
-        eval( "value_ = vs." + param2 );// or use the parser in conversation.js
+        // can use jVar as in conversation or must chech for eval error (cant find property of undefined !)
+        try{
+        eval( "value_ = vs." + param2 );// or use the parser in conversation.js, that means jVar ?
+        } catch(e){value_=null;}
         if(value_){
         if(param3=='=='){if(value_!=param4)template=null;
         }else if(param3=='!='){if(value_==param4)template=null;
@@ -1032,7 +1029,40 @@ mustacheF.out= function () {// this=step , bound in conversation.parseTemplatesR
         }
         }else template=null;
 
-        }else if(param=='list'&&(itr1.length>1)){// > 2-4 param  , its a more complex list display then just std mustache array+ static func
+        }
+        
+        else  if(param=='ff'){// 2 param) 
+
+            /*           example of template execution(passing current context )  using eval :
+                       {{#mustacheF.out}}$$ff&let iff=true;vars.mod_pippo={};step.goon=5;let out=iff;&
+                           <template >
+                           </template>
+                            {{/mustacheF.out}}
+
+                             example of template execution(passing current context )  using Function
+                       {{#mustacheF.out}}$$ff& 
+                       let poppo=context.vars.pippo;if(poppo)return true;
+                       &
+                           <template >
+                           </template>
+                            {{/mustacheF.out}}
+           
+           */ 
+           
+           // 25032020 : instead of if : TODO idea out can be like in condition pattern a regex or a even a function or a code to eval 
+           
+                   let value_,context={vars:stepp.values,state:stepp.state};
+                   // can use jVar as in conversation or must chech for eval error (cant find property of undefined !)
+                   try{
+                   value_=eval(  param2 );// use context
+                   } catch(e){value_=null;}
+                   if(value_){
+                    ;
+                   }else template=null;
+           
+                   }
+                   
+                   else if(param=='list'&&(itr1.length>1)){// > 2-4 param  , its a more complex list display then just std mustache array+ static func
 
  /*         example of template extract on askA msg :
             .......
@@ -1407,7 +1437,52 @@ return mustacheF.nmList(el,null,fn)}// will add e anche  dopo il primo el . call
     
     }// end myBoundF=
 
+    mustacheF.out__= function (mystep) {// this=step , bound in conversation.parseTemplatesRecursive() BUT reset by mustache to its context 
+        // this function (returning) register a handler function called by mustache when finds {{#out}}ttt{{/out}} 
+        //  then moustache call immediately the handler passing (ttt,render) whre render is a cb that will render a template that 
+        //  is built filtering ttt 
+        //  as we thought mustache do not bind the out function (found in context already bound to step) 
+        // we use it to pass step to handler using the out closure var step_ or ........
+    
+        // here handler=myBooundF , does :
+        // myBooundF receives a ttt template that will be transformed in a final template that can be rendered using render(template)
+        // as we thought mustache do not bind the myBooundF handler (found in context) we have bound bind out to step
+        // so here this should be this=step 
+        // when the handler function will be called it will build in excel context some status obj and set new function 
+        // to be available to the template ttt ....................
+    
+        // let step_=this;// can be used in returned function 
+        // so :
+        let step_=this.step;// is null , try to see what is specifically  this 
+        return function(){
+        return function (templ,render){
 
+
+
+            // can use some obj in scope 
+           return  myBoundF.call(this,templ,render,mystep);//.bind(step_);// probably don work and useless so delete it 
+        }   }
+    
+    }
+
+    mustacheF.out_= function () {// this=step , bound in conversation.parseTemplatesRecursive() BUT reset by mustache to its context 
+        // this function (returning) register a handler function called by mustache when finds {{#out}}ttt{{/out}} 
+        //  then moustache call immediately the handler passing (ttt,render) whre render is a cb that will render a template that 
+        //  is built filtering ttt 
+        //  as we thought mustache do not bind the out function (found in context already bound to step) 
+        // we use it to pass step to handler using the out closure var step_ or ........
+    
+        // here handler=myBooundF , does :
+        // myBooundF receives a ttt template that will be transformed in a final template that can be rendered using render(template)
+        // as we thought mustache do not bind the myBooundF handler (found in context) we have bound bind out to step
+        // so here this should be this=step 
+        // when the handler function will be called it will build in excel context some status obj and set new function 
+        // to be available to the template ttt ....................
+    
+        // let step_=this;// can be used in returned function 
+        // so :
+        let step_=this.step;// is null , try to see what is specifically  this 
+    
 // *********************************    check it :
 
     return myBoundF;//.bind(step_);// probably don work and useless so delete it 
@@ -1638,6 +1713,19 @@ let dynJs={ //  bank containing script directive with onChange x script/dynfield
             /// 27022020  CHANGED  all direc dyn directives will go into vars.direc as is . they will be the context of onChange
             //      so REVIEW following comments ....
 
+            dyn_rest_quando:{// a thread
+
+                loopDir:{
+                    goon:false// in the step 0 of the thread  dont want to recover past goon ( so msg will be prompt anyway ). see conversation.runstep
+                }
+            },
+            dyn_rist_altro_details:{// a thread
+
+                loopDir:{
+                    goon:false// in the step 0 of the thread  dont want to recover past goon ( so msg will be prompt anyway ). see conversation.runstep
+                }
+            },
+
         colazione_dyn:{// used in  associazione a    :
 
 
@@ -1732,9 +1820,9 @@ let dynJs={ //  bank containing script directive with onChange x script/dynfield
         [0,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col'],
         [1,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','hall al piano terra','col'],
         [2,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','colazione in giardino in giardino','col'],
-        [3,'terace','redisdes','red RTCSessionDescription','data','piano 1','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','res'],
-        [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','res'],
-        [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','res']
+        [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest'],
+        [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','rest'],
+        [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest']
 
     ]
 ,
@@ -1749,18 +1837,18 @@ Gdata:// will be used by onChange as group feature
 
 5 voicename vgroup
 6 wh available for the service (to prompt in altro)
-7 suggested next service to query 
+7 nextser : suggested next service to query 
 
 */
 [
 [0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
-[1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+[1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' colazione , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 ]
 ,
 
-
+//
             onChange_text:testFunc.toString,// without async !!
 
 
@@ -1977,7 +2065,7 @@ Gdata:// will be used by onChange as group feature
 */
 [
 [0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante , portineria e'],
-[1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+[1,'rest','master shef cucina internazionale','si prega prenotare per menu pesce ',1,'ristorante','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 ]
