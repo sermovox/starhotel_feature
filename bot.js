@@ -682,8 +682,8 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
                 //implemented in one col of master/desire Entity (mydata matrix)
 
                 // debug . to semplify a  match must exist ! > in future manage the event
-       if(matches.mod_loc){
-            loc=matches.mod_loc.match;//else loc='piano terra';
+       if(matches.mod_loc&&(loc=matches.mod_loc.match)){
+           // loc=matches.mod_loc.match;//else loc='piano terra';
             cond(5,loc,cQ);// add a intersect/where clause on col n 5 with instance id/value loc
         }
        if(matches.colazione_menu)cond(6,matches.colazione_menu.match,cQ);// future use
@@ -692,7 +692,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
        // 2502 return null ??
       //  ask='dyn_rest',
-       let singleRes=false;// todo  otherwise 
+       let singleRes=false;//results must be condensed to only 1 result
       let res=runQuery(mydata,cQ);// res={ind:[3,7],rows:[mydata[3],mydata[7]]}// must be not nulll because in any case we set a location default
       //console.log(' querying entity  with where clauses ',cQ,' got cursor : ',res);
 
@@ -774,7 +774,10 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
        state.appstatus.dyn_match={};state.appstatus.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
 
 
-
+        // AFTER GOT results build the group (query as a whore ) context (gr )/view (.complete will route to )
+        // - a cursor with rows res.ind.length >1 
+        //   or 
+        // - a single result 
 
             if(singleRes||res.ind.length==1){// consider 1 match
                 nres=1;// 1 match selected  
@@ -788,7 +791,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
 
 
-            // find group if 1 match 
+            // if 1 match  surely there is one class (here the resouce type :matches.mod_Serv.match)and related  group 
             if(matches.mod_Serv&&matches.mod_Serv.match){
                 cQ={cval:[matches.mod_Serv.match],ccol:[1]};// the group model Gdata has a view projection to match : mod_Serv
                                                             // mod_Serv , in this simple impl , is just defined in condition , but it should be a projection of  Gdata
@@ -866,7 +869,55 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
             if(matches.mod_assumere_med.match)// == anyway choose item 0 temporely, possible values : [no,contr,prendere,ok]
                                             //  &&mod_wh==.......
-            if(this.Gdata)gr=this.Gdata[0];// the view to summary rows result(s) into a summary based on some selected rows properties
+
+
+
+
+
+
+            /*  ************* 15042020  GR MANAGEMENT SUMMARY 
+                gr : the context for master summary view : displays the query result as a whole exponing user navigation on the inflacted master desire  kb subspace
+                    if some ask select a item on curson it will se  
+            
+                example of strategy : the query will get a cursor of rows of the same class/resource_type/serviceofferedtocustomer =matches.mod_Serv.match
+                        >  usually a query is about a specific class , that can be available as fields of (inflacted master resource instance) rows!
+                - each class has a Gdata[i] context and the .complete will :
+                    - route to proper template (organized under its (sub)root thread YYUU) rendered using  context param/models (set before and here) to show/navigate desideretree to show info requested  ( many  level 1 2 !..)
+                - the template has context param organized in levels , so 
+                        - depending from some user expectation priority like confirm or discover specific details 
+                            we can route to thread displayng the expectation tree using .complete 
+                        - inside the specific thread the user can be focalized to some info looking at  a low level context param like mod_wh
+                                    ?? we can have some outcontext ( desidere focus on sub outcontext available x the specific class ) , ex : mod_wh
+                        - anyway we have exposed also some other outcontext that the user can explore after current outcontext (YYUU) root thread
+                    to guide the user to navigate on specific  cursor got by  the query 
+                the view to summary rows result(s) into a summary based on some selected rows properties
+
+                inside the view/msgstep articulater under root YYUU can be view displayng info about the cursor or some specific item selected by some ask during the user navigation (just previuos )
+                - to display cursor works on 
+                - to display    a singlre item
+                > nb  specific item can be selected by some ask during the user navigation (just previuos )
+            */
+
+
+            // IN THIS IMPLEMENTATION all rows has the same group/resourcetype = matches.mod_Serv.match
+            //  and that is reflected on associated gr : 
+            // so as a single row case :
+            if(matches.mod_Serv&&matches.mod_Serv.match){
+                cQ={cval:[matches.mod_Serv.match],ccol:[1]};// the group model Gdata has a view projection to match : mod_Serv
+                                                            // mod_Serv , in this simple impl , is just defined in condition , but it should be a projection of  Gdata
+                                                            // so let the vname be the same ( )
+            } else  cQ={cval:[blResNam],ccol:[1]};// ?? dont use that
+            let grows=runQuery(this.Gdata,cQ);
+            if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
+                gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
+
+            }
+
+
+
+
+
+            if(this.Gdata&&!gr)gr=this.Gdata[0];// std resource/service : matches.mod_Serv.match='col'
 
             /* todo 
             so in a resolving_dyn_ask we in msg will list the vname to match ( like we list the missing entities ): resModel[].vname
@@ -1066,7 +1117,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
         // principale rooting mod is mod_assumere_med (=[no,contr,prendere,ok])then change list focus on mod_wh !!
 
 /*
-master view routing 2 level depending on mod_assumere_med and mod_wh
+master view will be chosen from available view 1..n routing 2 level depending on mod_assumere_med and mod_wh
 view 1 : lista con details (depending sub lev  ( a/b) depend by  ) e 2 (mod_wh)
 view 2 : 2 precise list to confirm
 mod_assumere_med=[no,contr,prendere,ok] e' outcontext 1-2 level 
@@ -1077,7 +1128,12 @@ prendere : 2 precise list after a confirmation iif i really need the list or i h
 ok , ctrl : view 1 b version then fddetail if user fill mob_wh  
 
 
-*/
+*/ 
+        // FROM :
+        //      gr , that is matches.mod_Serv.match  
+        //          or
+        //      mod_assumere_med 
+        //  >>>  definire .complete che mi portera a un view thread che gestira le varie best wanted info customer needs 
 
 
 
@@ -1110,9 +1166,17 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
             mydyn.complete='miss';// todo
         }
 
+
+        // *****   single selection context/view :
+        // if i dont want to specialize all views mapped by .complete in 2 case : many/single row 
+        //      using flags :   {{...mydyn.param.group.sel}} , or {{...mydyn.param.match}}
+        //  >> i can route to a single result view in which i can specialize using flags on :
+        //          {{matches.mod_Serv.match}} or  {{mod_assumere_med}} 
         
 
-        // SO the routing thread that display the info will refears to :mydyn.param.qsparam
+
+
+        // SO the routing thread that display the info will refears to :mydyn.param.qsparam    ??
 
         // nb mydyn.match is the match on condition 
 
@@ -2109,7 +2173,7 @@ mustacheF.qeA=function(qstring){
 
 
 
-            }else if(itr1.length==3){
+            }else if(itr1.length==3){// 2 param + template 
                 param=itr1[0]; param2=itr1[1];template=itr1[2];// last is template
             }else if(itr1&&itr1[0]&&itr1[1]){// 1 param only
                 param=itr1[0];template=itr1[1];
@@ -2148,14 +2212,17 @@ mustacheF.qeA=function(qstring){
         else  if(param=='ff'){// 2 param) 
 
             /*           example of template execution(passing current context )  using eval :
-                       {{#mustacheF.out}}$$ff&let iff=true;vars.mod_pippo={};step.goon=5;let out=iff;&
+                       {{#mustacheF.out}}$$ff&
+                       let iff=true;vars.mod_pippo={};step.goon=5;let out=iff;
+                       &
                            <template >
                            </template>
                             {{/mustacheF.out}}
 
-                             example of template execution(passing current context )  using Function
+                         example of template execution(passing current context )  using Function
                        {{#mustacheF.out}}$$ff& 
-                       let poppo=context.vars.pippo;if(poppo)return true;
+                       let poppo=context.vars.pippo;// or poppo=vars.pippo;
+                       if(poppo)return true;
                        &
                            <template >
                            </template>
@@ -2165,10 +2232,10 @@ mustacheF.qeA=function(qstring){
            
            // 25032020 : instead of if : TODO idea out can be like in condition pattern a regex or a even a function or a code to eval 
            
-                   let value_,context={vars:stepp.values,state:stepp.state};
+                   let value_,context={vars:stepp.values,state:stepp.state},vars=stepp.values;// also 
                    // can use jVar as in conversation or must chech for eval error (cant find property of undefined !)
                    try{
-                   value_=eval(  param2 );// use context
+                   value_=eval(  param2 );// use context.vars ( or vars)  or context.state 
                    } catch(e){value_=null;}
                    if(value_){
                     ;
@@ -3553,6 +3620,28 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
             /// 27022020  CHANGED  all direc dyn directives will go into vars.direc as is . they will be the context of onChange
             //      so REVIEW following comments ....
 
+            key_cambioricetta:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
+
+            ask_afterpilldet:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
+
+
+
         dyn_medicine:{// used in  associazione a    :
 
             // put here also the static  dyn ask definition  AAA ?? yes
@@ -3580,7 +3669,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
               2 patt
               3 descr
               4 data
-              5 loc 
+              5 loc / tipo medicazione-medicina-pastiglia-medicazione-iniezione / mattina-sera ... in sostanza un where field !         
               6 menu quando prenderla
               7 news avvertenze medico
               // 
@@ -3650,7 +3739,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 */
 [
-[0,'col','il tuo programma prevede di assumere le seguenti pastiglie ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle e come ',' ricorda anche che devi fare dei prelievi di urine'],
+[0,'col','il tuo programma prevede di assumere le seguenti pastiglie ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
 [1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
