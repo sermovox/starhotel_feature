@@ -3639,6 +3639,15 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
                     goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
                 }
             },
+            ask_opera1_0:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
 
 
 
