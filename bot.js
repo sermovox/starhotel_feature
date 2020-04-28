@@ -3575,7 +3575,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
         }// ends direc all dyn cb and bl 
     },
 
-    televita:{// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+    televita:{// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
         mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -3583,6 +3583,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
             //      - dyn template vars and 
             //      - dynask params used in in onchange to influence bl in some dyn ask field
             //              ex find the floor a log user is in 
+            //                  have info if the user got the medicine so can jump to rith service thread 
             //          >>> probably insert some of this in dedicated dyn obj like below
             //              
             //          > convo directives is more about dialog design !! 
@@ -3610,7 +3611,16 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
                 },// model specification , item voice name 
                 notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
            // vname:=notMatPr
-            }
+            },
+            // $$§mod_wh:come-come|che mod|quale mod&quando-quando&dove-dove&per-perch*
+            mod_wh:{
+                vmatches:{come:'come|che mod|quale mod',
+                //come:'(?(?=che)(\w* (mod*|mani*)|come))'
+                quando:'quando|che temp',per:'per|quale moti'
+                 },// model specification , item voice name 
+                 notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+            // vname:=notMatPr
+             }
 
         },
 
@@ -3626,6 +3636,8 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
     
                 loopDir:{
                     //goon:false // dont work 
+                    // if  goon goon2=true continue to test current ask conditions to gather user info/indication/answere from previous msg without prompt a new msg
+                    // if the bot has info to respond goon2=false so the bot can start a new turn , so prompt the current msg and then test the user answere   
                     goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
                 }
             },
@@ -3696,6 +3708,11 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
               // specific bl transaction fields 
               20 taken/missing : get join with user med with status get/miss: 0/1
+              21 ....
+              22 ....
+              23 ...
+              24 ---
+              25 inputdata1
 
 
 
@@ -3707,9 +3724,9 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
         */
                 [
-                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliere pastiglia acqua e bere  ','prima pasti ','10:00','aspirina','col',,,,,,,,true],
-                    [22,'cumadin','cuma*','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' introdurre supposta via rettale','prima pasti ','10:00','cumadin','col',,,,,,,,false],
-                    [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliere pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true],
+                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo pastiglia in acqua e bere  ','prima pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
+                    [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
+                    [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
                    ]
             ,
             data:// will be used by onChange as db rows as array of string if we try to manage a restaurant . all procedure to select are the same, changes only the selection data and answere view 
@@ -3748,7 +3765,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 */
 [
-[0,'col','il tuo programma prevede di assumere le seguenti pastiglie ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
+[0,'col','il tuo programma prevede di assumere le seguenti compresse :',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
 [1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
