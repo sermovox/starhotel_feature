@@ -55,6 +55,34 @@ console.log('*** instantiating Botkit CMS');
     }));
 }
 
+/*
+// xmpp : put in a module !
+const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
+const  xmpp2adapter=require('./nat/xmpp2adapter.js');
+let xmpp_adapter=new XmppAdapter({});
+// as in botkit core
+if (xmpp_adapter) {
+    // MAGIC: Treat the adapter as a botkit plugin
+    // which allows them to be carry their own platform-specific behaviors
+    controller.usePlugin(this.adapter);
+}
+if (xmpp_adapter) {
+   let logic=controller.handleTurn.bind(controller);
+   /*).catch((err) => {// like in core
+    // todo: expose this as a global error handler?
+    console.error('Experienced an error inside the turn handler', err);
+    throw err;
+    });* /
+
+
+
+   // let logic=this.handleTurn.bind(this);
+    xmpp2adapter(null, xmpp_adapter,logic);//(webserver,ad,logic) 
+}
+*/
+
+
+
 
 var testFunc =  // onChange template seems OLD!!! see dyn_rest_f !
 
@@ -2100,7 +2128,7 @@ params :
         }
         // if(clVars.notmatlist[0]==map.name)return ret;// first item
         if(firstname=='.'||(firstname!='-')&&firstname==mapname)retur= '';// first item
-        else retur= ' e anche ' ;
+        else retur= ' inoltre ' ;
 
 
         if(!morecompl){// return the value rendered by function using  context (the calling f context)
@@ -3724,7 +3752,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
         */
                 [
-                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo pastiglia in acqua e bere  ','prima pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
+                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo pastiglia in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
                     [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
                     [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
                    ]
@@ -3765,7 +3793,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 */
 [
-[0,'col','il tuo programma prevede di assumere le seguenti compresse :',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
+[0,'col','ecco l elenco dei farmaci che ci risulta devi ancora assumere ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
 [1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
