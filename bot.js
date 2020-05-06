@@ -261,7 +261,7 @@ var testFunc =  // onChange template seems OLD!!! see dyn_rest_f !
 */
     }// ends testfunc
 
-    var dyn_medi_f =  
+    var dyn_medi_f =  // used in vita , ...
     
     
     /* 27022020
@@ -828,7 +828,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             let grows=runQuery(this.Gdata,cQ);
 
             if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
-                gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
+             //   gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
 
             }
 
@@ -937,12 +937,12 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             } else  cQ={cval:[blResNam],ccol:[1]};// ?? dont use that
             let grows=runQuery(this.Gdata,cQ);
             if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
-                gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
+              // error in vmatch  gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
 
             }
 
 
-
+            console.log('dyn_medicine onchage matched group :',gr);
 
 
             if(this.Gdata&&!gr)gr=this.Gdata[0];// std resource/service : matches.mod_Serv.match='col'
@@ -1167,7 +1167,7 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
 
         if(matches.mod_assumere_med){// &&mod_wh&&mod_wh.match){
            let mat=matches.mod_assumere_med.match;
-        if(mat=='contr'||mat=='no'){// to check or anyway to prompt list (contr= controllare lista )
+        if(mat=='contr'||mat=='no'){// so the user need is to to check or anyway to prompt the queryed list (contr= controllare lista )
            // mydyn.param.desired='miss';// ['when']// the prpoperty more important to give: when  something is somewhat
             // mydyn.param.when=mydata[blRes][8];// e/o mydyn.param.wh=mydata[blRes][8];
 
@@ -1175,7 +1175,7 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
 
             // route and display when , then ask x detais , then returns to menu 
             mydyn.complete='miss';
-        }else if(mat=='ok'){// try to use same view of how just set a different flag for mustache 
+        }else if(mat=='ok'){//  so the user need is to check to confirm the absunction . try to use same view of how just set a different flag for mustache 
             //mydyn.param.desired='where';//['where'];
             // mydyn.param.where=mydata[blRes][8];// 8???? // e/o mydyn.param.wh=mydata[blRes][8];
             // route and display when , then ask x detais , then returns to menu 
@@ -1220,7 +1220,9 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
             }// ends No QEA
     // Cancel any GOON text from previous user answere 
 
-    convoSt.userTurn=null;
+        // ******   TO CORRECT : no more ,is useless and disturbing if we pass to  a relay 
+        // convoSt.userTurn=null;
+
 
         
     /*
@@ -1814,7 +1816,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             let grows=runQuery(this.Gdata,cQ);
 
             if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
-                gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
+              // error if matches.mod_Serv.vmatch is void>>>>>  gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
 
             }
 
@@ -2005,6 +2007,8 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             }// ends No QEA
     // Cancel any GOON text from previous user answere 
 
+
+    // ******   TO CORRECT : no more ,is useless and disturbing if we pass to  a relay 
     convoSt.userTurn=null;
 
         
@@ -2046,6 +2050,16 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 // global helper to be run in context of ......  
 //mustacheF.nmList=function (map,step,clVars){// map can be the notmatching model list item =[{name:modelx},{}] on ask condition 
 mustacheF.nmList=function (mapname,nmp,firstname,retAFunc){
+
+    //can be :
+    // firstname= fn  so first call fn='.', following  fn='-'
+    // or 
+
+    // firstname= count  so first call  count=1 following   count++
+
+
+    let count,fnisN= !isNaN(firstname);
+    if(fnisN)count=firstname;
 
     /*cases 
 
@@ -2127,9 +2141,17 @@ params :
             ret= ' '+mapname;
         }
         // if(clVars.notmatlist[0]==map.name)return ret;// first item
-        if(firstname=='.'||(firstname!='-')&&firstname==mapname)retur= '';// first item
-        else retur= ' inoltre ' ;
 
+        if(fnisN){
+
+            // firstname is a number count,  so first call  count=1 following   count++
+            retur= 'numero '+count;
+        }else{    
+
+            // firstname is a string  fn , so first call fn='.', following  fn='-'
+            if(firstname=='.'||(firstname!='-')&&firstname==mapname)retur= '';// first item
+            else retur= ' inoltre ' ;
+        }
 
         if(!morecompl){// return the value rendered by function using  context (the calling f context)
             return retur+ret;
@@ -2333,6 +2355,37 @@ mustacheF.qeA=function(qstring){
             
 
         }else if(param=='miss') {// render list of a jet not matched model used in dyn ask dyn_rest, 1,2 param 
+
+
+
+  /* *****  review 042020  {{#mustacheF.out}}$$miss&.....    **************++
+
+  ricordando che 
+	testing a previuos step condition named  askA ,
+		if the  condition is a model (start with $$xmodelname:... or $%....) ,it  will be registered if mf=match or mf=nomatch :
+		      step.values.askmatches[previous.collect.key][mf].push(modelname)
+
+si costruisce clVars={notmatlist:['po','pi'],notMatchL:[{name:'po'},{name:'pi'}]};   po is a modname
+	dove notmatlist e' riempito con tutti i model ( condition che hanno pattern starting con $$modname.... o $%...  , 
+		condition di askA ask il cui msg template contiene il costrutto (e in futuro) askB, optional parameter 
+	che :
+
+
+        // considerati i model che sono nel pattern $$ e $% di un condition ( di askA, ask in cui nel msg si trova {{#mustacheF.out}}$$miss&...)  e in futuro askB)
+        // si riempie clVars.notmatlist con nomi di model che :
+        //  - non sono wh model di dyn_ask matchati e
+        //  - non matchano secondo matches.model.match
+        // quindi si costruisce la funzione mustacheF.rendnotmatch=listAitem() che messa come nel template di un array come notMatchL  lista gli item.name del suo context notMatchL
+
+	TILL NOW ONLY askA is processed !!!!!!
+    // TODO : ++ prompt for models on   this step + adds  the interesting goto : param2=some interesting goto collect key
+    // so do another loop with if(param2)askname=param2;
+
+****************************
+ */
+
+
+
             // problem with length of param just start with no & in followingtemplate 
 
             /* example :
@@ -2417,7 +2470,7 @@ x {{vars.matches.mod_Serv.vmatch}}
 // -  askey next in tree that i want to prompt 1 step before ( as goon will try to match 2 step with same user)
 
 
-// remember when ask condition find a model to check will be registered if mf=match or mf=nomatch
+// remember when ask condition find a model to check,it  will be registered if mf=match or mf=nomatch
 //      step.values.askmatches[previous.collect.key][mf].push(amatch)
 
     clVars.notmatlist=[];
@@ -2436,6 +2489,15 @@ x {{vars.matches.mod_Serv.vmatch}}
 
     
     for(ii=0;ii<ma.length;ii++){// for each model tested in the ask (ma[ii]) find if was already matched
+
+
+
+        // in pratica : si scartano i model che sono where di dyn_ask che matchano dyn_ask=excel[modelname].mod_wh_Of 
+        //           tra questi si considerano quelli che non matchano ( in matches)
+
+
+
+        // old comments 
         // check id the model is alredy matched 
         // still do not match
         let ism=false;// this model (ma[ii]])is not matched and isrequired only as a where join to query the master dyn mod_wh_Of
@@ -2453,7 +2515,7 @@ x {{vars.matches.mod_Serv.vmatch}}
                 }
 
 
-
+            
         if(!ism)clVars.notmatlist.push(ma[ii]);
     }
     }
@@ -2658,6 +2720,11 @@ function listAitem1(firstname,col){// case out list , col is the row column inde
 
 // the closure AAD
 if(firstname==null)firstname='.';// first
+
+// 29042020 :
+let count=0;
+
+
 // other myBoundF vars
 // anyway make available clVars too 
 return function (){ // nb no text/template to work on , if had a template to work on function(template=text,render)
@@ -2670,12 +2737,21 @@ let fn,el;
 console.log('  ***** we are in out list a col of a matrix ({{#mustacheF.out}}$$list&5&...}})  and this is : ' ,this);
 // usually  this is a  notMatchL item ,={name:thenotmatchedname},clVars={notmatlist:['po','pi'],notMatchL:[{name:'po'},{name:'pi'}]}; 
 //return mustacheF.nmList(this,step,clVars)}// call an external function ( can be put in the same excel obj ? !)
-if(firstname=='.'){firstname='-';fn='.';}else fn=firstname;
+
+//if(firstname=='.'){firstname='-';fn='.';}else fn=firstname;// first call firstname='.', fn='.', following  firstname='-', fn='-'
+
+// 29042020 :
+if(firstname=='.'){firstname='-';fn='.';count=1;}else {fn=firstname;count++;}// first call firstname='.', fn='.', count=1 following  firstname='-', fn='-', count++
+
+
 if(Array.isArray(this)){el=this[col];
                         if(Array.isArray(el)&&el.length==1&&Array.isArray(el[0]))el=el[0];// 3 dim array is cursor.items case only
                     }
                     else el=this;
-return mustacheF.nmList(el,null,fn,true)}// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+//return mustacheF.nmList(el,null,fn,true)}// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+
+// 29042020 :
+return mustacheF.nmList(el,null,count,true)}// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
 
 }
     
@@ -3641,14 +3717,44 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
            // vname:=notMatPr
             },
             // $$§mod_wh:come-come|che mod|quale mod&quando-quando&dove-dove&per-perch*
-            mod_wh:{
-                vmatches:{come:'come|che mod|quale mod',
-                //come:'(?(?=che)(\w* (mod*|mani*)|come))'
-                quando:'quando|che temp',per:'per|quale moti'
-                 },// model specification , item voice name 
-                 notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
-            // vname:=notMatPr
-             }
+
+
+             ///////
+
+             mod_wh:{vmatches:{where:'dove',how:'come',when:'quando'},// model specification , item voice name 
+                vlist:['dove ','come','quando'],//temporaneo , è duplicato di vmatches con different format !
+                 notMatPr:'le informazioni desiderate come  quando dove '//  model entity name used in nmList not matched list 
+                 // vname:=notMatPr
+      },
+      mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+             notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+             ,mod_wh_Of:'dyn_rest'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+      // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+      // vname:=notMatPr
+     },
+     mod_Serv:{vmatches:{bar:'bar',rest:'medicamenti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'farmaci'},// model specification , item voice name 
+             vlist:['bar','medicamenti','portineria','piscina','lavanderia','farmaci'],//temporaneo , è duplicato di vmatches con different format !
+     // news : that is the declaration of model values and patten instead that do it in line on condition .
+     // : todo 
+     //   if a condition declare instead of :
+     //          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+     //      :
+     //          $$mod_Serv::
+     //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+     model:'bar-bar&rest-medicamen&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-farmac|pastigli|compress',
+     // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+     //      {bar:{
+     //          patt='ristorant*|pranzo|cena|trattoria',
+     //            ai_url='',
+     //            vname=''
+     //      },,}
+     
+     notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+     // vname:=notMatPr
+    },
+
+             /////
+             
 
         },
 
@@ -3752,7 +3858,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
         */
                 [
-                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo pastiglia in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
+                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo la compressa in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
                     [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
                     [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
                    ]
@@ -3793,7 +3899,249 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 */
 [
-[0,'col','ecco l elenco dei farmaci che ci risulta devi ancora assumere ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' pastiglie ','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
+[0,'col','ecco lelenco dei farmaci che ci risulta devi ancora assumere ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' farmaci','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
+[1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
+[2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+[3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+]
+,
+            onChange_text:testFunc.toString,// without async !!
+
+
+                // >>>> insert here onchange as a module of this obj so can see the fields !
+            onChange:function(new_value, convo, bot,script,ask){
+                return dyn_medi_f.call(this,new_value, convo, bot,script,ask) ;
+
+            }
+
+        }
+        }// ends direc all dyn cb and bl 
+    },
+    musei:{// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+
+        mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
+
+        excel:{//  values.excel are dyn staff x user maintenance and dynamic data
+            //      - dyn template vars and 
+            //      - dynask params used in in onchange to influence bl in some dyn ask field
+            //              ex find the floor a log user is in 
+            //                  have info if the user got the medicine so can jump to rith service thread 
+            //          >>> probably insert some of this in dedicated dyn obj like below
+            //              
+            //          > convo directives is more about dialog design !! 
+            //      - model definition ( view fields and also bl fields )
+            //          that usually are put in db 
+
+            // general param in template
+
+            rest:{col:{hall:{news:'today branch gratis!'}}},// delete 
+
+            news:'oggi grande festa della amicizia alle 20 tutti in piscina!' ,
+
+  
+  
+  
+  
+  
+            
+
+
+            // >>> following some Model attributes ( name/patt are directly inserted as condition $$)
+
+           mod_vita_user:{
+               vmatches:{bar:'bar',rest:'ristorante',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'colazione'
+                },// model specification , item voice name 
+                notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+           // vname:=notMatPr
+            },
+            // $$§mod_wh:come-come|che mod|quale mod&quando-quando&dove-dove&per-perch*
+
+
+             ///////
+
+             mod_wh:{vmatches:{where:'dove',how:'come',when:'quando'},// model specification , item voice name 
+                vlist:['dove ','come','quando'],//temporaneo , è duplicato di vmatches con different format !
+                 notMatPr:'le informazioni desiderate come  quando dove '//  model entity name used in nmList not matched list 
+                 // vname:=notMatPr
+      },
+      mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+             notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+             ,mod_wh_Of:'dyn_rest'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+      // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+      // vname:=notMatPr
+     },
+     mod_Serv:{vmatches:{bar:'bar',rest:'medicamenti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'farmaci'},// model specification , item voice name 
+             vlist:['bar','medicamenti','portineria','piscina','lavanderia','farmaci'],//temporaneo , è duplicato di vmatches con different format !
+     // news : that is the declaration of model values and patten instead that do it in line on condition .
+     // : todo 
+     //   if a condition declare instead of :
+     //          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+     //      :
+     //          $$mod_Serv::
+     //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+     model:'bar-bar&rest-medicamen&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-farmac|pastigli|compress',
+     // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+     //      {bar:{
+     //          patt='ristorant*|pranzo|cena|trattoria',
+     //            ai_url='',
+     //            vname=''
+     //      },,}
+     
+     notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+     // vname:=notMatPr
+    },
+
+             /////
+             
+
+        },
+
+
+        direc:{
+
+            /// 27022020  CHANGED  all direc dyn directives will go into vars.direc as is . they will be the context of onChange
+            //      so REVIEW following comments ....
+
+            key_cambioricetta:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    // if  goon goon2=true continue to test current ask conditions to gather user info/indication/answere from previous msg without prompt a new msg
+                    // if the bot has info to respond goon2=false so the bot can start a new turn , so prompt the current msg and then test the user answere   
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
+
+            ask_afterpilldet:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
+            ask_opera1_0:{// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+    
+                loopDir:{
+                    //goon:false // dont work 
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            },
+
+
+
+        dyn_medicine:{// used in  associazione a    :
+
+            // put here also the static  dyn ask definition  AAA ?? yes
+
+            loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+                    //will go inside values.loopDir[akey=colazione_dyn] because values.akey=colazione_dyn is managed by conversation for its staff
+                    //loop staff 
+                    // complete=repeat_...,// repeat in loop all where field till matches (max2)
+                    nomain:true,// a context var  in some msg 
+                    max_repeat:1// then default 
+
+                    // here the out function  on context of ....  . or put in global excel ?
+                    // out:out,// askdin function 
+                    // {{#values.loopDir[akey=colazione_dyn].out}}$$param&template to render on function out with param param {{/...out}}
+
+                    //, goon:true;
+
+            },
+
+           
+
+            med_data:// will be used by onChange as db rows as array of string 
+                        /* row : 0 id
+              1 value/nome
+              2 patt
+              3 descr
+              4 data
+              5 loc / tipo medicazione-medicina-pastiglia-medicazione-iniezione / mattina-sera ... in sostanza un where field !         
+              6 menu quando prenderla
+              7 news avvertenze medico
+              // 
+              8 where  come fare a recuperarla 
+              9 how come prenderla
+              10 when from : prima pasti
+              11 when to  max delay
+              12 voicename
+                13 loc/res,,,,, the group type medicine : future articulation of view results , potrebbe essere pranzo cena  o pills medicamento ....
+                   todo 
+                14 : patt :duplicated , see 2
+                15: spare
+                16:time2 from
+                17:time2 to
+
+              // specific bl transaction fields 
+              20 taken/missing : get join with user med with status get/miss: 0/1
+              21 ....
+              22 ....
+              23 ...
+              24 ---
+              25 inputdata1
+
+
+
+
+
+
+
+
+
+        */
+                [
+                    [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo la compressa in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
+                    [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
+                    [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
+                   ]
+            ,
+            data:// will be used by onChange as db rows as array of string if we try to manage a restaurant . all procedure to select are the same, changes only the selection data and answere view 
+            /* row : 0 id
+  1 value/nome
+  2 patt
+  3 descr
+  4 data
+  5 loc
+  6 menu
+  7 news
+  // 
+  8 where
+  9 how
+  10 when from
+  11 when to 
+  12 voicename
+*/
+    [
+        [0,'terace','redisdes','red RTCSessionDescription','data','piano 1','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','caffe terrazza'],
+        [1,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','hall al piano terra'],
+        [2,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','colazione in giardino in giardino']
+       ]
+,
+Gdata:// will be used by onChange as group feature so we can customize the view of the general entity instance in data 
+/* 
+musei : sono le stanze ove sono le opere
+
+row : 
+0 id
+1 value/nome
+2 best prompt per cominciare a rispondere al main desire / descrizione base sala 
+3 calce : the general descriptor for the service to put on general view . is the same of wh field on specific resouce ( come in lavanderia1 )
+4 defIndex : the index of resource data that is the std item x the specific service
+
+5 voicename vgroup > nome sala 
+6 wh available for the service (to prompt in altro)
+7 suggested next service to query 
+8 ?
+
+*/
+[
+[0,'col','la sala dei busti funerari  vuole rappresentare la arte funeraria che commemora i personaggi .......  ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,'sala dei busti funerari con 17 opere della arte funeraria romana','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
 [1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
 [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
 [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
@@ -3811,6 +4159,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
         }
         }// ends direc all dyn cb and bl 
     }
+
 
 
         
