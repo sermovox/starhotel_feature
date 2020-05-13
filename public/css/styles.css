@@ -124,8 +124,8 @@ a.button:hover {
   background: #FFFFFF;
   border-left: 1px solid #CCC;
   border-right: 1px solid #CCC;
-  /*height: 500px;
-  width: 320px;*/
+  height: 500px;
+  width: 640px;
   height: 100%;
   width: 100%;
   /*margin: 2rem auto;*/
@@ -207,7 +207,7 @@ a.button:hover {
 #message_window .message {
   font-size: 14px;
   padding: 0.5rem;
-  background: #F0F0F0;
+  background: #F5F5F5;
   color: #333;
   border-radius: 5px;
   width: auto;
@@ -248,6 +248,11 @@ a.button:hover {
 #message_window .message.outgoing {
   float: right;
   background: #a795ef;
+  color: white;
+}
+#message_window .message.outgoingx {
+  float: right;
+  background: #555555;
   color: white;
 }
 #message_window #message_replies {

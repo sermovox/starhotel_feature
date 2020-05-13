@@ -4,8 +4,8 @@
  */
 var converter = new showdown.Converter();
 converter.setOption('openLinksInNewWindow', true);
-
-var Botkit = {
+const navig=true;
+var Botkit = { 
     config: {
         ws_url: (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host,
         reconnect_timeout: 3000,
@@ -62,12 +62,26 @@ var Botkit = {
         });
 
     },
-    send: function (text, e) {
+    send: function (text, e) {// can be null if from js
         var that = this;
         if (e) e.preventDefault();
         if (!text) {
             return;
         }
+
+
+	// create a queue if text 'text1/text2/text3'
+
+	if(!this.queue)this.queue=text.split("/");
+	//console.log(" sendqueue called send , queue is : ",this.queue);
+	text=this.queue.shift();// the text is in queue
+	console.log(Date.now()/1000," send called send , out msg is  : ",text);
+	if(this.queue.length==0)this.queue=null;
+	else this.msgRended=true;// if we have a queue to send in next reply , when bot reply a timer will be set to call here again
+	document.getElementById("messenger_input").value=text;
+
+//console.log(" sendqueue called send , myform is : ",document.getElementById("myform"));
+
         var message = {
             type: 'outgoing',
             text: text
@@ -238,6 +252,7 @@ var Botkit = {
         this.input.focus();
     },
     renderMessage: function (message) {
+	console.log(" message to display is : ",message);
         var that = this;
         if (!that.next_line) {
             that.next_line = document.createElement('div');
@@ -245,14 +260,53 @@ var Botkit = {
         }
         if (message.text) {
             message.html = converter.makeHtml(message.text);
-        }
+	let matc;
+	if(navig){
+	if(message.thread){
+	matc="<span style=\"color:DodgerBlue;\" > <br> ______, Tread : " +message.thread + " , "+ " InCtx Key : "+message.key+" ,_______________________<br>";
+	if(message.matches){
+		matc+= "ModEnt : ";
+		if(message.matches.length<10)matc+=message.matches;
+		else{
+			matc+=message.matches.slice(0,8)+"<br>"+message.matches.slice(8);
+		}}
+		matc+="</span> <br>";
+	if(message.askmatches){
+		matc+="<span style=\"color:Red;\" >Ents/flags : ";
+		if(message.askmatches.length<10)matc+=message.askmatches+"</span><br>";
+		else{
+			matc+=message.askmatches.slice(0,8)+"<br>"+message.askmatches.slice(8)+"</span><br>";
+		}}
 
+	if(message.outCtx&&message.outCtx.length>0){// can be void array
+		matc+="<span style=\"color:Green;\" >Out Context/uIntent : </span> ";
+		matc+=fform(message.outCtx,4);}// ogni 4 salta riga
+
+	matc=matc.replace(/,/g,"&nbsp &nbsp ");
+	//matc=matc.replace(/>-->/g,"&nbsp </span> \> <span style=\"color:Blue;\" >&nbsp ");
+	message.html+=matc;
+        }
+	}
+	}// ends navig
         that.next_line.innerHTML = that.message_template({
             message: message
         });
         if (!message.isTyping) {
             delete (that.next_line);
         }
+
+	//that.msgRended=true;
+console.log(Date.now()/1000," msg ",message.text," rendered");
+	function fform(mys,mm){
+	let sf='';
+	mys.forEach(function(yx,i){
+		
+		let x=yx.split('/');
+		sf+= "<span style=\"color:Green;\" >"+x[0]+"&nbsp </span> \> <span style=\"color:Blue;\" >&nbsp "+x[1]+"</span> <span style=\"color:Blue;\" >&nbsp ";
+		if(!(i+1)%mm)sf+="<br>";
+	});
+	return sf;
+	}
     },
     triggerScript: function (script, thread) {
         this.deliverMessage({
@@ -385,11 +439,14 @@ var Botkit = {
 
         that.on('sent', function () {
             // do something after sending
+//that.msgRended=true;// reopen bot listening
         });
 
         that.on('message', function (message) {
 
             console.log('RECEIVED MESSAGE', message);
+console.log(Date.now()/1000,' RECEIVED MESSAGE', message.text);
+		// that.msgRended=false;
             that.renderMessage(message);
 
         });
@@ -447,6 +504,27 @@ var Botkit = {
             }
         });
 
+        that.on('message', function (message) {
+
+
+
+	// TODO receive also the matched flags and model
+
+
+	if(!that.msgRended)return;// do not sen anything
+	if(that.queue){
+console.log(Date.now()/1000," start timer on receiving msg ",message.text);
+	that.msgRended=false;// will discard any other receiving text till the timer expired so send() will goon another user answere with msgRended true
+	// ?? that.botReplyed=false;
+            setTimeout(function(){
+		console.log(Date.now()/1000," timer out on receiving msg e :",message.text);
+		// if(that.botReplyed)
+		that.sendQueue();
+	},1000);// 1 sec before goon with next response in queue
+	}
+	});
+
+
         that.on('history_loaded', function (history) {
             if (history) {
                 for (var m = 0; m < history.length; m++) {
@@ -479,7 +557,37 @@ var Botkit = {
         }
 
         return that;
+    },
+	botReplyed:false,// flag 
+	msgRended:true,// flag , now when receiving a bot response we send reply and start timer , if any other msg from bot before the timer ends is not considered( is a part of ) 
+	queue:null,// 
+
+    sendQueue: function () {
+
+        //if (this.msgRended&&this.queue) 
+	{// useless
+
+	console.log(" sendqueue called , queue is : ",this.queue);
+//console.log(" sendqueue called 2 , myform is : ",document.getElementById("myform"));
+	/* not usefull
+	let ite=this.queue.pop();
+	document.getElementById("messenger_input").innerHTML=ite;document.getElementById("messenger_input").value=ite;
+	if(this.queue.length==0)this.queue=null;*/
+	
+	//// document.getElementById("myform").submit();
+	////  document.getElementById("mysubmit").onclick();//  disabilitato
+	let ite=' ';
+	this.send(ite,{preventDefault:function(){}});// or send(ite)
+
+	
+
+         
+        }
+
     }
+
+
+
 };
 
 
