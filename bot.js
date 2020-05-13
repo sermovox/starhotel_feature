@@ -3991,6 +3991,28 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
      // vname:=notMatPr
     },
 
+
+    mod_mattsera:{vmatches:{path_1:'sala delle donne in piscina',pat_0:'percorso base'},// model specification , item voice name 
+    vlist:['sala delle donne in piscina','percorso base'],//temporaneo , è duplicato di vmatches con different format !
+// news : that is the declaration of model values and patten instead that do it in line on condition .
+// : todo 
+//   if a condition declare instead of :
+//          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+//      :
+//          $$mod_Serv::
+//      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+model:'path_1-percorso 1&path_0-[\s\S]+|start',
+// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+//      {bar:{
+//          patt='ristorant*|pranzo|cena|trattoria',
+//            ai_url='',
+//            vname=''
+//      },,}
+
+notMatPr:' il percorso  '//  model entity name used in nmList not matched list 
+// vname:=notMatPr
+},
+
              /////
              
 
@@ -4020,7 +4042,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
     
                 loopDir:{
                     //goon:false // dont work 
-                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                   // goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
                 }
             },
             ask_opera1_0:{// first step of a displaying view thread . no goon at first step  :
@@ -4158,7 +4180,7 @@ row :
 
         }
         }// ends direc all dyn cb and bl 
-    }
+    }// ends musei
 
 
 
