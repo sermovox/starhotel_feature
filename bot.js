@@ -953,7 +953,7 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 */
 
 let db,rest;
-require('./nat/onChange.js').init(db,rest);// service + controller ?
+require('./nat/onChange.js').init(db,rest,null,null);// service + controller ?
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {

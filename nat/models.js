@@ -1,5 +1,8 @@
-let dynJs;
-module.exports =dynJs={ //  bank containing script directive with onChange x script/dynfield-key 
+let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ;
+
+
+
+//  bank containing script directive with onChange x script/dynfield-key 
     // onChange is  bound to its dynJs[myscript] > contain scripts directive 
     // cms.before will insert :
     //  values.excel    >  dynJs[myscript_].excel
@@ -29,7 +32,8 @@ dynJs={ascript:{ TO REVIEW  !!!
             }
 }
 */
-hotel3pini_vox:{// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+
+hotel3pini_vox={// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // added later :   mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -282,9 +286,9 @@ onChange_text:null,//testFunc.toString,// without async !!
 onChange:null//function(new_value, convo, bot,script,ask){    return dyn_rest_f.call(this,new_value, convo, bot,script,ask) ;}
 }// ends direc all dyn cb and bl 
 }
-},// ends hotel3pini_vox
+};// ends hotel3pini_vox
 
-hotel3pini:{// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+hotel3pini={// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -541,9 +545,9 @@ Gdata:// will be used by onChange as group feature
 
 }
 }// ends direc all dyn cb and bl 
-},// ends hotel3pini
+};// ends hotel3pini
 
-hotels:{// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+hotels={// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -772,9 +776,9 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 }
 }// ends direc all dyn cb and bl 
-},// ends hotels
+};// ends hotels
 
-televita:{// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+televita={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -1008,9 +1012,9 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 
 }
 }// ends direc all dyn cb and bl 
-},// ends televita
+};// ends televita
 
-musei:{// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+museoAQ={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
 
@@ -1085,8 +1089,8 @@ notMatPr:' il servizio desiderato  '//  model entity name used in nmList not mat
 },
 
 
-mod_mattsera:{vmatches:{path_1:'sala delle donne in piscina',pat_0:'percorso base'},// model specification , item voice name 
-vlist:['sala delle donne in piscina','percorso base'],//temporaneo , è duplicato di vmatches con different format !
+mod_mattsera:{vmatches:{path_1:'storico',pat_0:'culturale'},// model specification , item voice name 
+vlist:['storico','culturale'],//temporaneo , è duplicato di vmatches con different format !
 // news : that is the declaration of model values and patten instead that do it in line on condition .
 // : todo 
 //   if a condition declare instead of :
@@ -1094,7 +1098,7 @@ vlist:['sala delle donne in piscina','percorso base'],//temporaneo , è duplicat
 //      :
 //          $$mod_Serv::
 //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
-model:'path_1-percorso 1&path_0-[\s\S]+|start',
+model:'path_1-storico&path_0-culturale|[\s\S]+|start',
 // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
 //      {bar:{
 //          patt='ristorant*|pranzo|cena|trattoria',
@@ -1103,6 +1107,46 @@ model:'path_1-percorso 1&path_0-[\s\S]+|start',
 //      },,}
 
 notMatPr:' il percorso  '//  model entity name used in nmList not matched list 
+// vname:=notMatPr
+},
+mod_target:{vmatches:{bambi:'versione per bambini',std:'versione per pubblico generico'},// model specification , item voice name 
+vlist:['versione per bambini','versione per pubblico generico'],//temporaneo , è duplicato di vmatches con different format !
+// news : that is the declaration of model values and patten instead that do it in line on condition .
+// : todo 
+//   if a condition declare instead of :
+//          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+//      :
+//          $$mod_Serv::
+//      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+model:'bambi-bambin|ragaz&std-publico|[\s\S]+',
+// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+//      {bar:{
+//          patt='ristorant*|pranzo|cena|trattoria',
+//            ai_url='',
+//            vname=''
+//      },,}
+
+notMatPr:' versione '//  model entity name used in nmList not matched list 
+// vname:=notMatPr
+},
+mod_percorso:{vmatches:{storico:'storico',culturale:'culturale'},// model specification , item voice name 
+vlist:['storico','culturale'],//temporaneo , è duplicato di vmatches con different format !
+// news : that is the declaration of model values and patten instead that do it in line on condition .
+// : todo 
+//   if a condition declare instead of :
+//          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+//      :
+//          $$mod_Serv::
+//      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+model:'storico-\bstorico&culturale-\bculturale',
+// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+//      {bar:{
+//          patt='ristorant*|pranzo|cena|trattoria',
+//            ai_url='',
+//            vname=''
+//      },,}
+
+notMatPr:' tipologia di utenza '//  model entity name used in nmList not matched list 
 // vname:=notMatPr
 },
 
@@ -1174,14 +1218,14 @@ dyn_medicine:{// used in  associazione a    :
     med_data:// will be used by onChange as db rows as array of string 
                 /* row : 0 id
       1 value/nome
-      2 patt
-      3 descr
+      2 patt per match singolo item
+      3 descr short descr
       4 data
-      5 loc / tipo medicazione-medicina-pastiglia-medicazione-iniezione / mattina-sera ... in sostanza un where field !         
+      5 loc / tipo medicazione-medicina-pastiglia-medicazione-iniezione / mattina-sera / target user ... in sostanza un where field !         
       6 menu quando prenderla
       7 news avvertenze medico
       // 
-      8 where  come fare a recuperarla 
+      8 where  come fare a recuperarla , la location dell'opera   , luoghi associati all'opera, 
       9 how come prenderla
       10 when from : prima pasti
       11 when to  max delay
@@ -1211,7 +1255,7 @@ dyn_medicine:{// used in  associazione a    :
 
 */
         [
-            [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo la compressa in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
+            [11,'aspirina','aspirina','famosa testa di pietra con orecchie a sventola ','data','std_user','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo la compressa in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
             [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
             [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
            ]
@@ -1243,14 +1287,14 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 musei : sono le stanze ove sono le opere
 
 row : 
-0 id
+0 id / nordine sale da visitare
 1 value/nome
 2 best prompt per cominciare a rispondere al main desire / descrizione base sala 
-3 calce : the general descriptor for the service to put on general view . is the same of wh field on specific resouce ( come in lavanderia1 )
-4 defIndex : the index of resource data that is the std item x the specific service
+3 calce : the general descriptor for the service to put on general view . is the same of wh field on specific resouce ( come in lavanderia1 ) // ulteriore dettaglio 
+4 defIndex : the index of resource data that is the std item x the specific service/major opera
 
 5 voicename vgroup > nome sala 
-6 wh available for the service (to prompt in altro)
+6 wh available for the service (to prompt in altro) // domande disponibili x approfondimenti
 7 suggested next service to query 
 8 ?
 
@@ -1270,8 +1314,7 @@ row :
 
 }
 }// ends direc all dyn cb and bl 
-}// ends musei
+};// ends musei
 
 
-
-};// ends dynJs
+module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ};
