@@ -1805,6 +1805,27 @@ appWrap.aiax('tour-start', request);
    // anyway we must select a group resource ( colazione , ristorante ,,,,):
    cond(13,matches.mod_Serv.match,cQ);
 
+
+
+
+
+
+
+
+//////////////////// 052020 :
+// can be ported on dispacher action with a aiax , then returned in 
+//          - session/convo.vars (vars.askmatches.......)
+//               or 
+//         - justin (json) result (res) and set here its askmatches ??????????????
+
+
+
+
+
+
+
+
+
    // 2502 return null ??
   //  ask='dyn_rest',
    let singleRes=false;//results must be condensed to only 1 result
