@@ -50,6 +50,8 @@ controller.plugins.cms.onChange(myscript, color11,async function(a,b,c){
 */
 initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_rest']);
 
+initCmd('star_hotel',{meds:[11,22,33],cur:'rossi'},['dyn_medicine']);// copied from 'televita_voice'
+
 };// end register bank (dynJs)
 
 
@@ -231,11 +233,11 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
             //let mkey='dyn_medicine';// TODO : for all direc do .....
 
              //let myoC1=dynJs[myscript_].direc[mkey].onChange;//.bind(dynJs[myscript]);
-             controller.plugins.cms.onChange(myscript_, mkey,async function(a,b,c){
+             controller.plugins.cms.onChange(myscript_, mkey,async function(bot,convo,res){
                 // let color_=color,myscript_=myscript_;// CORRECT put myscript_ in a closure !
                  //return myoC1(a,b,c,myscript_,color_);
                  //return dynJs[myscript][color].onChange(a,b,c,myscript_,color_);// this should be set 
-                 return directive.direc[mkey].onChange(a,b,c,myscript_,mkey);// this should be set 
+                 return directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);// this should be set 
                      } );// can i bind with its obj ?
                      });
 
