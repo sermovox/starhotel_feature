@@ -1,9 +1,17 @@
 let 
-models_directives=dynJs=require('./models.js'),// db and http init by bot.js
-fwOnC=require('./onChange.js'),//fw onChange to register
-controller;
+dynJs=require('./models.js'),// db and http init by bot.js
+//models_directives=dynJs,
+
+// should be also controller.plugin.vCtl.appWrap
+fwOnC;//require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
+
+
+let controller;
 console.log('\n starting FW initCmd ,dynJs:  ',dynJs);
-let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw onChange to register
+
+
+// TODO    try to put also modsOnAsk in onChange :
+//let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw onChange to register
 
 let init=function(){// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
 
@@ -50,7 +58,7 @@ controller.plugins.cms.onChange(myscript, color11,async function(a,b,c){
 */
 initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_rest']);
 
-initCmd('star_hotel',{meds:[11,22,33],cur:'rossi'},['dyn_medicine']);// copied from 'televita_voice'
+initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'televita_voice'
 
 };// end register bank (dynJs)
 
@@ -61,6 +69,21 @@ initCmd('star_hotel',{meds:[11,22,33],cur:'rossi'},['dyn_medicine']);// copied f
  // should be like a frame connect a ws to a bot using login in main browser windows .......
 function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys in bank dynJs[myscript] whose  myonchange framework onchange function must be resistered as botkit onchange ],
                                                         // model-dir if the model name  is different by cmd name myscript_)
+
+/* ****************  as in onChange.js : mng summary on framework onchange settings in a command :
+ onChange functions onChange=fwAskOnChange={modelname:{askname1:onchange1_function,,,}} will be injected on model models.modelname.direc.askname1.onChange,
+      if modelname param is missing we take modelname=cmdname
+ in fwbase.initCmd('cmdname',{meds:[11,22,33],cur:'rossi'},[askname1,,,],modelname) will be loaded the modelname asks functions on cmd cmdname
+ will be usually injected on models.modelname.direc.askname.onChange
+
+ usrAppSt: the param to load on application server service (starting status)
+        begin_def(myscript_,usrAppSt) 
+        to inform a process is requested by dialogstack started by cmd : myscript_  with param usrAppSt
+monchange : list of onChange ask function on which i want vframework support 
+
+*/
+
+
     let myth='default',directive;
 
     //if(!dynJs[myscript_])return;// error
@@ -166,14 +189,15 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
             
                              dyn_match:{}};// ??  per status tipo qs di newpage after a form usare  mydyn=askmatches['dyn_rest']
      
-
+oo
             let appSt=state.appstatus;// make available in current convo the appState
 
             */
 
-           // getappWrap(bot,convo) sets : appWrap=values.app={aiax:function(actionurl,req),session,begin_def:function serverservice()}
+           // getappWrap(bot,convo) sets : appWrap=={aiax:function(actionurl,req),session,begin_def:function serverservice()}
          // example usrAppSt={meds:[11,22,33],cur:'rossi'} , current user got from previous  botframework loging service call : TODO
-           await fwOnC.getappWrap(bot,convo);// getappWrap(bot,convo) sets : appWrap=values.app ; vars={channel,user,....}
+           await fwOnC.getappWrap(bot,convo);// will recover session , check  appWrap in vars.app ....
+                                            // getappWrap(bot,convo) sets : appWrap=fwOnC..appWrap ; vars={channel,user,....}
            let values=convo.step.values,
            appWrap=values.app,session=values.session;
 
@@ -184,7 +208,7 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
             // inform server endpoint a major comand is requesting 
             appWrap.begin_def(myscript_,usrAppSt);
              // get user status from db query 
-             appWrap.aiax('register',{user:usrAppSt.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}
+             appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}
 
 
 
@@ -193,7 +217,9 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
 
              // GENERAL FUNCTION TO INJECT in ALL convo >>> better set in ?????
              //convo.step.mustacheF=dynJs[myscript_].mustacheF;
-             convo.step.mustacheF=mustacheF;
+
+             //convo.step.mustacheF=// review template generator in convo the delete this !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             // alredy done fwOnC.mustacheF=mustacheF;
 
              const dc=convo.dc;
 
@@ -204,7 +230,7 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
              // convo.openStep.state.app=appWrap;// already done
 
 
-              convo.setVar('modsonask',modsOnAsk(script));//  modsOnAsk used in .out miss func 
+              convo.setVar('modsonask',fwOnC.modsOnAsk(script));//  modsOnAsk used in .out miss func 
              convo.setVar('excel',directive.excel);// corrected to be as was before
 
 
@@ -250,6 +276,8 @@ function initCmd(myscript_,usrAppSt,monchange,mod_dir){//  (cmd,usrAppSt,[keys i
 // register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
 module.exports =function (cnt){
     controller=cnt;
+    fwOnC=controller.plugins.vCtl;// is vCtl
     if(controller.plugins.cms)init();
+
 
 }

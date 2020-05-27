@@ -1,22 +1,50 @@
 var db,rest;// services
+
+let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw functions
+const fs = require('fs');
+// luigi 032020
+const logger=function(message,ch,send){//logger({user,text},ch,'')
+    if(!message.text)return;
+    let x,mylog;
+        if(send){x=' send ';}else x=' receive from '+message.user;
+    mylog='\n'+new Date().toUTCString()+'app server,ch: '+ch+x+', log :\n      >>  '+message.text;
+    mylog+=' ..';
+    let fn='app.log';
+    if(ch=='book'){fn='book.log';mylog='\n'+new Date().toUTCString()+' user '+message.user+' asked to book the slot : '+message.text;}
+    fs.appendFile(fn, mylog, function (err) {
+        if (err) return console.log(err);
+      //console.log('Appended!');
+     });
+
+}
+
 let application;
 
 let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access point 
     let cfg = cfg_;
     let botstatus = { processing: 0, log: [] };
-    return {
+    return {// application
 
         begin_def: function (cmd, request) {
             // new user comes in ( comes out after a time lag cause channel reset )
-            botstatus.log.push(cmd + '-' + request);// request.toString+ time stamp 
+            // the dialogstack active dialogid is cmd
+            // to see if it was a new dialogstack we must have beginDialog info flag ( todo) , or observ that session is a void obj
+            let log_='begin-'+cmd+'-'+JSON.stringify(request);
+            botstatus.log.push(log_);
+            logger({user:'',text:log_},'event','');
+            console.log('application endpoint begin_def called. def thread called for cmd : ', cmd,', request: ', request);
+
         },
         post:function(action, vars, session, request) {// request is a qs : ?ask=pippo&colore=giallo  (actionurl,convovars,session,req);
+            let log_='post-action:'+action+'-request:'+JSON.stringify(request)+'-session:'+JSON.stringify(session);
+            botstatus.log.push(log_);
+            logger({user:session.user,text:log_},'post','');
             transaction(action, vars, session, request);
-            console.log('appserver called session : ', session, '\n vars ', vars);
+            console.log('application endpoint post called. session : ', session, '\n vars ', vars);
 
         },
         post_aiax_fw_chain:function(action, vars, session, request) {
-            // here we implement a middleware organized by root level and adapter to interface
+            // here we implement a middleware organized by rooting level (ctl/app routing) and adapter to interface ext service (ve)
             // that will receive and respond data in model format to onchange that use model and directive fw support 
 
             console.log('appserver post_aiax_fw_chain called session : ', session, '\n vars ', vars);
@@ -41,16 +69,25 @@ let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access poi
                 session.curprocess = null;// cultural or storico is state contained in convo.vars ...
                 // .....  access and updates app status session + convo status vars
             } else if (action_ == 'set') {
-                session.path = result.path;
+                session.path = request.path;
+            } else if (action_ == 'book') {// action tour-book
+                session.booked = request.book;// request={book:res};
+                logger({user:session.user,text:session.booked},'book','');
+
             } else if (action_ == 'next') {
                 if (session.curprocess == 'path') ;//  ?????   session.path++;
             } else;
         } else if (action == 'register') {
             // call server to get user data 
             // await user=get()
-            let user = request.user;
+            console.log('application endpoint post called. def thread triggered/replay for service/cmd : ', request.service,'\n session: ', session, '\n vars ', vars);
+            let user = request.user;// from convo.vars.user
             session.user = user;// will be available as vars.appWrap.session.user
-            session.processing=request.service;
+            session.vuser='luigi';
+            session.processing=request.service;// from userbefore()
+            let log_='app-register-on-session';
+            // botstatus.log.push(log_);
+            logger({user:session.user,text:log_},'app','');
 
             ;
         }
@@ -60,6 +97,7 @@ let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access poi
     }
 }
 
+/*
 let WrapApp=function(session,convovars){
     this.sess=session;
     this.va=convovars;
@@ -74,11 +112,93 @@ WrapApp.prototype.begin_def=function(cmd,req){
 WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
     post_aiax_fw_chain(actionurl,this.va,this.sess,req);
  }
+*/
 
+ //convostatus=application.post('tourstart',convostatus,app_session,request);// request is a qs : ?ask=pippo&colore=giallo
+ function wrapgen(session,convovars){// 
+    //let app_session=session;convovars=convovars;// closure var
 
-async function getappWrap(bot,convo){// recover session and return a wrapper to have session and with that call the aiax app endpoint
-// returns a app endpoint wrapper : appWrap=values.app={aiax:function(actionurl,req),session,begin_def:function serverservice()} aiax will change vars and session
+    return {
     
+    post:function(actionurl,req){
+        application.post(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
+    },
+    post_aiax_fw_chain:function(actionurl,req){
+       application.post_aiax_fw_chain(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
+   },
+    begin_def:function(cmd,req){
+       application.begin_def(cmd,req);// session and convovars cant change when i stay in the same convo
+   }
+    //session:app_session
+    //,session //// warning session must not be reset ! so i would loose the new ref 
+    }
+
+};
+
+
+//let convovars=values;
+// one or the other
+
+
+
+
+
+
+
+
+
+
+async function getappWrap(bot,convo){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
+
+    /* *********************    22052020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
+
+
+     nb the convo has access to vCtl   via vCtl=controller.plugins.vCtl
+        the vCtl.application will be called using a session and vars wrapper (vars=values=convo.step.state.values).appWrap singlethon set at onbefore()
+
+
+
+
+
+    user entering in a new cmd will start a dialogstack status : all status of all cmd  (thread) called by first starting cmd
+
+        let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
+         userDstate={session,
+                      dialogStack:[{convoid,convostate}// convostate > step.state
+                          ,,,]
+                    }
+
+
+    each cmd has its conversation=convo instance 
+    before active convo is called (check : dc.beginDialog?)will recover its status (convostate) from dialogStack ( the top of stack) 
+        so convo can start a step pass a convenient state obj: step
+            onStep(,step)
+                on which  can find convostate=step.state
+
+    someone ( can be dc.beginDialog ) must check if session singlethon  exists , init it and attach it in some step referencies
+        we do it in onbefore()  ( called from onStep()) that is easier because is a userstaff :
+            - once got userDstate we check the singleton session then attach it 
+                - somewhere in onStep ,:
+                    session=step.status.values.session (or step.values) //
+
+                - in onchange or in before :
+                    session=convo.vars.session;
+
+            - here we set  also the application (session and vars wrapper) (vars=values=convo.step.state.values).appWrap singlethon , so in step we can call application wrapping also session and vars with :
+                 - somewhere in onStep ,:
+                    appWrap=step.status.values.app (or step.values) //
+
+                - in onchange or in before :
+                    appWrap=convo.vars.app;
+
+
+
+                    nb in future move al vCtl convo status (x=matches/assmatches/...) from vars.x to vars.vFw.x
+
+
+*/    
+    
+
                 /*      ***************************************
                 convo.vars==convo.step.values==convo.step.state.values
                         ***************************************
@@ -86,7 +206,7 @@ async function getappWrap(bot,convo){// recover session and return a wrapper to 
 
 
 
-/* mng overview          rules in convo status :
+/* OLD mng overview          rules in convo status :
 
  convo status is    values=convo.step.values
   +
@@ -120,8 +240,9 @@ nb
        }
     }*/
 
-    let values=convo.step.values;
+    let values=convo.step.state.values;//
 
+    /*22052020
     // already set in this convo ?
     if(values.app){// the wrking convo values , appWrap=values.app
 
@@ -133,65 +254,44 @@ nb
        // values.app=Object.assign({session:values.session},basewrap);
 
     }else ;// error
-}
+    }*/
 
-    if(!values.session){
+    if(!values.session){// session not set so set it and the appWrap
     let dialogState=bot._controller.dialogSet.dialogState;// =
 
     // or directly
     // somewere before :
-    let state = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
-        if(state.error);// error
-        if(state.session);//error 
+    let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
+
+        if(userDstate.error);// error
+        if(userDstate.session);//error 
  
    // QUESTION  : non basta che faccia questo al begin del default thread ( butto app in values ????
  
  // changing 052020 .  
   //  state.appstatus={appSt:'ok',dyn_match:{}};// status a livello app . per status tipo qs di newpage after a form usare  mydyn=askmatches['dyn_rest']
  
-  values.session=state.session||{};
-    }
+  values.session=userDstate.session=userDstate.session||{};
+    
 
 
  //here a onchange can call : 
  
 //  let convostatus=convo.vars,request={path:'cultura'};// >>>>>>>>>>>>>>>>>>>   put all fw staff under vars.frameW   !!!!  ex  vars.matches  > vars.frameW.matches
  
-
-
- //convostatus=application.post('tourstart',convostatus,app_session,request);// request is a qs : ?ask=pippo&colore=giallo
- function wrapgen(session,convovars){
-     //let app_session=session;convovars=convovars;// closure var
-
-     return {
-     
-     aiax:function(actionurl,req){
-         application.post(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
-     },
-     post_aiax_fw_chain:function(actionurl,req){
-        application.post_aiax_fw_chain(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
-    },
-     begin_def:function(cmd,req){
-        application.begin_def(cmd,req);// session and convovars cant change when i stay in the same convo
-    },
-     //session:app_session
-     session
-     }
- 
- };
- let app_session=values.session;
- 
-//let convovars=values;
-// one or the other
-values.app=wrapgen(app_session,convo.vars);
- //values.app=new WrapApp(values.session,values);
+//appWrap=wrapgen(null,convo.vars);
+// porta fuori as const
+// put after : values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
+//values.app=new WrapApp(values.session,values);
 
 
 
- console.log( 'getappWrap, onchange/before recover state , app wrapper (vars.app) = ',values.app,'\n session ',values.session); 
+
+ console.log( 'getappWrap, onchange/before recover state , app wrapper (state.app) = ',values.app,'\n session ',values.session); 
 
  
-
+    }
+    if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
 }
 
 
@@ -1376,6 +1476,124 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
 */
 }// ends dyn_medi_f
 
+var dyn_star_booking =  // used in vita , ...
+    
+    
+// 27022020
+
+
+
+
+async function  // 
+(new_value, convo, bot,script,ask)  {// this function will be loaded at cms init with the jsonobj:
+// convo.vars=convo.step.values
+
+
+
+    let script_excel=this.excel// mnt dyn data 
+
+
+
+      ;//  
+      const stepSt=convo.step,convoSt=stepSt.state,values=stepSt.values;// nb values=convo.step.values==convo.vars
+    askmatches=convo.vars.askmatches,/* askmatches={aask:{
+
+                                                            match:'aval',
+                                                            matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
+                                                            nomatches:[{key:'aval'},,,],// only models
+                                                            ... some onchange added fields , ex : matched complete desire param ...
+                                                        }}*/
+    matches=convo.vars.matches,// models matches . see ormat at conversation.addMatcRes, convo.vars.matches.amodel={match:itemvalue-key,vmatch:voicenameofitem,data:xqea}
+    mustacheF=stepSt.mustacheF;
+    var answ ;
+if(!matches.mod_Serv.match)matches.mod_Serv.match='col';// the default group is colazione 
+console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' context: ',this);
+
+
+ //  see getappWrap .... 
+
+ 
+
+// setting a convo app wrapper 
+//appWrap=values.app={aiax:function(actionurl,req),session,begin_def:function serverservice()}
+
+/* now s a field 
+await getappWrap(bot,convo);// get and make available in current convo the appState wrapper in values=vars=convo.step.values;
+                            // appWrap=values.app
+let appWrap=convo.step.values.app;
+*/
+
+let appWrap=values.app;
+await getappWrap(bot,convo);// check session , then if values.app is cancelled by persistence entering a new turn :
+                            // - get and make available in current convo the appState wrapper in values=vars=convo.step.values;
+                            //      appWrap=values.app
+appWrap=values.app;
+if(new_value&&convo.vars.matches.mod_wh.match=='quando'){
+    let test='\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*';// '\bprenot*\w*\s(alle|per le)*\w*\s(\w*)'prenotare alle 14 o 17
+let res=new_value.match(new RegExp(test, 'i'));// no : ig
+// test='stay*\w*\s(\w*)' will return rematch=[],  in rematch[1] is the word after stay*
+// no :  stay*\w*\s(\w*)|\bprenot*\w*\s(alle|per le)*\w*\s(\w*)
+// ok :  '\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*' , 'i'
+//          '\\bprenot\\w*\\s(?:alle|per le)\\s+(\\w*)', 'i'
+// see at https://regex101.com/ :
+//  text: stayed perto prenotiamoo per le 17 per te prenotare alleall 14        regex: stay*\w*\s(\w*)|\bprenot*\w*\s(alle|per le)*\w*\s(\w*)     gi  
+// if(res[1]...)
+if(res&&res.length>0&&!isNaN(res[1])){
+
+request={book:res[1]};// request={path:vars.matches.match};
+let session=values.session;
+let someoutintentgrouprelay= appWrap.post('tour-book', request);//appWrap.post_aiax_fw_chain('tour-book', request);
+}
+}
+/* 052020 a new ctl chain 
+onchane thatr follow aiax_fw_chain format can delegate some work to a  aiax_fw_chain('tour-start', request);  framework support 
+so the ctl hain will get the 'tour-start' action and let fw access poit to manage it using as status  values.matches and asmatches
+    3 level are mng 
+        - onchange direct maniupulation of session and vars model
+        - ask/ctl level : it is when request.url=ask:askname?  returns outcontext askmatches.match that will be used by condition $$$ to its 'thread outcontext' relay/selecting ask
+            a null ret means that there are just 1 outcontext possible and the selection is just in its ask condition 
+        - main server rooting when request.url=url:thname? response will be res={cmd,} that will be used by condition $$$ to a ask relay whit 'gotocmd outcontext'
+
+        the receiving chain can be a middleware chain where some jpob id done by level or special ext service (voice enabler wit.ai intent resolver ...)
+        the vars status is managed by ask/ctl level
+        the main server level works only with session status and manage only 
+
+
+nb usually the onchange will be after the matcher condition testing done in previous ask . this onchange can integrate that matcher works
+
+
+
+
+*/
+
+//let state={appstatus:appWrap.session};// session temporarely , in future just use appWrap.session
+
+
+
+
+
+
+//  let convostatus=convo.vars,request={path:'cultura'};// >>>>>>>>>>>>>>>>>>>   put all fw staff under vars.frameW   !!!!  ex  vars.matches  > vars.frameW.matches
+ 
+ //convostatus=application.post('tourstart',convostatus,app_session,request);// request is a qs : ?ask=pippo&colore=giallo
+
+
+
+// >>>>  also a call can come in a condition $$$$ using let session=vars.appWrap.session; vars.appWrap.aiax('action', request={ask:pippo})
+   
+   
+   
+   
+   // here as start :
+//   values.appSt=state.appstatus;// make available in current convo the appState
+   // better  wen before are moved to begin :
+   // this.appSt=await dialogState.get(context);
+
+
+
+
+}
+
 var dyn_star_f =  // used in vita , ...
     
     
@@ -1579,10 +1797,14 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
     */
    // b) :
 
+
+   /*
    let dialogState=bot._controller.dialogSet.dialogState;// =
 
    // or directly
    // somewere before :
+
+
    let state = await dialogState.get(convo.dc.context, { dialogStack: [] });
    state.appstatus={appSt:'ok',dyn_match:{}};// status a livello app . per status tipo qs di newpage after a form usare  mydyn=askmatches['dyn_rest']
 
@@ -1591,7 +1813,9 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
    // better  wen before are moved to begin :
    // this.appSt=await dialogState.get(context);
 
-
+*/
+let session=convo.vars.session,
+appWrap=convo.vars.app;// is it void as we need call ......
   
                     // from related gathered  matched models  choose the qs/queryclauses to run 
 
@@ -1645,7 +1869,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
 
 
-       state.appstatus.dyn_match={};state.appstatus.dyn_match[ask]={match:mydata};// ??
+       session.dyn_match={};session.dyn_match[ask]={match:mydata};// ??
 
         mydyn.param.desired=mydata.answere;
         mydyn.complete=mydata.qeaaction;//'qeaaction';// route to the answere display (action related)  and context summary then propose new action 
@@ -1914,7 +2138,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
    //now  here update it  
    // so in template we can recover a copy put in vars.appSt.dyn_match.dyn_rest.match[6]
-   state.appstatus.dyn_match={};state.appstatus.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
+   session.dyn_match={};session.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
 
 
     // AFTER GOT results build the group (query as a whore ) context (gr )/view (.complete will route to )
@@ -2325,8 +2549,8 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
 
 
      console.log(' dyn_rest bl ended with short span qs vars.askmatches.dyn_rest.param : ',mydyn.param,'\n and vars is : ',convo.vars);
-     if(state.appstatus&&state.appstatus.dyn_match&&state.appstatus.dyn_match[ask])
-      console.log(' and app status update   values.appSt=state.appstatus,  state.appstatus.dyn_match.dyn_rest : ',state.appstatus.dyn_match[ask]);
+     if(session&&session.dyn_match&&session.dyn_match[ask])
+      console.log(' and app status update   values.appSt=session,  session.dyn_match.dyn_rest : ',session.dyn_match[ask]);
     }// ends desire entity 
     else{// no desire entity got , error ,(a def must anyway exists)
         console.error(' ERROR : a query can not find even a default row , lease manage with an exit error');
@@ -2547,10 +2771,15 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
 // setting a convo app wrapper 
 //appWrap=values.app={aiax:function(actionurl,req),session,begin_def:function serverservice()}
+
+/* now s a field 
 await getappWrap(bot,convo);// get and make available in current convo the appState wrapper in values=vars=convo.step.values;
                             // appWrap=values.app
 let appWrap=convo.step.values.app;
+*/
+
 request={path:'cultura'};// request={path:vars.matches.match};
+let appWrap=values.app,session=values.session;
 let someoutintentgrouprelay= appWrap.post_aiax_fw_chain('tour-start', request);
 
 /* 052020 a new ctl chain 
@@ -2574,7 +2803,7 @@ nb usually the onchange will be after the matcher condition testing done in prev
 
 */
 
-let state={appstatus:appWrap.session};// temporarely , in future just use appWrap.session
+//let state={appstatus:appWrap.session};// session temporarely , in future just use appWrap.session
 
 
 
@@ -2655,7 +2884,7 @@ let state={appstatus:appWrap.session};// temporarely , in future just use appWra
 
 
 
-       state.appstatus.dyn_match={};state.appstatus.dyn_match[ask]={match:mydata};// ??
+       session.dyn_match={};session.dyn_match[ask]={match:mydata};// ??
 
         mydyn.param.desired=mydata.answere;
         mydyn.complete=mydata.qeaaction;//'qeaaction';// route to the answere display (action related)  and context summary then propose new action 
@@ -3032,8 +3261,8 @@ and mod_wh=matches.mod_wh.match;   ???????????
 
    //now  here update it  
    // so in template we can recover a copy put in vars.appSt.dyn_match.dyn_rest.match[6]
-   state.appstatus.dyn_match={};
-   state.appstatus.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
+   session.dyn_match={};
+   session.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
 
    
 
@@ -3453,8 +3682,8 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
 
 
      console.log(' dyn_rest bl ended with short span qs vars.askmatches.dyn_rest.param : ',mydyn.param,'\n and vars is : ',convo.vars);
-     if(state.appstatus&&state.appstatus.dyn_match&&state.appstatus.dyn_match[ask])
-      console.log(' and app status update   values.appSt=state.appstatus,  state.appstatus.dyn_match.dyn_rest : ',state.appstatus.dyn_match[ask]);
+     if(session&&session.dyn_match&&session.dyn_match[ask])
+      console.log(' and app status update   values.appSt=session,  session.dyn_match.dyn_rest : ',session.dyn_match[ask]);
     }// ends desire entity 
     else{// no desire entity got , error ,(a def must anyway exists)
         console.error(' ERROR : a query can not find even a default row , lease manage with an exit error');
@@ -4301,16 +4530,17 @@ convoSt.userTurn=null;
 
 
 // format : fwAskOnChange={modelname:{askname:f,,,},,,]// the modelname usually can be the cmdname , but different cmd version have same modelname
-let fwAskOnChange={televita:{dyn_medicine:dyn_medi_f},
+let fwAskOnChange={// ={modelname:{askname1:functionref1,,,},,}. usually model is the cmd name . used/ fwOnchange functions : in will be injected on models.onchange
+                    televita:{dyn_medicine:dyn_medi_f},
                     museoAQ:{dyn_medicine:dyn_museo_f},
                     hotel3pini_vox :{ dyn_rest:dyn_rest_f},
                     hotel3pini :{ dyn_rest:dyn_rest_f},
                     hotels :{ dyn_rest:dyn_rest_f,colazione_dyn:dyn_rest_f},
-                    star_hotel :{ dyn_rest:dyn_star_f,colazione_dyn:dyn_rest_f}
-
-                };// fwOnchange functions : will be injected on directives
+                    star_hotel :{ dyn_medicine:dyn_star_f,ask_afterpilldet:dyn_star_booking},// a copy of televita model onchange functions . that model is applied to televita_voice cmd
+                };// fwOnchange functions : will be injected on models.modelname.direc.askname.onChange
 function init(db_,rest_,appcfg,session){db=db_;rest=rest_;
     application=fsmfactory(appcfg);// init application
+ 
 }
 function buildF(ask,ftext){
     fwAskOnChange[ask]=null;
@@ -4319,4 +4549,13 @@ function buildF(ask,ftext){
 
 
 }// insert db and rest services
-module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap};// onChange:will overwrite directive onchange
+
+
+/* ****************  mng summary on framework onchange settings in a command :
+ onChange functions (onChange.js).onChange=fwAskOnChange={modelname:{askname1:onchange1_function,,,}} will be injected on model models.modelname.direc.askname1.onChange,
+      if modelname param is missing we take modelname=cmdname
+ in fwbase.initCmd('cmdname',{meds:[11,22,33],cur:'rossi'},[askname1,,,],modelname) will be loaded the modelname asks functions on cmd cmdname
+ will be usually injected on models.modelname.direc.askname.onChange
+*/
+
+module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery

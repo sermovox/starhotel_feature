@@ -131,7 +131,9 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 let db,rest;
 
 // in future add fw as plugin !!!
-require('./nat/onChange.js').init(db,rest,null,null);// service + controller ?
+let vctl=require('./nat/onChange.js')
+controller.addPluginExtension('vCtl', vctl);// will be available as controller.plugin.vCtl.xx
+vctl.init(db,rest,null,null);// service + controller ?
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {
@@ -157,11 +159,14 @@ controller.ready(() => {
         // ************************    myscript is cabled !!!!!
 
         
-        // register cmdDirectives, will injeci a ref of some fw var in controller so that fw functions will be accessible from controller  instance (ex conversation!)
-        let fwCtl=require('./nat/fwbase.js')(controller);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-       // controller.usePlugin(fwCtl);
 
     }// end picms
+    if (controller.plugins.vCtl) {// 
+                // register cmdDirectives, will injeci a ref of some fw var in controller so that fw functions will be accessible from controller  instance (ex conversation!)
+                let fwCtl=require('./nat/fwbase.js')(controller);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+                // controller.usePlugin(fwCtl);
+         
+    }
 });
 
 

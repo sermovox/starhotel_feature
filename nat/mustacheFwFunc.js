@@ -764,7 +764,9 @@ return mustacheF.nmList(el,null,count,true)}// will add e anche  dopo il primo e
 function modsOnAsk(script) {// from a conversation script create a map : ask > list of model tested in ask
     // we  want to know what model will be tested on script asks on all threads
     // in onchange  main dyn_ask will test major models gathered by y many asks that are visited in the dialog
-    // so in a ask we'll find the models that we test fox matching in the ask and the most important goon ask in its condition routing 
+    // so in a ask we'll find 
+    //  -the models that we test for matching in the ask and 
+    //  - the most important goon ask in its condition routing 
 
 
 // **************************    // seems modsOnAsk do not give right ouput !!!
@@ -816,7 +818,7 @@ function modsOnAsk(script) {// from a conversation script create a map : ask > l
 
 
                     }
-                    console.log('** modsOnAsk , in thread ', thread, ' evaluating ask step ', p, '  with collect var  ', name, ' testing model : ', mods);
+                    console.log('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var  ', name, ' testing model (type $$ and $%): ', mods);
                     if (mods.length > 0) modsOnAsk_[name] = mods;
 
                 }// a step with ask

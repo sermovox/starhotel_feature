@@ -1037,6 +1037,7 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
         // general param in template
     
         rest:{col:{hall:{news:'today branch gratis!'}}},// delete 
+        vname:'hotel cinque stelle',
     
         news:'oggi grande festa della amicizia alle 20 tutti in piscina!' ,
     
@@ -1129,7 +1130,13 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
             loopDir:{
                 //goon:false // dont work 
                 goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
-            }
+            },
+            onChange_text:null,
+    
+    
+          
+        onChange:null//
+    
         },
         ask_opera1_0:{// first step of a displaying view thread . no goon at first step  :
     
@@ -1168,16 +1175,16 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
                     /* row : 0 id
           1 value/nome
           2 patt
-          3 descr
-          4 data
+          3 descr in testa 
+          4 data news , marketing
           5 loc / tipo medicazione-medicina-pastiglia-medicazione-iniezione / mattina-sera ... in sostanza un where field !         
-          6 menu quando prenderla
+          6 menu (wh = menu o che ....)
           7 news avvertenze medico
           // 
-          8 where  come fare a recuperarla 
-          9 how come prenderla
-          10 when from : prima pasti
-          11 when to  max delay
+          8 where  come fare a raggiungerlo
+          9 how come prenotare/chiamarlo/....   e' vario !
+          10 when from : arertura 
+          11 when to  chiusura
           12 voicename
             13 loc/res,,,,, the group type medicine : future articulation of view results , potrebbe essere pranzo cena  o pills medicamento ....
                todo 
@@ -1185,14 +1192,17 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
             15: spare
             16:time2 from
             17:time2 to
+        18: det dettaglio in master 
+        19 :det  dettaglio in item  
     
           // specific bl transaction fields 
-          20 taken/missing : get join with user med with status get/miss: 0/1
+          20 true/false   taken/missing : get join with user med with status get/miss: 0/1
           21 ....
           22 ....
           23 ...
           24 ---
           25 inputdata1
+
     
     
     
@@ -1203,11 +1213,23 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     
     
     */
+   /*
             [
                 [11,'aspirina','aspirina','aspirina descr ','data','credenza 1','prima pasti ','se salti non riprenderla ','vai in credenza ',' sciogliendo la compressa in acqua ','prima dei pasti ','10:00','aspirina','col',,,,,,,,true,,,,,''],
                 [22,'cumadin','cuma|coum','cumadin descr','oggi branch gratis alle 11 ','credenza 2','prima pasti ','se salti non riprenderla','vai in credenza',' deglutendo la compressa intera con acqua','dopo i pasti ','10:00','cumadin','col',,,,,,,,false,,,,,''],
                 [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
                ]
+*/
+
+               [
+                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vaial piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
+                [1,'hall','hall','è la sala principale del hotel','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra','col',,,,,'è la sala principale del hotel , apre alle 7 ','è la sala principale del hotel , apre alle 7 e ha servizio di branch all americana',true,,,,,''],
+                [2,'giardino','giardino','è immerso nel verde del giardino , aperto solo la sera ','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ','col',,,,,'è immerso nel verde del parco acquatico , con sale private , apre alle 20','è immerso nel verde del parco acquatico naturale, con tavoli riservati per una colazione appartata apre alle 20',true,,,,,''],
+                [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,'']
+                
+                ]
         ,
         data:// will be used by onChange as db rows as array of string if we try to manage a restaurant . all procedure to select are the same, changes only the selection data and answere view 
         /* row : 0 id
@@ -1225,10 +1247,11 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     11 when to 
     12 voicename
     */
+   // DO NOT USE :
     [
-    [0,'terace','redisdes','red RTCSessionDescription','data','piano 1','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','caffe terrazza'],
-    [1,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','hall al piano terra'],
-    [2,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','colazione in giardino in giardino']
+    [0,'terace','redisdes','red RTCSessionDescription','data','piano 1','pesce','eggs backon gratis','vaial piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza'],
+    [1,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra'],
+    [2,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ']
     ]
     ,
     Gdata:// will be used by onChange as group feature so we can customize the view of the general entity instance in data 
@@ -1244,12 +1267,21 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     8 ?
     
     */
+   /*
     [
     [0,'col','ecco lelenco dei farmaci che ci risulta devi ancora assumere ',' avverti l operatore se hai problemi collaterali, ultimamente l aspirina è da preferire sciolta prima di ingiarla. ',1,' farmaci','  quando prenderle o modalità di assunzione',' sezione medicamenti o servizio prenotazione visite'],
     [1,'rest','il tuo programma prevede di applicare i seguenti medicamenti','avverti l operatore se hai difficolta  ',1,'medicamenti','  quando fare la medicazione e come ',' ciao , portineria e taxi'],
     [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
     [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
-    ]
+    ]*/
+
+    [
+        [0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
+        [1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' colazione , portineria e taxi'],
+        [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+        [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+        ]
+
     ,
         onChange_text:null,//testFunc.toString,// without async !!
     
@@ -1587,4 +1619,4 @@ row :
 };// ends musei
 
 
-module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ};
+module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel};
