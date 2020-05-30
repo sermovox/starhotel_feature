@@ -10,7 +10,7 @@ const logger=function(message,ch,send){//logger({user,text},ch,'')
     mylog='\n'+new Date().toUTCString()+'app server,ch: '+ch+x+', log :\n      >>  '+message.text;
     mylog+=' ..';
     let fn='app.log';
-    if(ch=='book'){fn='book.log';mylog='\n'+new Date().toUTCString()+' user '+message.user+' asked to book the slot : '+message.text;}
+    if(ch=='book'){fn='public/booking.html';mylog='<br><h2> a new reservation was confirmed on : '+new Date().toUTCString()+' at: '+message.text+'</h2><h4> user : '+message.user+'</h4>  waiting for a new schedule ...<br>__________________________________<br>'}
     fs.appendFile(fn, mylog, function (err) {
         if (err) return console.log(err);
       //console.log('Appended!');
@@ -19,6 +19,312 @@ const logger=function(message,ch,send){//logger({user,text},ch,'')
 }
 
 let application;
+
+let vfwF={// framework funvtions module
+    addMatcRes:function (mat,// true : matched
+        entity,storemat,storeMId // storemat isthe value/name matched,  storeMId is the index p 
+        ,routing// routing=linematch is true if not $% case ( not routing case ) so this condition will stop the cond loop
+        ,rematch// the regex matched extraction (....)
+        ,reset// reset matches ???? never called !!!!!!!!!!!!!!!
+        ,param,// not nul if this is a resolver selection ask
+        storeVal// a integer or string to get from user 
+        ,step,previous
+        ){// register model/entity match, last turn match asked with $$ or $% result 
+
+/* if condition with entity ( $$ or $% case )  we register  a model match ( entity instance  = itemname) :
+      adding  {key:entity} to  values.askmatches.askname.match array (  values.askmatches.askname={match:[{},,,,],nomatch:[]} )
+      + setting                         values.matches.entity={match:itemvalue}
+                 if exist def in excel : values.matches.entity={match:itemvalue,vmatch:vars.excel.entity.vmatch,data:rematch[1]=matches.entity} 
+
+
+
+      or not matched :
+      adding {key:entity} to  values.askmatches.askname.nomatch array (  values.askmatches.askname={match:[{},,,,],nomatch:[]} )
+
+ if a condition with no model matches we register a match {ind:4} (and not {key:value})
+    adding {ind:4} to  values.askmatches.askname.match array (  values.askmatches.askname={match:[{},,,,],nomatch:[]} )
+    if do not match ,do nothing  
+
+*/
+
+// mat      : true if entity is matched, false 
+// entity   : model name ($$ case) otherwise null condition  index 
+// storematch, storeMId is 
+//              if condition is $$ $% ( model match) : the name/value matched () entity not null),
+//              storeMId is the id of matching condition 
+
+/*  *******    master/desire entity simple relation with ask conditional described as $$ 
+
+          the entity/model should be  is defined somewhere (in excel ...)
+          in this very simple implementation the view is not bind to the model ( id/name/voicepattern/shortdescriptio)
+          but just set by $$ condition munually copyng the name/pattern field
+          in future (DONE !)  we should do $$mod:areference on the model description file set somewhere in 
+              the model/field dialog description bind to a static (file) descriptio or to a dyn db schema
+          here the where model are just the space of a relational where entity put directly in a col of master entity ( desire entity)
+              whith its id or name ( both are key)
+          so to make sintetic : $$....reflect the name-voicepattern of a implicit model whose id/name is put in a where field of the related master desire entity
+    ******
+*/
+
+
+
+// storemat : matched model item name/value ($$ case), otherwise condition  index
+
+// old : so matches can be available in out as step=this ,this.values.askmatches[thisaskmatchesname].match/nomatch='entity1|entity2'
+
+/*
+                        askmatches=convo.vars.askmatches,/* askmatches={aask:{
+
+                                match:'aval',
+                                matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
+                                nomatches:[{key:'aval'},,,],// only models
+                                ... some onchange added fields , ex : matched complete desire param ...
+                            }}
+                    modmatches=convo.vars.matches.amodel={match:itemvalue-key,vmatch:voicenameofitem,data:xqea}
+
+*/
+
+
+let askmatches=step.values.askmatches;
+
+
+console.log(' ** addMatcRes called to set matching result  ,mat: ',mat,',entity: ',entity,',storemat: ',storemat,', routing: ',routing);
+
+
+if(reset){
+
+
+    if(entity)step.values.matches[entity]=null;
+        askmatches[previous.collect.key]=null;
+
+     return;
+}
+
+let mf,amatch,amatchId;
+if(mat)mf='matches';else mf='nomatches';
+if(entity)amatch={key:entity};// the model/entity name matched/not matched
+amatchId={id:storeMId};// normal condition match with no model 
+
+
+// do in main p loop if(storeMId==0)step.values.askmatches[previous.collect.key];// reset if start conditions loopif(reset){
+
+// nb step.values.askmatches[previous.collect.key] can be alredy filled with short bl status (like qs in reload after a web form)
+askmatches[previous.collect.key]=askmatches[previous.collect.key]||{matches:[],// [mod_ent1,mod_ent5,,] also condition with $%
+                                                                                            match:null,// {key:'mod_ent5}condition not $% (so routing)
+                                                                                            mId:null,// {id:5} // present also in no proper entity
+                                                                                            nomatches:[]};//  [mod_ent2,mod_ent3,,]adds only $% or $$  case
+askmatches[previous.collect.key].matches=askmatches[previous.collect.key].matches||[];
+askmatches[previous.collect.key].nomatches=askmatches[previous.collect.key].nomatches||[];
+
+// if(askmatches[previous.collect.key][mf])
+    if(entity)askmatches[previous.collect.key][mf].push(amatch);
+
+    //             FIXED   ERROR  
+    // when a past alreday ask matched we need to unmatch when testing again tll get a new match
+    //  >>> so to make easy unmatch at any unmatched condition. the ask match only at last routing condition 
+    //   DEFALUT THREAD EXCLUDED !!!!! 
+    askmatches[previous.collect.key].match=null;  
+
+    if(routing){ askmatches[previous.collect.key].match=amatch;// stop condition routing
+                    askmatches[previous.collect.key].mId=amatchId;}// 
+
+    //                ERROR  
+    // when a past alreday ask matched we need to unmatch when testing again tll get a new match
+    //  >>> so to make easy unmatch at any unmatched condition. the ask match only at last routing condition 
+    //   DEFALUT THREAD EXCLUDED !!!!! 
+
+
+// else askmatches[previous.collect.key][mf] = {key:entity};// first value
+//askmatches[previous.collect.key].match += entity;// += '|'+entity in case of multimatch. register too the step was  matched in favor of entity 
+
+
+
+// model settings in this normal ask (no queryask/desidereask )
+// model can be 
+// - defined in condition patt line ( $$entity:.....) or 
+// - in excel  ( $$entity::) or 
+//  - defined on run  ( $$desidereAsk:;) in a CONDITION that  resolve a selection of a desire onchangequery ask, the name is entity='mod_'+previous.collect.key
+//      in this care storemat is the selected/matched item name/value
+// register only model matches ( not register model notmatching in nomatches field, if dont match match=null !): 
+if(entity){// in this condition we  manage matching (vars.matches/askmatches) on model and value entity/value ($$,,)
+
+    let isVal=storeVal&&storemat=='value',// a model whose values are the regex group match , not the item name declared in excel
+        mv=step.values.matches[entity]=step.values.matches[entity]||{};
+    if(mat){
+        if(isVal){// the entity is a value ( item is the regex match value)
+        mv.match=storeVal;// register under values.matches.entity=itemvalue
+        mv.mid=1;// dont use this, usable to see if is match is good 
+        }else{// a finit dimension entity
+            mv.match=storemat;// register under values.matches.entity=itemvalue
+            mv.mid=storeMId;
+        }
+        
+    }else mv.match=null;// tested (step.values.matches[entity] exists  ) but not matched // so not matched is matches[entity]=null???
+
+    if(param&&param.group) {// this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
+                            // the model that matches the cursor has the same  name as this desiredE ask :
+                            // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
+                            //      so is not the name of a declared model in excel ! or in line condition : &&model:....
+
+/* remember what said in bot.js onchange :
+the cursor can be passed to a resolver ak that will find a single match , so will complete the setting of :
+
+param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
+param.match=blResNam;//=blResItem[1];//  name  ex 'caffe top'
+param.vmatch=blResItem[12];// voice name 
+*/
+
+
+
+        // entity is the on running generated model by the condition resolver with same name as the ask !
+       //  step.values.matches[entity]={match: storemat};// alredy done 
+       // adds matched item copyng from desidere ask :
+       // param=step.values.askmatches[desiredE].param
+
+       // UPdate the desire query param ( so add a match and a sel)
+
+
+       param.group.sel={item:param.cursor.rows[storeMId]
+        //,index:blRes
+       };// index storeMId refears to cursor.rows index not to table/data index !! so take care ! 
+
+
+
+       param.match=storemat;// ?? touch the desire ask result ?
+       param.vmatch=param.cursor.resModel[storemat].vname;// ?? touch the desire ask result ?
+       param.selmatched=entity;// a way to see in param  if the match is a single row cursor or a following selection match,
+                                // entity=previous.collect.key 
+
+       // now the generated mode . should i add  param ??? on model or on ask ? both ? 
+       //step.values.matches[entity].vmatch=step.values.askmatches[desiredE].param.group.sel[12];
+       mv.vmatch=param.vmatch ;// pass in param ??
+
+        // attach param to model ( AND to this normal ask ? )
+        mv.param=param;
+        askmatches[previous.collect.key].param=param;
+       
+
+
+
+
+    }else{
+
+        if(isVal){
+            mv.vmatch=step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+       }else{// recover voice name  if there is registered  in excel :
+        if(step.values.excel[entity]&&step.values.excel[entity].vmatches)mv.vmatch=step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+        }
+    // leave previous matches if '§' nb cant be used in vuluetype model !!
+    if(rematch&&rematch[1])mv.data=rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
+         }
+ }
+
+
+
+/* *** askmatches mng OVERVIEW
+    usually this are the vars used 
+
+    - in desire ask that do onchange trying to resolve a single match of a single item:
+      >in template :
+
+        {{vars.askmatches.dyn_rest.param.......}} 
+            example {{vars.askmatches.dyn_rest.param.match}}
+                    {{vars.askmatches.dyn_rest.param.vmatch}}
+        
+        and 
+                {{vars.askmatches.dyn_rest.param.group.....}} the group class view attributes( class_/resourcetype group view of item) of matching item/instance
+                    example {{vars.askmatches.dyn_rest.param.group.name}}
+                            {{vars.askmatches.dyn_rest.param.group.vname}}
+
+                         nb in this implemtation of item cols (bl attributes)
+                            {{vars.askmatches.dyn_rest.param.group.sel.item[1]}}==
+                             {{vars.askmatches.dyn_rest.param.match}}, 
+
+                             {{vars.askmatches.dyn_rest.param.group.sel.item[12]}}==
+                             {{vars.askmatches.dyn_rest.param.vmatch}}
+
+                {{/vars.askmatches.dyn_rest.param.group.sel.....}}// the matched model item view attributes 
+
+
+
+                example : the matched model value/name {{vars.askmatches.dyn_rest.param.group.name}}
+                        the matched model vname {{vars.askmatches.dyn_rest.param.group.vname}} ( = {{vars.matches.mod_Serv.vmatch}} 
+
+     > in condition:
+
+        {{vars.askmatches.dyn_rest.complete}} the onchange query matching process result 
+
+    - in resolver  CONDITION  trying to resolve a single match of a desire ask multi results we set and use :
+
+             IN NEXT ROUTED (by resolver condition )  MSG we can use in template :
+
+                {{vars.askmatches.dyn_rest.param.group.sel.item...}} ( so as we routed from a resolver query ) 
+
+                    nb desire ask multi results store rows setting  :
+                            mydyn.param.match=mydyn.param.vmatch=null;// nb different from a non dyn ask !!!
+                            mydyn.param.cursor={rows:res.rows,resModel:{},data,param} 
+
+                and as previous, select a item  setting :
+
+                    {{vars.askmatches.dyn_rest.param.match}} and 
+                    {{vars.askmatches.dyn_rest.param.vmatch}}
+        
+                but dont change .group staff that was set in desire ask onchange :
+                            example :
+
+                                param.group.name=gr[1];// example col or rest 
+                                param.group.vname=gr[5];// example colazione or ristorante
+
+    - in normal ask 
+      >in template :
+
+
+                        {{vars.askmatches.akey.match}}  the condition model that caused not default routing  
+
+                        used only by algo : entity={{vars.askmatches.akey.matches[i].key}} say that a condition, of key=akey, matched on that entity 
+                        used only by algo : entity={{vars.askmatches.akey.matches[i].key}} say that a condition, of key=akey, dont matched on that entity 
+
+
+
+
+
+
+   *** model matches mng OVERVIEW
+     in template :
+         {{vars.matches.mod_Serv.match}} and {{vars.matches.mod_Serv.vmatch}} 
+
+     in condition:
+                    .................
+
+
+
+*/
+
+// if(mydynParam) we have the resolver section to complete :
+    /* 
+    
+    a) set model build on this resolver that is entity  
+
+    mydyn=step.values.askmatches[previous.collect.key]
+    if(mydynParam){// a cursor selection case ii is the matched index 
+            mydyn.param.group.sel=step.values.askmatches[desiredE].cursor.data[ii];
+
+            // no : 
+            //todocheckvname vmatches; now we can find in data[][]=mydyn.param.group.sel[12];
+            //=mydyn.param.group.sel[12];
+
+        }
+    b) add/complete/review  param selection also in  desiredE
+        >>> todo check out if the matches in desiredE.match and in desiredE.param.group  ......
+        
+    */
+
+
+
+
+}
+
+};
 
 let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access point 
     let cfg = cfg_;
@@ -91,9 +397,7 @@ let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access poi
 
             ;
         }
-
-
-        
+       
     }
 }
 
@@ -1533,8 +1837,8 @@ if(new_value&&convo.vars.matches.mod_wh.match=='quando'){
 let res=new_value.match(new RegExp(test, 'i'));// no : ig
 // test='stay*\w*\s(\w*)' will return rematch=[],  in rematch[1] is the word after stay*
 // no :  stay*\w*\s(\w*)|\bprenot*\w*\s(alle|per le)*\w*\s(\w*)
-// ok :  '\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*' , 'i'
-//          '\\bprenot\\w*\\s(?:alle|per le)\\s+(\\w*)', 'i'
+// ok :  '\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*' , 'i'  text: prenotaribilità verso le  17, manca 17:30 (google format)
+//  also :         '\\bprenot\\w*\\s(?:alle|per le)\\s+(\\w*)', 'i'
 // see at https://regex101.com/ :
 //  text: stayed perto prenotiamoo per le 17 per te prenotare alleall 14        regex: stay*\w*\s(\w*)|\bprenot*\w*\s(alle|per le)*\w*\s(\w*)     gi  
 // if(res[1]...)
@@ -1592,7 +1896,7 @@ nb usually the onchange will be after the matcher condition testing done in prev
 
 
 
-}
+} //end dyn_star_booking
 
 var dyn_star_f =  // used in vita , ...
     
@@ -2070,7 +2374,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
    iD=name;
 
 
-   if(res&&(nres=res.rows.length)>0)
+   if(res&&res.rows&&(nres=res.rows.length)>0)
 
     {//desire entity should be not null  , set anyway a default 
 
@@ -4558,4 +4862,4 @@ function buildF(ask,ftext){
  will be usually injected on models.modelname.direc.askname.onChange
 */
 
-module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery

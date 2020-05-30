@@ -1067,6 +1067,16 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
              notMatPr:'le informazioni desiderate come  quando dove '//  model entity name used in nmList not matched list 
              // vname:=notMatPr
     },
+
+    // a value model : get its valus by a group match in a regex ( now only result[1] is consifdered a valid value match )
+    mod_bookhour:{vmatches:{value:''},//int value , when matched the value is the number got:vars.models.matches.modelname.vmatch vars.models.matches.modelname.match
+    vlist:['ora prenotata'],//temporaneo , è duplicato di vmatches con different format ! // not value type
+    model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
+     notMatPr:'l ora in cui prenotare'//  model entity name used in nmList not matched list 
+     // vname:=notMatPr
+},
+
+
     mod_mattsera:{vmatches:{'storico':'culturale'},// model specification , item voice name 
          notMatPr:' il percorso preferito '//  model entity name used in nmList not matched list 
          ,mod_wh_Of:'dyn_medicine'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
