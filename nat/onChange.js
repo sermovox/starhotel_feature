@@ -1898,7 +1898,7 @@ nb usually the onchange will be after the matcher condition testing done in prev
 
 } //end dyn_star_booking
 
-var dyn_star_f =  // used in vita , ...
+var dyn_star_f =  // used in starhotel , ...
     
     
 /* 27022020
