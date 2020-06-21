@@ -144,6 +144,38 @@ controller.ready(() => {
     /* catch-all that uses the CMS to trigger dialogs */
     if (controller.plugins.cms) {// picms
 
+
+        // now set the client dilalog to start : giving responsability to testtrigger to GET the right root cmd. 
+        // when  root trigered cmd is completing, in onAfter ( or last ask onchange) user cb , will call  the app level of the cmd app 
+        //      application  application/ fsmfactory in onchange.js ,
+        //  that , 
+        //          (
+        //              like a routing level of a spa , 
+
+        //              that redirect internally defining the new incontext + prompt for it before exiting 
+        //              or
+        //               post to main app that as usual 
+        //                  redirect with a new (spa) page + qs to download to client 
+        //                  or 
+        //                  /aiax) just give response  so the spa itself will route to next page 
+
+       //               BUT, as cant work with cmstriggering sys ,  does this way : 
+        //          )
+        // 1. if dont need to reset the triggering preference can do what a web server post do 
+        //          ( use model got in convo.vars.matches, calc next static current value or dyn in vars.matches[dynmodel] likr dyn smp in mybot ))
+        //          set the prompt to address the user to next, cms triggerable,  cmd 
+        // 2. if need to ghange the preferred trigeramle by cms : 
+        //   will post to a app level in bot.js that , passing session, will 
+        //      - use the post data , 
+        //      - instead of set a new get redirect page with qs,  give directive to update the triggering system in :
+        //          testTrigger that when come a tc, containing the user session ,  will trigger according with session.incontext.preference 
+        //      - give a update for next page prompt (if needed)
+
+
+        // will  come back with a post to main app that :
+        //  - will not redirect with a new page + qs to receive a new page with a title prompt but :
+        //  - will get the
+        // will send lastreview testtrigger 
         controller.on('message,direct_message', async (bot, message) => {
             let results = false;
             results = await controller.plugins.cms.testTrigger(bot, message);

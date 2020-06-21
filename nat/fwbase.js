@@ -10,12 +10,89 @@ let controller;
 console.log('\n starting FW initCmd ,dynJs:  ',dynJs);
 
 
+
+// a directive fw cb bank
+
+let dynMatch=function(dynMod){
+    // ?? directive.direc[mkey]
+    // using directive info run fts using db/http directive.excel[dynMod]
+
+    // built using some fw matcher component ( fwHelpers) 
+    //      integrated by user cb to custom some part of matching process like service_
+};
+
+// TODO : user service injection 
+// user will use some service function he provide in dynJs.service[afunc]=funcion(){} ( or registering like fw.controller();)
+//      eventually using some fw  base helpers like fwHelpers , 
+//              example   old service helpers 
+//                        httpService : 
+//                              - .....  
+//                          or
+//                        fillDependingUseCtl returns null and req is std middleware :
+//                              - if we match some model , we can see if there are some where depending dyn ( no fts , just a usual were select) that can be launched when this where is match
+//                                  if all other depending where model were matched we can run the query ( knowing all where clauses ) to get (db/rest query)the depending dyn  and fill the dyn match status
+//                                     nb knowing a model match , the dyns that has that model as a  where clause  are got from dialog config :....
+//              see x example  httpService= httpFarm(fwHelpers)  , so registering using  dynJs.service['httpService']=httpService;
+//                  nb httpService: match a dyn (fills matcher status ....) , also if it has not a askkey , with a db/rest query , the params are got from config dialog 
+// using vars.dir.service.httpService  or vars.app.service['httpService']
+
+
+
+
+
+let fwCb={fWService1:null,askS:{dynMatch},thS:{}};// fw service  to be used on convo 
+let fwHelpers;
+
+
 // TODO    try to put also modsOnAsk in onChange :
 //let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw onChange to register
 
 let init=function(){// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-
+// db=db_,http_=http;
  
+
+/* convo will at some event in step looping, 
+//  for example in condition looping :
+//      according with step  directive inserted with macro or condition type , or just looking at usersay formatting 
+//          ( example type=regex and usersays='$$dyn_model::' means : run matcher scalarstaticmodelregex on model speified on directive excel...), 
+//  launch the registered handler esempio dynMatch
+
+// example to launch on a condition model a matcher we can specify a fw std dyn matcher in this way :
+//  in type=intent put in macro the directive containing :
+//      matcher='fwCb.askS.dynMatch' // std fw function put in a event tree directory ( here read  fw service for ask of name dynMatch)
+or easier : 
+//      matcher='dynMatch' // std fw function put in fwCb.askS directory 
+//      or custom matcher='service.mydynMatch'    o 'vars.app.service.mydynMatch'????
+//              where mydynMatch is a custom matcher built and registerd like httpService like we registerd above
+
+
+// >> to set fwCb.askS.dynMatch = dynJs.service['httpService'] (set as above =httpService;) we remember the chains of calls in bot.js :
+// - call vctl=onchange 
+// - add vctl as plugin in  botkit ctl () 
+//  when ctl ready, bot.js will  
+//  -call this fwbase  : fwCtl=require('./nat/fwbase.js')(controller)   
+//      so we run this init()
+//      here add fwHelpers=.....  as in aiv3
+//      here, in fwbase to set some custom (and also some fw service built from base fwHelpers) :
+
+//      call ctl.plugin.vCtl.setService(fwHelpers,fwCb)  // so httpService will call fwHelpers.   after got the directive models description 
+//      that's simply : (fwOnC=controller.plugins.vCtl).setService(fwHelpers,fwCb)
+
+                in fwOnC.setService(){
+                         we set fwOnC.fwCb=fwCb 
+                         then extend services 
+                          fwOnC.fwCb.askS.dynMatch= fwOnC.service['httpService']=httpService= httpFarm(fwHelpers)
+                            nb how get dynMatch in setting .dir json in macro ???
+                            
+                        now wen convo are instatiated it will get vCtl=_vcontroller so in code convo we can call services like :
+                        this._vcontroller.service[y] or this._vcontroller.fwCb_[x]
+
+ ........  that's it !!!!!!!!!
+
+*/
+
+fwOnC.setService(fwHelpers,fwCb);// will give fwfunction , they will be added to build 
+
 
 initCmd("televita",{meds:[11,22,33],cur:'rossi'},['dyn_medicine']);// (cmd,usrAppSt,[keys in bank dynJs[myscript] to register])
 initCmd('televita_voice',{meds:[11,22,33],cur:'rossi'},['dyn_medicine'],'televita');
@@ -59,6 +136,8 @@ controller.plugins.cms.onChange(myscript, color11,async function(a,b,c){
 initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_rest']);
 
 initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'televita_voice'
+initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'star hotel
+
 
 };// end register bank (dynJs)
 
@@ -89,7 +168,7 @@ monchange : list of onChange ask function on which i want vframework support
     //if(!dynJs[myscript_])return;// error
 
 
-    let model=mod_dir|| myscript_;
+    let model=mod_dir|| myscript_;// ATTENTION bad name,   MODEL IS REALLY the Command script !
 
     if(model){if(dynJs[model])directive=dynJs[model];else{ 
         console.log('\n starting FW initCmd ,cant find any models or directives for cmd   ',myscript_);
@@ -230,6 +309,9 @@ oo
              // convo.openStep.state.app=appWrap;// already done
 
 
+
+             //// NB non status directives , excel and direc are set here because they must be got also in msg template , , shoud be set as cemmented in onChange WUI
+
               convo.setVar('modsonask',fwOnC.modsOnAsk(script));//  modsOnAsk used in .out miss func 
              convo.setVar('excel',directive.excel);// corrected to be as was before
 
@@ -244,13 +326,26 @@ oo
             
             });// end before()
 
+            // >>>>>  SET Directive convo event(tyed to begin after th or step/ask example dynmatchers in ask condition loop  ) service/handler
+            // add a directive fw cb bank, so put here 
+
+
+
+
+
+            // >>>>>  SET botkit convo onchange service/handler
            monchange.forEach(function(mkey){
 
-            // set onchange , can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
+            // set botkit convo onchange service/handler , can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
             // dynJs[myscript_].direc[mkey].onChange_text OR a text from cms trigger in json
             //console.log( 'registering on cmd ',myscript_,' ask ',mkey, ' dynJ : ',dynJs[myscript_]);
             console.log(' FW initCmd :  convo begin : setting onchange for  cmd   ',myscript_,' onchange for ask ',mkey);
             if(!directive.direc[mkey])return;
+
+
+
+            // WARNING  model IS cmd !!!!!!
+
 
             if(directive.direc[mkey].onChange_text)fwOnC.buildF(mkey,directive.direc[mkey].onChange_text);// build from text with eval
 
@@ -263,7 +358,10 @@ oo
                 // let color_=color,myscript_=myscript_;// CORRECT put myscript_ in a closure !
                  //return myoC1(a,b,c,myscript_,color_);
                  //return dynJs[myscript][color].onChange(a,b,c,myscript_,color_);// this should be set 
-                 return directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);// this should be set 
+
+
+                 // the run context of function is  directive.direc[mkey] see X on chart RT1, shouldnt put also some context like excel??(instead of get it ...)
+                 return directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey]
                      } );// can i bind with its obj ?
                      });
 
