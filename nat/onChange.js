@@ -4862,4 +4862,5 @@ function buildF(ask,ftext){
  will be usually injected on models.modelname.direc.askname.onChange
 */
 
-module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+

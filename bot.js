@@ -55,31 +55,44 @@ console.log('*** instantiating Botkit CMS');
     }));
 }
 
-/*
+///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
-let xmpp_adapter=new XmppAdapter({});
-// as in botkit core
+let xmpp_adapter
+// activate xmpp:
+//xmpp_adapter=new XmppAdapter({});
+
+
+configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
+function configureWebhookXmpp(webserver,uritest){
 if (xmpp_adapter) {
+    // as in botkit core
     // MAGIC: Treat the adapter as a botkit plugin
     // which allows them to be carry their own platform-specific behaviors
-    controller.usePlugin(this.adapter);
-}
-if (xmpp_adapter) {
-   let logic=controller.handleTurn.bind(controller);
+    controller.usePlugin(xmpp_adapter);// chi usa il controller potra recuperare il xmpp_adapter : cio avviene quando .....
+
+   let logic=controller.handleTurn.bind(controller);// bot entry 
    /*).catch((err) => {// like in core
     // todo: expose this as a global error handler?
     console.error('Experienced an error inside the turn handler', err);
     throw err;
-    });* /
+    });*/
 
 
 
    // let logic=this.handleTurn.bind(this);
-    xmpp2adapter(null, xmpp_adapter,logic);//(webserver,ad,logic) 
+   // al posto di registrare con webserver.post(url,function {
+    //  ... 
+    //   inner function che verra chiamata per gestire il request : 
+    //  adapter.processActivity(req, res, logic=this.handleTurn.bind(this))// servono adapter e logic 
+
+    // ...} ) 
+    //  registro su xmpp2adapter  logic e adapter 
+    xmpp2adapter(webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test !!
 }
-*/
+}
+//*/
 
 
 
@@ -168,6 +181,7 @@ controller.ready(() => {
          
     }
 });
+
 
 
 

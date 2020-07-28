@@ -1019,7 +1019,7 @@ Gdata:// will be used by onChange as group feature so we can customize the view 
 }
 }// ends direc all dyn cb and bl 
 };// ends televita
-star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+let star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
     // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
     
@@ -1089,8 +1089,9 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
     // vname:=notMatPr
     },
-    mod_Serv:{vmatches:{bar:'bar',rest:'medicamenti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'farmaci'},// model specification , item voice name 
-         vlist:['bar','medicamenti','portineria','piscina','lavanderia','farmaci'],//temporaneo , è duplicato di vmatches con different format !
+    mod_Serv:{vmatches:{bar:'bar',rest:'ristoranti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'colazione',ext:'ristoranti della zona'},// model specification , item voice name 
+   vlist:['bar','ristoranti','portineria','piscina','lavanderia','colazione','ristoranti della zona'],//temporaneo , è duplicato di vmatches con different format ! 
+
     // news : that is the declaration of model values and patten instead that do it in line on condition .
     // : todo 
     //   if a condition declare instead of :
@@ -1098,20 +1099,23 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     //      :
     //          $$mod_Serv::
     //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
-    model:'bar-bar&rest-medicamen&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-farmac|pastigli|compress',
+
+
+
+    // message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
+    //model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+    model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+
     // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
     //      {bar:{
     //          patt='ristorant*|pranzo|cena|trattoria',
     //            ai_url='',
     //            vname=''
     //      },,}
-    
-    notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+        notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
     // vname:=notMatPr
     },
-    
-         /////
-         
+
     
     },
     
@@ -1230,9 +1234,9 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
                 [33,'prostamol','prost*','prostamol descr','data','credenza 1','prima pasti ','se salti non riprenderla','vai in credenza',' sciogliendo pastiglia acqua e bere ','prima pasti ','10:00','prostamol','rest',,,,,,,,true,,,,,''],
                ]
 */
-
+/*
                [
-                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vaial piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
+                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vai al piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
                 [1,'hall','hall','è la sala principale del hotel','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra','col',,,,,'è la sala principale del hotel , apre alle 7 ','è la sala principale del hotel , apre alle 7 e ha servizio di branch all americana',true,,,,,''],
                 [2,'giardino','giardino','è immerso nel verde del giardino , aperto solo la sera ','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ','col',,,,,'è immerso nel verde del parco acquatico , con sale private , apre alle 20','è immerso nel verde del parco acquatico naturale, con tavoli riservati per una colazione appartata apre alle 20',true,,,,,''],
                 [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
@@ -1240,6 +1244,22 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
                 [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,'']
                 
                 ]
+*/
+// /*
+
+               [
+                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vai al piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
+                [1,'hall','hall','è la sala principale del hotel','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra','col',,,,,'è la sala principale del hotel , apre alle 7 ','è la sala principale del hotel , apre alle 7 e ha servizio di branch all americana',true,,,,,''],
+                [2,'giardino','giardino','è immerso nel verde del giardino , aperto solo la sera ','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ','col',,,,,'è immerso nel verde del parco acquatico , con sale private , apre alle 20','è immerso nel verde del parco acquatico naturale, con tavoli riservati per una colazione appartata apre alle 20',true,,,,,''],
+                [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [6,'da toni','toni','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''],
+                [7,'da genio','genio','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''] 
+
+               ]
+
+// */
         ,
         data:// will be used by onChange as db rows as array of string if we try to manage a restaurant . all procedure to select are the same, changes only the selection data and answere view 
         /* row : 0 id
@@ -1284,13 +1304,22 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
     [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
     ]*/
-
+/*
     [
         [0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
         [1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' colazione , portineria e taxi'],
         [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
         [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
         ]
+*/
+    [
+        [0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
+        [1,'rest','cucina internazionale','calcei',1,'ristorante','  quando è aperto e come arrivarci',' colazione , portineria e taxi'],
+        [2,'portineria','full service','calcei',1,'portineria','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+        [3,'lavanderia','servizio 24 ore','calcei',1,'servizio di lavanderia','  quando è aperto e come arrivarci',' ristorante , portineria e taxi'],
+        ]
+
+
 
     ,
         onChange_text:null,//testFunc.toString,// without async !!
