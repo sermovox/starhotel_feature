@@ -272,7 +272,7 @@ var Botkit = {
 		}}
 		matc+="</span> <br>";
 	if(message.askmatches){
-		matc+="<span style=\"color:Red;\" >Ents/flags : ";
+		matc+="<span style=\"color:Red;\" >mathedStep/Ents/flags : ";
 		if(message.askmatches.length<10)matc+=message.askmatches+"</span><br>";
 		else{
 			matc+=message.askmatches.slice(0,8)+"<br>"+message.askmatches.slice(8)+"</span><br>";

@@ -2378,6 +2378,20 @@ appWrap=convo.vars.app;// is it void as we need call ......
 
     {//desire entity should be not null  , set anyway a default 
 
+
+
+        if(singleRes){// get away all rows >1
+            //             res={ind:[3,6,8],rows:[mydata[3],mydata[6],mydata[8]]}
+            let singl={ind:[],rows:[]};
+            singl.ind.push(res.ind[0]);
+            singl.rows.push(res.rows[0]);
+            res=singl;
+        
+
+        }
+
+
+
         // resNam is the array containing the col name of matrix rows 
     let resNam=res.rows.map(function(v,i){return v[iD]});// calc matching [rows], then returns rows [] with just some cols (1:name)
 
@@ -2450,53 +2464,28 @@ appWrap=convo.vars.app;// is it void as we need call ......
     //   or 
     // - a single result 
 
-        if(singleRes||res.ind.length==1){// consider 1 match
-            nres=1;// 1 match selected  
-     blRes=res.ind[0];// the index of row 0 in data
-     // PP blResItem=res.rows[0];// just take first index (in mydata matrix)
-     blResItem=res.rows[0];// just take first index (in mydata matrix)
-     blResNam=resNam[0];// just take first index (in mydata matrix)
+    nres=res.ind.length;
 
+// TTT 
+// TT : calc  gr 
 
-
-
-
-
-        // if 1 match  surely there is one class (here the resouce type :matches.mod_Serv.match)and related  group 
+        // IN THIS IMPLEMENTATION all rows has the same group/resourcetype = matches.mod_Serv.match
+        //  and that is reflected on associated gr : 
+        // so as a single row case :
         if(matches.mod_Serv&&matches.mod_Serv.match){
             cQ={cval:[matches.mod_Serv.match],ccol:[1]};// the group model Gdata has a view projection to match : mod_Serv
                                                         // mod_Serv , in this simple impl , is just defined in condition , but it should be a projection of  Gdata
                                                         // so let the vname be the same ( )
         } else  cQ={cval:[blResNam],ccol:[1]};// ?? dont use that
         let grows=runQuery(this.Gdata,cQ);
-
         if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
-         //   gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
-
+          // error in vmatch  gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
         }
 
 
-// make sense to fill sel and def only if we got first row of cursor, other wise just fills mydyn.param.cursor={matches,patt,data} !
 
 
-
-        let isStd;
-        if(blRes==gr[4]) isStd=true;else isStd=false;
-
-        if(!isStd)mydyn.param.group.def={item:mydata[gr[4]]};// as index not string 
-        // nb :  mydata[blRes]==res.rows[0];
-        mydyn.param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
-        // nb  nb different from a non dyn ask !!! see mng summary in addMatcRes() in conversation.js 
-        mydyn.param.match=blResNam;//=blResItem[1];//  name 
-        mydyn.param.vmatch=blResItem[12];// voice name 
-
-        mydyn.param.templatef={};// template flag to add specific parts depending from the match
-
-        if(mydata[blRes][0]==1||mydata[blRes][0]==2)mydyn.param.templatef.ishall=true;//(the default , so in template use this flag to not repeat default suggestion )
-
-
-    }else{// many query results : a cursor with more rows : fills cursor
-
+// fills cursor 
 
     /* - CASE  medicine  : 
 
@@ -2522,7 +2511,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
 
 
 
-        nres=res.ind.length;
+
         //let cursor=res.rows.map(function(v,i){return v[iD]});// calc matching [rows], then returns rows [] with just some cols (1:name)
         mydyn.param.match=mydyn.param.vmatch=null;// nb different from a non dyn ask !!!
         //mydyn.param.cursor={rows:res.rows,resModel:{},data,param} ;// or use a arrays projection name and patt 
@@ -2569,25 +2558,65 @@ appWrap=convo.vars.app;// is it void as we need call ......
             > nb  specific item can be selected by some ask during the user navigation (just previuos )
         */
 
-
-        // IN THIS IMPLEMENTATION all rows has the same group/resourcetype = matches.mod_Serv.match
-        //  and that is reflected on associated gr : 
-        // so as a single row case :
-        if(matches.mod_Serv&&matches.mod_Serv.match){
-            cQ={cval:[matches.mod_Serv.match],ccol:[1]};// the group model Gdata has a view projection to match : mod_Serv
-                                                        // mod_Serv , in this simple impl , is just defined in condition , but it should be a projection of  Gdata
-                                                        // so let the vname be the same ( )
-        } else  cQ={cval:[blResNam],ccol:[1]};// ?? dont use that
-        let grows=runQuery(this.Gdata,cQ);
-        if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
-          // error in vmatch  gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
-
-        }
+        // ends fills cursor 
 
 
         console.log('dyn_medicine onchage matched group :',gr);
 
 
+// TTT
+
+
+
+
+
+        if(nres==1){// 1 match
+     blRes=res.ind[0];// the index of row 0 in data
+     // PP blResItem=res.rows[0];// just take first index (in mydata matrix)
+     blResItem=res.rows[0];// just take first index (in mydata matrix)
+     blResNam=resNam[0];// just take first index (in mydata matrix)
+
+
+
+
+        // TT
+
+        // TT
+
+
+
+
+
+
+
+
+
+
+// make sense to fill sel and def only if we got first row of cursor, other wise just fills mydyn.param.cursor={matches,patt,data} !
+
+
+
+        let isStd;
+        if(blRes==gr[4]) isStd=true;else isStd=false;//is this match the std/representant of the class 
+        // put resource row in mydyn.param.group.sel anf register the clas default under mydyn.param.group.def :
+        if(!isStd)mydyn.param.group.def={item:mydata[gr[4]]};// as index not string // def={item:theresourceThatisTheClassDefault}. 
+        // nb :  mydata[blRes]==res.rows[0];
+        mydyn.param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
+        // nb  nb different from a non dyn ask !!! see mng summary in addMatcRes() in conversation.js 
+        mydyn.param.match=blResNam;//=blResItem[1];//  name 
+        mydyn.param.vmatch=blResItem[12];// voice name 
+
+        mydyn.param.templatef={};// template flag to add specific parts depending from the match, used in .......
+
+        // mydata[blRes][0] : the index of  the first query row , so .... ?
+        if(mydata[blRes][0]==1||mydata[blRes][0]==2)mydyn.param.templatef.ishall=true;//(the default , so in template use this flag to not repeat default suggestion )
+
+
+    }else{// many query results : a cursor with more rows : fills cursor
+
+
+
+        // ?? 
         if(this.Gdata&&!gr)gr=this.Gdata[0];// std resource/service : matches.mod_Serv.match='col'
 
         /* todo 
@@ -2607,7 +2636,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
         */
 
       
-      }
+      }// ends // many query results 
 
 
 
@@ -2644,10 +2673,11 @@ if(gr){// the choosen summary template Gdata[i] should be chosen basing on rows 
 
     mydyn.param.group.name=gr[1];// just interna value , should be pills
     mydyn.param.group.vname=gr[5];// pastiglie
-    mydyn.param.group.best=gr[2]; // pre lista
-    mydyn.param.group.calce=gr[3];// avvertenze per medicine particolari o intolleranze generiche relative alla lista user e pills , dynamic !
+    mydyn.param.group.best=gr[2]; // master : presentazione  lista in master in assenza di richieste mod_wh
+    mydyn.param.group.calce=gr[3];//class common detail item: avvertenze per medicine particolari o intolleranze generiche relative alla lista user e pills , dynamic !
     mydyn.param.group.what=gr[6];// prompt per ulteriori detail di aiuto all'assunzioine, come lista o come specifico di una pill ??
     mydyn.param.group.nextserv=gr[7];
+    mydyn.param.group.promtAfterList=gr[8];// the closing prompt for master to goon with the list . if exists will override the std  x all group in template
 
 
 
@@ -2817,7 +2847,8 @@ ok , ctrl : view 1 b version then fddetail if user fill mob_wh
         mydyn.param.info= null;//info to display func of mod_assumere_med and mod_wh ????
 
         // route and display when , then ask x detais , then returns to menu 
-        mydyn.complete='miss';
+        
+        if(nres>1)mydyn.complete='miss';else mydyn.complete='single';// query produced a single match, no need to isplay the master list , can goon detail directly !!!
     }else if(mat=='ok'){//  so the user need is to check to confirm the absunction . try to use same view of how just set a different flag for mustache 
         //mydyn.param.desired='where';//['where'];
         // mydyn.param.where=mydata[blRes][8];// 8???? // e/o mydyn.param.wh=mydata[blRes][8];
@@ -4862,5 +4893,5 @@ function buildF(ask,ftext){
  will be usually injected on models.modelname.direc.askname.onChange
 */
 
-module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
 

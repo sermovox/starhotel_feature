@@ -61,7 +61,7 @@ const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
-//xmpp_adapter=new XmppAdapter({});
+xmpp_adapter=new XmppAdapter({});
 
 
 configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
