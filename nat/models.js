@@ -1,4 +1,4 @@
-let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ;
+let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config;
 
 
 
@@ -6,12 +6,12 @@ let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ;
     // onChange is  bound to its dynJs[myscript] > contain scripts directive 
     // cms.before will insert :
     //  values.excel    >  dynJs[myscript_].excel
-    //  values.loopDir  >
+    //  values.loopDir  > ????
     //  values.matches  >    model matches ex :values.matches.color='red'
     //  values.askmatches  >    model matches ex :values.matches.color='red'
 
 /*
-dynJs={ascript:{ TO REVIEW  !!!
+dynJs={ascript:{ TODO : to  REVIEW  changed !!!  on 062020 last templates was config and star_hotels !!!
             excel:{
                     staticvarr...
                     askname:{askstaticattributes,notMatPr:'piano interessato'}  >>> 27022020 : better move inside askdynDir !!!!!!!!!!!!!!!!
@@ -394,6 +394,8 @@ excel:{//  values.excel are dyn staff x user maintenance and dynamic data
 
 
 direc:{
+    // 072020 : dyn that recover dyn model data in onchange are ask dyn so go here 
+    // dyn model that matches in a condition using a dynmatcher can be definex inside excel  (right ?) 
 
     /// 27022020  CHANGED  all direc dyn directives will go into vars.direc as is . they will be the context of onChange
     //      so REVIEW following comments ....
@@ -1085,9 +1087,10 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     },
     mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
          notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
-         ,mod_wh_Of:'dyn_rest'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+         ,mod_wh_Of:'dyn_rest',// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
     // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
     // vname:=notMatPr
+    schemaurl:'location'
     },
     /*    mod_Serv:{vmatches:{bar:'bar',rest:'medicamenti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'farmaci'},// model specification , item voice name 
          vlist:['bar','medicamenti','portineria','piscina','lavanderia','farmaci'],//temporaneo , è duplicato di vmatches con different format !
@@ -1185,6 +1188,7 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     dyn_medicine:{// used in  associazione a    :
     
         // put here also the static  dyn ask definition  AAA ?? yes
+        schemaurl:'Master',// schemaname of master collection, url is  'mongodb://localhost:27017/'
     
         loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
                 //will go inside values.loopDir[akey=colazione_dyn] because values.akey=colazione_dyn is managed by conversation for its staff
@@ -1325,7 +1329,7 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     }// ends direc all dyn cb and bl 
     };// ends star_hotel
     
-    config={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
+config={// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
         // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
         
@@ -1446,8 +1450,12 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
         
         direc:{
         
+
+
+            //  ????????????????????????
             /// 27022020  CHANGED ( sure ?)  all direc dyn directives will go into vars.direc as is . they will be the context of onChange
             //      so REVIEW following comments ....
+
         
             key_cambioricetta:{// first step of a displaying view thread . no goon at first step  :
         
@@ -1954,7 +1962,7 @@ row :
 
 }
 }// ends direc all dyn cb and bl 
-};// ends musei
+};// ends museoAQ
 
 
 module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config};

@@ -1,11 +1,15 @@
-var db,rest;// services
+var db,// db connection fron vctl
+rest;// xxx services ?? who set it ??????????????????
 
 let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw functions
+let application,service,fwCb;
+
+
 const fs = require('fs');
 
 let 
-dynJs=require('./models.js'),// db and http init by bot.js
-d
+dynJs=require('./models.js');// db and http init by bot.js
+// ?? d;
 
 // luigi 032020
 const logger=function(message,ch,send){//logger({user,text},ch,'')
@@ -23,145 +27,206 @@ const logger=function(message,ch,send){//logger({user,text},ch,'')
 
 }
 
-let application;
-let fwCb,// fw matchers funcions wrapped to add reference to directives
-    service;// custom functions  to make available in injected js code $$$$  and in template && code &&  ,question , what is the scope of eval code ??
 
 
 
-function httpFarm(fwHelpers_) {// will define data service using fwHelpers or another implementation to extract dyn view
 
-    /*122019 Mng Summary 
-    returns : f= function  :
-        f(field, req, options) (( req: req ctl chain format : .......................))
-        it does :
-          - get paramlist,mapping,schema_url  from dialog.dynamic[field] 
-          - so calls and returns :
-                fwHelpers.onChange_dynField(req, null, schema_url, null, null, paramList, null, mapping);
-              .............................................
-              > see aiv3 refImplementation.onChange_dynField ......
-  
-  
-    */
-    
+//function setService(fwHelpers,fwCb_){}// ported on service.js
 
-  
-  
-    var fwHelpers = fwHelpers_;//make available  refImplementation (onChange_dynField,rest,...) or its mofificationd + db + http + api to aiv3
-    
-     //{   getVoiceModel: 
-     // 122019 now return a function 
-      let f=async function (field, req, options) {// getVoiceModel:function(dynfield,req,options){
- 
-
-
-        // db : the param , the schema , the mapping response in row-id/text/descriprion/
-        // rest : ....
-  
-        // as the param will be in some vars.matched item matched entity , i just recover from conf the list of params , then the 
-        // a std aiax getter can do the query 
-  
-        // get the array of param to do query/aiax :
-        // this.dialog.dynamic.adynfield.dynparam if i set call this
-
-
-
-        dialog=dynJs.direc;// ERROR old mybot, so correct it !
-
-
-        var paramList = dialog.dynamic[field].dynparam, // ex : ['param1'.'param2'], like attrib in a qs of a get, usually ['tableName_resName']
-          mapping = dialog.dynamic[field].map,// additional info to map rest json field to itemname and item description  ,usually null
-          schema_url = dialog.dynamic[field].url;// url or schema to lauch the query ,
-        // in helpers : for(var i=0;i<paramList.length;i++){if(convo.vars[paramList[i]]){qs[paramList[i]]=convo.vars[paramList[i]]}else{qs=null;break;}}
-  
-        // will extract query for many dynfield 
-  
-        // uses db, http and ref implementation of refImplementation to extract dyn and params to fill dynfield and params of convo.vars
-        // fwHelpers.onChange_dynField();// to do : use less param , dialog info can be obtained using api in  refImplementation functions 
-  
-        var queryresult;
-        //onChange_dynField:function (dynfield1, isDb_Aiax, schema_url, sess_clone, sess_dyn, setquerywhere_, prefill, mapfuncnam, afterallDyncalc) {// a inner of main ctl code
-        // calc inside onchange the param:
-        //  isDb_Aiax,  prefill, ),  afterallDyncalc no more because return a promise
-  
-        //return a promise 
-        /* req_=req has specific format , relayed from f(req), see httpservicemngsummary :
-        req = { convo, session, askey,qs } , 
-        qs : {	term=qs.term,exec_=qs.exec,		> used to do search /fts on patt field 
-        full=qs.full,inter=qs.int;		> used to set result rows format 
-        join_1_m=qs.join_1_m,join_n_m=qs._join_n_m, > askey/fields to join using current field model .match 
-        fts=qs.fts				> > used to do fts on patt field 
-        } */
-        let pro=await  fwHelpers.onChange_dynField(req, null, schema_url, null, null, paramList, null, mapping)// paramList,mapping,url_schema could be got also in caller but if we set those param here can be explanatory/clearer
-        let session=req.session;
-        // fill match_param see      RETURNS   in    onChange_dynField()  
-        let (rows,reason)=pro;// depending from req.full and req.inter  we receive different fields in  rows ={}
-        if(reason=='json'){
-  
-         // TODO  updates Match_Parm using a func like in function qeAres(req,services) we updates  dynSes
-  
-         if(session.Match_Parm[req.askey]==null)session.Match_Parm[req.askey]= new  MatchSt();
-  
-          session.Match_Parm[req.askey].curRows=rows;
-  
-  
-  
-        }else if(reason=='byte'){
-  
-        }else if(reason=='err'){
-  
-        }else{return false;
-        }
-   
-        return true;
-      }
-      return f;
-   // }
-  };
-
-function setService(fwHelpers,fwCb){
-    /*
-we extend services fwCb
- fwCb.askS.dynMatch= fwOnC.service['httpService']=httpService= httpFarm(fwHelpers)
-   nb how get dynMatch  in setting .dir json in macro ???
-   
-now 
-1: when convo are instatiated it will get this obj :
-          vCtl=_vcontroller so in code convo we can call services like :
-    this._vcontroller.service[y] 
-
-    or
-
-2:  in un ask use directive function x  : this._vcontroller.fwCb[askname][x]
-
-mentre in template we can use && .... vars.service(...)  .....  && 
-
-
-
-*/
-    let httpService;
-    service['httpService']=httpService= httpFarm(fwHelpers);// general 
-
+// here or in service.js :
+function regService(path,func){//'fwCb.askS.dynMatch',func){
+// service[path]=func;
 }
+service={};
+
+function injService(service_,fwCb_){// adds services on locale scope ( x onchange)
+
+    /* mng summary 072020
 
 
-let vfwF={// framework funvtions module used in convo obj 
-        // instead of write custom convo code try to custom sw here. 
-        // we can think to add some context var to be used instead to pass such vars i every call we do
+    service=service.setService(fwHelpers,fwCb_){// injection system : build services in 
+
+
+
+
+
+      from fwHelpers ( from a factory that extends onchange ctl ( the voice ctl), db,http, and base helper functions) 
+          and the knowledge of models (dynJs) in scope of this (onchange.js) closure,
+          we build BASE services obj that can access to fw data (cv...... and dyn models/directives in dynJs/models.js):
+                     models and matching algos) 
+                      to do convo functions  ( onstep directives and add db methods fts staff , db map  ... 
+
+         the first service build here as helper for  convo onchange ( so put in fwCb) directive function is got using fwHelpers base function (db interfce and rest interface) 
+		and is  the def dyn matcher ('restServ') that can be a template to do other customizations 
+
+        
+
+         
+        service : a bank of functions available in conversation and in user onchange and in $$$$ condition eval 
+        fwCb : in fwCB we set the function that can be used if the attribute is set ( by excel....  or in condition macro and .... ) as directive in state.dir 
+         for example   
+    
+      
+    we extend services fwCb
+     fwCb.askS.dynMatch= fwOnC.service['httpService']=httpService= httpFarm(fwHelpers)
+       nb how get dynMatch  in setting .dir json in macro ???
+       
+    now 
+    1: when convo are instatiated it will get this obj :
+              vCtl=_vcontroller so in code convo we can call services like :
+        this._vcontroller.service[y] 
+    
+        or
+    
+    2:  in un ask use directive function x  : this._vcontroller.fwCb[askname][x]
+    
+    mentre in template we can use && .... vars.service(...)  .....  && 
+    
+    
+    
+    */
+
+
+// we set simply : service < return new sFact(){// using closure scope vars :  Object.assign(this,fwHelpers);
+
+  // in service.js we just extends fwHelpers  so service starts as a fwHelper extension 
+  // as services will be added to cv  (cv=onchangejs).service can be called:
+  // - from ask.onchange 
+  //    see fwbase.initCmd  where we can see that onchange user func will be called in its obj :
+  //          directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);
+  //    > so from there we can get onchange functions using vars.app.service (see  wrapgen(session,convovars))
+
+  // - from msg handlebars functions
+  //    ................. 
+  
+  // - from conversations ( matcher )
+  //      this._vcontroller.fwCb this._vcontroller.service
+
+
+
+// TO DO : some services that call fwHelpers.rest adding some var from fw vars 
+//   ......
+
+
+    
+
+// service is the service bank , would be better extend its context with 
+
+Object.assign(service_,service);// adds local service
+  //   service=service_;// use service.rest(url,qs) to do rest from onchange
+    fwCb=fwCb_;// just the structure to fill , with no func ?
+
+
+
+    let // ?
+    def_rest_=service.rest;// to customize this as done x service.onChange_dynField, see fwhelpers refImplementation.rest: ....... 
+
+    // first template customization : the def dyn matcher : it uses base function (fwhelpers=service).onChange_dynField
+    // to set a user function adding directive information on model.js
+    fwCb.askS.dynMatch=async function(tomatch,entity,excel,varmatches){// used by condition dyn matcher or from onchange 
+        /*
+        varmatches , the convo + user status of all matches in convo. 
+                in getmatched we  use mainly the vars.matches x the entity 
+                        ( see the dyn entity matches constructor MatchSt())
+                         and its where or related dependenings, 
+                        to extract the onChange_dynField generic query params
+        tomatch, the user  text
+        entity, the master dyn 
+        excel=dir_excelformat the directive model definitions in excel format , see model.js (the reference can be available here too as dynJs !) 
+        returns the matcher status and the match result if finish the multi turn search (normal matcher , single turn returns matched not matched !)
+        */
+       // finds if there is where , models declared in excel as mod_wh_Of of some master dyn field 
+       // should be dir_excelformat=
+       let wheres;
+       if(excel&&excel[entity])//&&excel[entity].wheres)
+       wheres=excel[entity].wheres;// filled on fwbase.find_wheres(directive)
+
+      // cb( this.onChange_dynField(req, isDb_Aiax, schema_url, null, null, wheres, true,null, afterallDyncalc));
+       let myr={rows,res};
+       let isDb_Aiax=true;
+       let wheresval;
+       if(varmatches)wheresval=getmatched(wheres,varmatches);// to do 
+       let previousmatch,idspace;// optionals
+       if(varmatches[entity]&&varmatches[entity].qeAdata){previousmatch=varmatches[entity].qeAdata.lastWhere;
+
+       }
+
+       // so no cb need to influence the Rest db interface job ?!?!
+        // entSchema : the schema name describig the map of entity and its relation into db engine, like EF in .net
+        // schema is set in rest server or in the local rest service (if isDb_Aiax) interfacing db server via driver 
+        let entSchema={name:entity,n_m:0};// set db schemaname as the entity name !
+        // WILL TRY TO MATCH TEXT AND WHERE CONDITION ON A DB SCHEMA ( using where field and text matching on .patt column)
+       myr=await service.onChange_dynField(entSchema,text,wheres,wheresval,idspace,isDb_Aiax,previousmatch);// in previousmatch the rest db interface can see if can use previous db result to refine the query faster
+
+            if(myr&&myr.reason=='err'){return new MatchSt()}// todo 
+            else{
+                // to do interscation here or in db rest interface ?then 
+            
+                if(previousmatch)return previousmatch;
+                else return new MatchSt();
+
+            }
+
+
+        }
+
+    }
+
+function MatchSt(){// std matcher status constructor 
+    // most used :
+    this.match='',//thematcheditemname/value;// if length=1 match ! , list of value col in query 
+    this.id=0,// the key id 
+
+    this.vmatch=null;// the entity as known by voice
+
+    this.type='dynMatch',//'the algo type expected to work  on this status',      
+    this.cursor=[];// a string matrix
+
+    this.nMPrompt;//			will be used to insert a .prompt[0], the bot suggested response in order to be set as context x next template by  
+    // both ?
+    this.prompt=[];		// dyn only, used instead of entities , a dyn is like a multi value static single entity
+     // but match still used to have the list of query pattern items
+             
+             
+             
+     this.complete='wait/getting/got';			// the master matching status
+   
+   
+
+   this.qeAdata=null;// optional session status used by multiturn  qeA matching algo , in base to the status of matching algo 
+               // {
+               //  idspace:null,// [45,77,89]
+               //  wheres=['city','size'], same index as lastwwhere
+               //  lastWhere,// [['rome',id=12],null]// the order match with the where field in rest query qs={where:['city','state']], id only if db see that the where is a relation matching with id=ext key
+               //						id to make easyer to run a new query with old where match 
+               //,}
+   
+   }
+
+
+let vfwF={// framework functions module used in convo obj 
+        // instead of write custom convo code in converstion.js try to custom sw here. 
+        // we can think to add some context var to be used instead to pass such vars  every call we do
 
     addMatcRes:function (mat,// true : matched
-        entity,
+        entity,             // ................................
         storemat,storeMId // storemat is
                             // if the model is static   or is no model , we use a regex matcher , so is a string : the value/name matched ,  
+                            //                          storeMId is the index p,  in static  model definition 
                             // if the model is dyn,,, , we use a directive matcher   , so (isStatic=false) is a obj the matcher returns:
-                            //          dyn matcher returns :  {match,vmatch,id,patt,shortD,bldata1,bldata2,,,},  
-                        //storeMId is the index p 
+                            //          dyn matcher returns : see dynMatch in fwhelpers.js
+
         ,routing// routing=linematch is true if not $% case ( not routing case ) so this condition will stop the cond loop
         ,rematch// the regex matched extraction (....)
         ,reset// reset matches ???? never called !!!!!!!!!!!!!!!
         ,param,// not nul if this is a resolver selection ask
         storeVal// a integer or string to get from user 
         ,step,previous
+    //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
+    //              if we need a var that knows if the matcher used is std regex static model or a custom matcher use isStatic_
+      ,isStatic_ // will decide to put std static match or use 
+
+
         ){// register model/entity match, last turn match asked with $$ or $% result 
 
 /* if condition with entity ( $$ or $% case )  we register  a model match ( entity instance  = itemname) :
@@ -280,14 +345,24 @@ askmatches[previous.collect.key].nomatches=askmatches[previous.collect.key].noma
 //      in this care storemat is the selected/matched item name/value
 // register only model matches ( not register model notmatching in nomatches field, if dont match match=null !): 
 if(entity){// in this condition we  manage matching (vars.matches/askmatches) on model and value entity/value ($$,,)
+
+    //  AQJU :
+    //  isStatic=typeof step.result === 'string' ????????? ,
+    //      explaination 1: if we have a string result we surely run std regex model so storeMId is defined , so we setstep.values.matches[entity]={match:'entname',id=p:3}
+    //      explaination 2: thinks to dyn_medicine ask : in this case we run a ask dyn, so we load rest models using rest in onchange , in this case we dont use string as result because ........
+    //  probably non correct , perhaps is better to add that as  a param !!!
+    
+    
     let isStatic=typeof step.result === 'string';// otherwire is  a no static model (dynmodel)returned by a matcher function a dynmodel
-    let isVal=isStatic&&storeVal&&storemat=='value';// a static model whose values are the regex group match , not the item name declared in excel
+    if(!(typeof isStatic_ == 'undefined')) isStatic=isStatic_;// prefer the param if is set
+
+    let isVal=isStatic&&storeVal&&storemat=='value';// a static model whose values are the regex group match ( user gives a integer, a name of something), not the item name declared in excel
 
         mv=step.values.matches[entity]=step.values.matches[entity]||{};
     if(mat){
         if(isVal){// the entity is a value ( item is the regex match value)
         mv.match=storeVal;// register under values.matches.entity=itemvalue
-        mv.mid=1;// dont use this, usable to see if is match is good 
+        mv.mid=1;// dont use this, usable to see if is match is good (mid>0) 
         }else{// a finit dimension entity
             if(isStatic){
             mv.match=storemat;// register under mv=values.matches.entity={match:itemvalue=storemat,id:6}
@@ -299,14 +374,14 @@ if(entity){// in this condition we  manage matching (vars.matches/askmatches) on
         
     }else mv.match=null;// tested (step.values.matches[entity] exists  ) but not matched // so not matched is matches[entity]=null???
 
-    if(isStatic){
+   // ?? if(isStatic){
     if(param&&param.group) {// this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
                             // the model that matches the cursor has the same  name as this desiredE ask :
                             // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
                             //      so is not the name of a declared model in excel ! or in line condition : &&model:....
 
 /* remember what said in bot.js onchange :
-the cursor can be passed to a resolver ak that will find a single match , so will complete the setting of :
+the cursor can be passed to a resolver ask that will find a single match , so will complete the setting of :
 
 param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
 param.match=blResNam;//=blResItem[1];//  name  ex 'caffe top'
@@ -359,7 +434,7 @@ param.vmatch=blResItem[12];// voice name
     // add a  data to store regex extraction  to ......... ????
     if(rematch&&rematch[1])mv.data=rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
          }
-    }
+    // } //ends if(isStatic)
  }
 
 
@@ -564,9 +639,10 @@ WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
  //convostatus=application.post('tourstart',convostatus,app_session,request);// request is a qs : ?ask=pippo&colore=giallo
  function wrapgen(session,convovars){// 
     //let app_session=session;convovars=convovars;// closure var
-
-    return {
-    
+    return {// that obj can be got inside a onchange ( do not has onchange in scope  ( is added on model ask directive , can come from cms !))
+            // with vars.app
+    service,
+    fwCb,
     post:function(actionurl,req){
         application.post(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
     },
@@ -579,34 +655,13 @@ WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
     //session:app_session
     //,session //// warning session must not be reset ! so i would loose the new ref 
     }
-
 };
-
-
 //let convovars=values;
 // one or the other
-
-
-
-
-
-
-
-
-
-
 async function getappWrap(bot,convo){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
-
     /* *********************    22052020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
-
-
      nb the convo has access to vCtl   via vCtl=controller.plugins.vCtl
         the vCtl.application will be called using a session and vars wrapper (vars=values=convo.step.state.values).appWrap singlethon set at onbefore()
-
-
-
-
-
     user entering in a new cmd will start a dialogstack status : all status of all cmd  (thread) called by first starting cmd
 
         let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
@@ -614,8 +669,6 @@ async function getappWrap(bot,convo){// now is a session recover (into values.se
                       dialogStack:[{convoid,convostate}// convostate > step.state
                           ,,,]
                     }
-
-
     each cmd has its conversation=convo instance 
     before active convo is called (check : dc.beginDialog?)will recover its status (convostate) from dialogStack ( the top of stack) 
         so convo can start a step pass a convenient state obj: step
@@ -638,21 +691,12 @@ async function getappWrap(bot,convo){// now is a session recover (into values.se
                 - in onchange or in before :
                     appWrap=convo.vars.app;
 
-
-
                     nb in future move al vCtl convo status (x=matches/assmatches/...) from vars.x to vars.vFw.x
-
-
 */    
-    
-
                 /*      ***************************************
                 convo.vars==convo.step.values==convo.step.state.values
                         ***************************************
                 */  
-
-
-
 /* OLD mng overview          rules in convo status :
 
  convo status is    values=convo.step.values
@@ -665,18 +709,11 @@ getappWrap(bot,convo) sets : appWrap=values.app={aiax:function(actionurl,req),se
                     appWrap=values.app
 
 nb 
-
     - when status persist will loose values.app.aiax and begin_def function we ripristine appWrap from values.session
-
     - if we dont have session we get it from persistant system :
         state = await dialogState.get(convo.dc.context, { dialogStack: [] });
         session=app_session=state.session=state.session||{};
-
 */
-
-
-
-
 /*
     let basewrap={
         aiax:function(actionurl,req){
@@ -719,9 +756,6 @@ nb
   //  state.appstatus={appSt:'ok',dyn_match:{}};// status a livello app . per status tipo qs di newpage after a form usare  mydyn=askmatches['dyn_rest']
  
   values.session=userDstate.session=userDstate.session||{};
-    
-
-
  //here a onchange can call : 
  
 //  let convostatus=convo.vars,request={path:'cultura'};// >>>>>>>>>>>>>>>>>>>   put all fw staff under vars.frameW   !!!!  ex  vars.matches  > vars.frameW.matches
@@ -731,23 +765,13 @@ nb
 // put after : values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
 //values.app=new WrapApp(values.session,values);
 
-
-
-
- console.log( 'getappWrap, onchange/before recover state , app wrapper (state.app) = ',values.app,'\n session ',values.session); 
-
- 
+ console.log( 'getappWrap, onchange/before recovered state , app wrapper (state.app) = ',values.app,'\n app session ',values.session);  
     }
-    if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
+
+    // do in fwbase caller :
+    // if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
+    return wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
 }
-
-
-
-
-
-
-
-
 
 var testFunc =  // onChange template seems OLD!!! see dyn_rest_f !
 
@@ -815,12 +839,14 @@ var testFunc =  // onChange template seems OLD!!! see dyn_rest_f !
        let cQ={cval:[],ccol:[]};// query where clauses , cval =values     ccol= column to where 
       //  cQ.cval=[];cQ.ccol=[];
        //values=convo.values;
+
        function cond(ind,val){
            if(val){
            cval.push(val);
            ccol.push(ind);
            }
        }
+
        function runQuery(mydata,cq){// find rows in mydata matching/whering columns/value as specified by cq
            rows=[];// rows matching where clauses cQ
            let nd=cq.ccol.length;
@@ -904,8 +930,6 @@ var testFunc =  // onChange template seems OLD!!! see dyn_rest_f !
             bot.say('ok you got answare :' + answ);
             // try to add dyn a new trhread that can dispatch at a thread or script dynamically 
             // depending on answ
-    
-        
     }
 
 /* remember mustache function to be called 
@@ -932,46 +956,26 @@ var dyn_medi_f =  // used in vita , ...
 /* 27022020
 
 **** MNG SUMMARY  this is the method assigned to the dyn bl associated with the dyn_ask dyn_rest . IT Define the onChange cb using dyn_rest as context 
-
-
 cfg obj = dynJs={ //  bank containing script directive with onChange x script/dynfield-key 
 
-
         hotel:{// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
-
             mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
-
             excel :{.... } ,
-
             ,,,,,
-
             dyn_rest:{// used in  associazione a    :
-
                     loopDir:{
                     ......
-
                     },
-
                     data:
                             [
                         [0,'terace','redisdes','red RTCSessionDescription','data','piano 1','pesce','eggs backon gratis','vaial piano','come','08:00','10:00'],
                       ],   
                     onChange_text:testFunc.toString,// without async !! used to build onChange from text def  
-
-
                  // >>>> insert here onchange as a module of this obj so can see the fields !
                 onChange:function(new_value, convo, bot,script,ask){
                         return dyn_rest_f.call(this,new_value, convo, bot,script,ask) ;
-
                 }
-
             }
-
-
-
-
-
-
 */
 
 
@@ -998,8 +1002,6 @@ async function  //    (res,bot,convo){// after deserialized
 
 
     let script_excel=this.excel// mnt dyn data 
-
-
 
       ;//  mydata=this.ask.data;
 
@@ -1054,8 +1056,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
     ottenere i param del corrispondente procedure che lancia la query equivalente via dialog tree :
     - got param after prompt via single turn entity ai or refining  multiturn ( mi vuoi dare la collocazione ? > piano 2) tree dialog  ,
             > at the end goto thread that check all required param need to go to dyn_ask that run ( the equivalent to AA) procedure 
-
-
     */
     console.log(' query running  cq is : ',cq);
        let rows=[],ind=[];// rows matching where clauses cQ
@@ -1079,9 +1079,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
         // PP else return rows[0];// anyway returns a default
         else return {ind:[0],rows:[rows[0]]};// anyway returns a default
    }
-
-
-
 
    /* STATUS MNG 
    > put in appSt. in this impl we keep the user status in state 
@@ -1116,10 +1113,7 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
         OR 
         b) if we want to be tyed to tc like dialogstack we can use the same 
             so just add a appstatus to state={appstatus,dialogStack: [] }
-
         probably just state.appstatus={.....} 
-
-
    */
 
     /* a);
@@ -1140,8 +1134,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
    values.appSt=state.appstatus;// make available in current convo the appState
    // better  wen before are moved to begin :
    // this.appSt=await dialogState.get(context);
-
-
   
                     // from related gathered  matched models  choose the qs/queryclauses to run 
 
@@ -1178,22 +1170,13 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
    // bl will put its status changes/pamab inside dyn obj mydyn :
    mydyn.matched='match';// match as dyn ask , the matched model item match is put in mydyn.param.match   or if a app status in 
    
-
-
-
    mydyn.param={};// a summary of the result of the service this bl dyn provides 
-
-
-
 
         mydyn.param.item={qea:{item:mydata}};// qa a single response from qea the result of a db/sparql query : an action with data (usually display some data)
 
 
    // usually the desire obj is one of the managed view ( x_data )rootable by this ask , 
    // so qea will route to a  managed view as mod_wh does but the answere is not a item=xdata[matindex] fields but item.answere
-
-
-
 
        state.appstatus.dyn_match={};state.appstatus.dyn_match[ask]={match:mydata};// ??
 
@@ -1205,9 +1188,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             }
 
     }else {// No QEA , output defined by : matches.mod_wh
-
-
-
 
         infl_view=0;// def : case generic,col,......
 
@@ -1255,19 +1235,11 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
  
         mydata=this.med_data;// the desire entity : has inflated all detailed/querred desires entities to give 
         infl_view=2;// no more used , all resource select hans in same data matrix , same format 
- 
- 
- 
- 
- 
         /*           [
                      [0,'terace','redisdes','red RTCSessionDescription','data','piano1','pesce','void','vaial piano','come','08:00','10:00'],
                      [1,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11','piano2','pesce','void','vaial piano','come','07:00','10:00'],
                      [2,'outside','redisdes','red RTCSessionDescription','data','piano1','carne','void','vaial piano','come','09:00','10:00']
                     ]
-        
-        
-        
         */
         let cQ={cval:[],ccol:[]};// init query where clauses , cval =values     ccol= column to where 
        //  cQ.cval=[];cQ.ccol=[];
@@ -1280,10 +1252,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
             cq.ccol.push(ind);
             }
         }
-
-
-
-
 
   // REMEMBER THE DESIRE ENTITY JOIN FIELD simple realization :
 
@@ -1298,12 +1266,8 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
                                           whith its id or name ( both are key)
                                       so to make sintetic : $$....reflect the name-voicepattern of a implicit model whose id/name is put in a where field of the related master desire entity
                                 ******
-
-
                             */
 /*  *******    master/desire entity simple relation with ask conditional described as $$ 
-
-
 
     #####//#endregion
 
@@ -1369,7 +1333,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
     #####
 */
 
-
    // >>>>>>> example from user or colazione_luogo filled get loc or set the default hall location piano2
    let loc; // the id/name item instance of a join/where field (1:N) 
             //implemented in one col of master/desire Entity (mydata matrix)
@@ -1428,9 +1391,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
         // add dyn_rest match (as a result summary)
 //            askmatches.dyn_rest={match:[]};
 
-
-
-
 // DO BL 
 
 
@@ -1479,11 +1439,6 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
      blResItem=res.rows[0];// just take first index (in mydata matrix)
      blResNam=resNam[0];// just take first index (in mydata matrix)
 
-
-
-
-
-
         // if 1 match  surely there is one class (here the resouce type :matches.mod_Serv.match)and related  group 
         if(matches.mod_Serv&&matches.mod_Serv.match){
             cQ={cval:[matches.mod_Serv.match],ccol:[1]};// the group model Gdata has a view projection to match : mod_Serv
@@ -1491,17 +1446,10 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
                                                         // so let the vname be the same ( )
         } else  cQ={cval:[blResNam],ccol:[1]};// ?? dont use that
         let grows=runQuery(this.Gdata,cQ);
-
         if(grows&&grows.rows){gr=grows.rows[0];// should be 1 row
          //   gr[5]=matches.mod_Serv.vmatch;       // so let the vname be the same ( ) ( from knowing the projection model rebuild the bl model )
-
         }
-
-
 // make sense to fill sel and def only if we got first row of cursor, other wise just fills mydyn.param.cursor={matches,patt,data} !
-
-
-
         let isStd;
         if(blRes==gr[4]) isStd=true;else isStd=false;
 
@@ -1511,12 +1459,9 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
         // nb  nb different from a non dyn ask !!! see mng summary in addMatcRes() in conversation.js 
         mydyn.param.match=blResNam;//=blResItem[1];//  name 
         mydyn.param.vmatch=blResItem[12];// voice name 
-
         mydyn.param.templatef={};// template flag to add specific parts depending from the match
 
         if(mydata[blRes][0]==1||mydata[blRes][0]==2)mydyn.param.templatef.ishall=true;//(the default , so in template use this flag to not repeat default suggestion )
-
-
     }else{// many query results : a cursor with more rows : fills cursor
 
 
@@ -2230,10 +2175,14 @@ async function  //    (res,bot,convo){// after deserialized
     //          >> vars.dynfieldobj so try to set this=vars.dynfieldobj
 
 
-    let script_excel=this.excel// mnt dyn data 
+    let script_excel=this.excel,// mnt dyn data 
+    mydirective=this.direc[ask];// schemaurl:'mongodb://localhost:27017/',
+    
 
+    let services=service,dbEntFw;// service from closure or this.service; 2 ways to get services _: from injected on context or from closure 
+    if(this.service)services=this.service;
 
-
+    if(services)dbEntFw=services.onChange_dynField;
       ;//  mydata=this.ask.data;
 
       // most important var passed is the convo step status and its convo status :
@@ -2290,6 +2239,8 @@ console.log(' onchange fired for ask ', ask, ' inside my_script: ', script,' con
 
 
     */
+
+    
     console.log(' query running  cq is : ',cq);
        let rows=[],ind=[];// rows matching where clauses cQ
        let nd=cq.ccol.length;
@@ -2492,7 +2443,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
 
         }*/
  
-        mydata=this.med_data;// the desire entity : has inflated all detailed/querred desires entities to give 
+       // set after :  mydata=this.med_data;// the desire entity : has inflated all detailed/querred desires entities to give 
         infl_view=2;// no more used , all resource select hans in same data matrix , same format 
  
  
@@ -2511,6 +2462,21 @@ appWrap=convo.vars.app;// is it void as we need call ......
         let cQ={cval:[],ccol:[]};// init query where clauses , cval =values     ccol= column to where 
        //  cQ.cval=[];cQ.ccol=[];
         //values=convo.values;
+        function runQuery__(mydata,res,loc,menu){
+
+
+
+            if(loc&&loc.match){// location where/join condition 
+                // loc=matches.mod_loc.match;//else loc='piano terra';
+                 cond(5,loc.match,cQ);// add a intersect/where clause on col n 5 with instance id/value loc
+             }
+            if(menu&&menu.match)cond(6,menu.match,cQ);// future use , menu where/join condition 
+            // anyway we must select a group resource ( colazione , ristorante ,,,,):
+            cond(13,res,cQ);
+            
+            runQuery(mydata,cQ)
+
+        }
         function cond(ind,val,cq){
             // val added to cq.cval=[]=[val7oj,val9obj], val is usually a string
             // ind added to cq.cind=[]=[7,9]
@@ -2573,7 +2539,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
 
         ex quale opere murarie sono state fatte nel 5 secolo e da chi ?
          risposta query general : le opere murarie sono state fatte da mario e sono argini di terra .
-            si pasa poi al target query ( raccoglie tutte le questin su opere relative al tematrattato in una sala) xhe dira :
+            si pasa poi al target query ( raccoglie tutte le questin su opere relative al tematrattato in una sala) che dira :
              piu in generale il tema x e trattato nella sala y sul percorso dove si espone il concetto y  che attiene alla tua domanda specifica 
              li nella sala ....   ti interessa sentire gli altri concetti della sala o vuoi andarci o vuoi continuare lla visita nel corrente posto dove sei ?
              
@@ -2609,35 +2575,78 @@ appWrap=convo.vars.app;// is it void as we need call ......
 */
 
 
+
+
+ 
+
    // >>>>>>> example from user or colazione_luogo filled get loc or set the default hall location piano2
-   let loc; // the id/name item instance of a join/where field (1:N) 
+   let loc,menu; // the id/name item instance of a join/where field (1:N) 
             //implemented in one col of master/desire Entity (mydata matrix)
 
+    let singleRes=false,res;//results must be condensed to only 1 result
+
+ 
+
+let myurl=mydirective.schemaurl;//  schemaurl:'main',
+let entityexpanded=true;
+if(!(myurl&&dbEntFw)){// no url 
+    mydata=this.med_data;// the desire EXPANDED ( some properties inflated) entity is recovered locally : has inflated all detailed/querred desires entities to give 
+    // INTERNAL QUERY
+            // debug . to semplify a  match must exist ! > in future manage the event
+
+
+ //  res=runQuery(mydata,cQ);// res={ind:[3,7],rows:[mydata[3],mydata[7]]}// must be not nulll because in any case we set a location default
+    res=runQuery__(mydata,matches.mod_Serv.match,matches.mod_loc,matches.colazione_menu);
+ 
+ 
+ //console.log(' querying entity  with where clauses ',cQ,' got cursor : ',res);
+
+
+}else{
+
+// SERVICE QUERY 
+
+                     
+
+let entSchema=[],wheres;
+entSchema.push({name:myurl,n_m:0}) ;// defime master tablecollection
+// join clause ( we know from schema inspection or from definition that some where are in db master join field/col ) 
+// entSchema[1]= {name:schemaname of first relation ,n_m:1/2,prevId:3,prevVal:'rome',id,val,refCol}// n_m: 1:1_n,2:n_m 
+// where clause ( we know from schema inspection or from definition that some where are in db master  field/col , type is atomic , int or string) 
+// wheres[entSchema[1]= {name:schemaname of first relation ,n_m:1/2,prevId:3,prevVal:'rome',id,val,refCol}// n_m: 1:1_n,2:n_m 
+
+wheres=null; // defime master query where  condition (where in a collection field containing values(name) of property entity knon only by its name  )
+                                       
+if(!entityexpanded){
             // debug . to semplify a  match must exist ! > in future manage the event
    if(matches.mod_loc&&(loc=matches.mod_loc.match)){
-       // loc=matches.mod_loc.match;//else loc='piano terra';
-        cond(5,loc,cQ);// add a intersect/where clause on col n 5 with instance id/value loc
+    schemaurl=script_excel['mod_loc'].schemaurl;// 'location'// mnt dyn data  schemaurl='location'
+    entSchema.push({name:schemaurl,n_m:1}) ;//  // defime master query join  condition (where in a ref collection field to a db entity/collection )
     }
-   if(matches.colazione_menu)cond(6,matches.colazione_menu.match,cQ);// future use
-   // anyway we must select a group resource ( colazione , ristorante ,,,,):
-   cond(13,matches.mod_Serv.match,cQ);
+    let resu=await dbEntFw(entSchema,text_,wheres,null,true);
+    if(resu.reason=='runned')res=resu.rows;     
+}else{
+    let resu=await dbEntFw(entSchema,text_,wheres,null,true);
+    if(resu.reason=='runned'){mydata=resu.rows; 
+        res=runQuery__(mydata,matches.mod_Serv.match,matches.mod_loc,matches.colazione_menu);// query locally
 
-   // 2502 return null ??
-  //  ask='dyn_rest',
-   let singleRes=false;//results must be condensed to only 1 result
-  let res=runQuery(mydata,cQ);// res={ind:[3,7],rows:[mydata[3],mydata[7]]}// must be not nulll because in any case we set a location default
-  //console.log(' querying entity  with where clauses ',cQ,' got cursor : ',res);
+    }
+}
 
 
+
+}
+
+  // QUERY FILLED 
 
   let id=0,name=1,iD,
   nres=0;// matchings rows
    iD=name;
 
 
-   if(res&&res.rows&&(nres=res.rows.length)>0)
+   if(res&&res.rows&&(nres=res.rows.length)>0)// some resource is available
 
-    {//desire entity should be not null  , set anyway a default 
+    {//desire entity should be not null  , set anyway a default from the group it belongs to 
 
         // resNam is the array containing the col name of matrix rows 
     let resNam=res.rows.map(function(v,i){return v[iD]});// calc matching [rows], then returns rows [] with just some cols (1:name)
@@ -2702,7 +2711,7 @@ appWrap=convo.vars.app;// is it void as we need call ......
     mydyn.param.group={};// view  transformation 
 
    //now  here update it  
-   // so in template we can recover a copy put in vars.appSt.dyn_match.dyn_rest.match[6]
+   // so in cms user template we can recover a copy put in vars.appSt.dyn_match.dyn_rest.match[6]
    session.dyn_match={};session.dyn_match[ask]={match:blResNam};// has meaning only if 1 match
 
 
@@ -3018,23 +3027,28 @@ if(gr){// the choosen summary template Gdata[i] should be chosen basing on rows 
 
 
 
- // now fills context to be rendered by template/view triggered    by mydyn.complete calculated moslty from mod_assumere_med=[no,contr,prendere,ok]
+ // now fills cms template context to be rendered by template/view triggered    by mydyn.complete calculated moslty from mod_assumere_med=[no,contr,prendere,ok]
  // most important is the view thread , defined by mydyn.complete
  // view and related context will display the query results , that is a list of rows resulted by the main bl query
 
  // user can be intrerested eventually to see at some linked property tied to 
- // - the list itself , ex : i want to know where are or how prepare the medicine to take 
- // - some specific pills 
- // so we can o subquery on specific pills or on the list as a whole
+ // - the list itself , ex : i want to know where are or how prepare all items ( the medicines to take )
+ // - some specific pill/medicine properties
+ // so we can  subquery on specific item list pill after selection  or on the list as a whole
 
  // THE linked property can be querred using 3 method :
  // 1:
- //     query will be pre build so we can choose the query using user selection on some menu item proposed or
+ //     query will be pre build so we can choose the query and run it on all list items or 1 item using user selection
  // 2 :
- //     will be generated by looking at wh, do some regex or qea to find the most probable linked desire and choose a field 
- //         on desire to render the answere to wh asked or
+ //     will be generated by looking at wh, do some regex or qea to find the most probable linked desire property 
+            and choose a field (???) on desire to render the answere to wh asked or
  // 3: 
  //     just a sparql result to be rendered 
+
+ //     to review :   think qea like a property/col containig many  sub properties ( many level) values put all in a text string 
+                            eventually tagged with 
+                                        the name of the most relevant entity/property it contains in text : tag can be "sponsor" or 'author'
+                                        or specific to a subentity values , so the tag can be : "color:'red'"
 
  // after query displayed continue saying seems you interested on some linked info to uor main desidere specifically about subject 
  //  say soming generaòl about subject specically some that related wh request then goon asking other detail on current maaster desire (medicine)
@@ -5406,7 +5420,7 @@ async function  //    (res,bot,convo){// after deserialized
                                                             ... some onchange added fields , ex : matched complete desire param ...
                                                         }}*/
     matches=convo.vars.matches,// models matches . see ormat at conversation.addMatcRes, convo.vars.matches.amodel={match:itemvalue-key,vmatch:voicenameofitem,data:xqea}
-    mustacheF=stepSt.mustacheF;
+    mustacheF=stepSt.mustacheF;// in future will be in context
     var answ ;
 // matches.mod_Serv.match must be defined as we here must find a resource of a  group 
 if(!matches.mod_Serv.match)matches.mod_Serv.match='col';// the default group is colazione 
@@ -6124,19 +6138,29 @@ let fwAskOnChange={// ={modelname:{askname1:functionref1,,,},,}. REALLY model is
                     hotel3pini_vox :{ dyn_rest:dyn_rest_f},
                     hotel3pini :{ dyn_rest:dyn_rest_f},
                     hotels :{ dyn_rest:dyn_rest_f,colazione_dyn:dyn_rest_f},
-                    star_hotel :{ dyn_medicine:dyn_star_f,ask_afterpilldet:dyn_star_booking},// a copy of televita model onchange functions . that model is applied to televita_voice cmd
-                    config :{ dyn_medicine:dyn_config_f,ask_afterpilldet:dyn_config_booking}
+                    star_hotel:{ dyn_medicine:dyn_star_f,ask_afterpilldet:dyn_star_booking},// a copy of televita model onchange functions . that model is applied to televita_voice cmd
+                    config :{dyn_medicine:dyn_config_f,ask_afterpilldet:dyn_config_booking}
                 };// fwOnchange functions : will be injected on models.modelname.direc.askname.onChange
-function init(db_,rest_,appcfg,session){db=db_;rest=rest_;
+
+function init(db_,rest_,appcfg,session){
+    db=db_;    rest=rest_;// they will be propagated into service and fwHelper via fwbase
     application=fsmfactory(appcfg);// init application
- 
+    // service and fwCb will be added later soon !!!!
+    // they can be said injected in sense that they are instantiated outside the fw by user configuration code and registered on fw 
+    //  ( that in service obj , that is the same as startup in .net, , or using some registration call to (service.js).register(servicename,func), 
+    // than called in user cb ( onchange()) by name service.somaregisterd injected service)
+    // ALL will be in context/scope of user onchange convo cbs !
 }
-function buildF(ask,ftext){
-    fwAskOnChange[ask]=null;
+
+function buildF(ask,ftext){/* now done in fwbase 
     // use a text and get a function using :
     //  - eval or function returning a function to insert in a promise
-
-
+    /* now done in fwbase :
+    fwAskOnChange[ask]=null;//  - eval or function returning a function to insert in a promise
+    let context={};
+    Object.assign(context,service,fwCb);// not add aiv3 staff 
+    fwAskOnChange[ask].bind(context);
+    */
 }// insert db and rest services
 
 
@@ -6147,4 +6171,10 @@ function buildF(ask,ftext){
  will be usually injected on models.modelname.direc.askname.onChange
 */
 
-module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,setService};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+// that's the voice controller :  todo ad service and directives obj ( )
+module.exports ={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+// service injection : 
+// this onchange export seems  the equivalent to csharp dialog obj called by handler .
+// so as it is  init with all the injection staff that will be on scope of user onchange, and do not need those obj added to vars status to be available !!  . like service !!
+// >>> whoever will chain these onchange cb to convo onstep() ( THAT IS fwbase in case the onchange comes from cms !!) :
+// -  will add in its space/context service,application and fwCb

@@ -49,7 +49,9 @@ const controller = new Botkit({
 
 if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');
-    controller.usePlugin(new BotkitCMSHelper({
+
+    // TODO What if many cms (app) to run ? ( and deallocate when finish ?)
+    controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too 
         uri: process.env.uri,
         token: process.env.token,
     }));
@@ -128,12 +130,27 @@ dynJs.hotel3pini.direc.colazione_dyn.onChange = testFunc;
 dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 */
 
-let db,rest;
+let db,// the db connection 
+jrest;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+if (process.env.DB_URI) {
+
+    mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
+	var conn      = mongoose.createConnection(process.env.DB_URI);
+	// now use conn to call std methods that was using a tandard connection :
+	//   trip = mongoose.model('master',stdModel1);   >>>>   trip = conn.model('master',stdModel1);
+
+	if(conn)db=conn;
+
+}
 
 // in future add fw as plugin !!!
 let vctl=require('./nat/onChange.js')
 controller.addPluginExtension('vCtl', vctl);// will be available as controller.plugin.vCtl.xx
-vctl.init(db,rest,null,null);// service + controller ?
+
+jrest=require('./nat/rest.js');jrest.init(controller.http);
+vctl.init(db,jrest.jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {
@@ -195,7 +212,12 @@ controller.ready(() => {
     }// end picms
     if (controller.plugins.vCtl) {// 
                 // register cmdDirectives, will injeci a ref of some fw var in controller so that fw functions will be accessible from controller  instance (ex conversation!)
+
+
+            // module containing the directive definition module.js can be got with cms download of all amd definition 
+            //    TODO   problem How to add custom matcher function (matcher in specific conditions ): they must be eval in some context ........
                 let fwCtl=require('./nat/fwbase.js')(controller);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+                                                                 // will propagate vct.db and vctl.rest on service and fwhelpers
                 // controller.usePlugin(fwCtl);
          
     }
