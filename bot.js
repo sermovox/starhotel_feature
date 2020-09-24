@@ -152,7 +152,7 @@ vctl.init(db,rest,null,null);// service + controller ?
 controller.ready(() => {
 
     // load traditional developer-created local custom feature modules
-    controller.loadModules(__dirname + '/features');
+   // after cms ?       controller.loadModules(__dirname + '/features');
 
     /* catch-all that uses the CMS to trigger dialogs */
     if (controller.plugins.cms) {// picms
@@ -174,6 +174,9 @@ controller.ready(() => {
         
 
     }// end picms
+    // load traditional developer-created local custom feature modules
+   controller.loadModules(__dirname + '/features');// on modules registered after on cms 
+
     if (controller.plugins.vCtl) {// 
                 // register cmdDirectives, will injeci a ref of some fw var in controller so that fw functions will be accessible from controller  instance (ex conversation!)
                 let fwCtl=require('./nat/fwbase.js')(controller);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
