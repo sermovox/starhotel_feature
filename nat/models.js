@@ -288,6 +288,7 @@ onChange:null//function(new_value, convo, bot,script,ask){    return dyn_rest_f.
 }
 };// ends hotel3pini_vox
 
+
 hotel3pini={// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
 // add later mustacheF,// mustach functions // passed now in step.values.mustacheF but then copied in conversation.mustacheF
@@ -1189,6 +1190,50 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
     
         // put here also the static  dyn ask definition  AAA ?? yes
         schemaurl:'Master',// schemaname of master collection, url is  'mongodb://localhost:27017/'
+        schema: 
+            {
+                // receiving the cursor rows from db we can flat into a array of format med_data using :
+                // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+                //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+  
+                    // nb here got is number  not boolean like med_data
+          
+          // DEFAULT FIELDS :
+          _id: Number,// choosen numeric id !!!
+          // id/name
+              value: {type: String, required: true},// the name (if we want to use as patt a modified voice name or  bl key or the gui key shown in list, here the name
+          
+              patt: {type: String, required: true},// the vui key ( voice name to find entity itself)	// * post_title
+             descr: {type: String, required: true},// the find/query IR matching terms
+          // mobile reserveurl or a a detailed description
+             data: {type: String},// the fts added terms/relation x refine or some bl detail // the preparazione
+          
+          
+          // BL FIELDS : 
+          
+          loc: {type: String, required: true},
+          menu: {type: String},
+          news: {type: String},
+          where: {type: String, required: true},
+          how: {type: String, required: true},
+          whenfrom: {type: String},
+          whento: {type: String},
+          voicename: {type: String, required: true},
+          res: {type: String},
+          patt2: {type: String},
+          spare: {type: String},
+          time2from: {type: String},
+          time2to: {type: String},
+          det_master: {type: String},
+          det_item: {type: String},
+          got: {type: Number},
+          dat1: {type: String},
+          dat2: {type: String},
+          dat3: {type: String},
+          dat4: {type: String},
+          inputdata1: {type: String}
+
+            },
     
         loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
                 //will go inside values.loopDir[akey=colazione_dyn] because values.akey=colazione_dyn is managed by conversation for its staff
@@ -1238,8 +1283,7 @@ star_hotel={// REFERENCE . all var dyn added at containers values.excel/matches/
           23 ...
           24 ---
           25 inputdata1
-
-    
+  
     
     
     
@@ -1964,5 +2008,13 @@ row :
 }// ends direc all dyn cb and bl 
 };// ends museoAQ
 
+let _yourname={// starting with _ means that a goto cmd will fire a child !!
+    
+    excel:{
 
-module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config};
+prov:{// registering in basefw will make available so in 
+mod_wh_Of:'paese'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+}}};
+
+
+module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config,_yourname};

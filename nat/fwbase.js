@@ -5,7 +5,7 @@ dynJs=require('./models.js'),// dynJs=comands={cmddir,cmd2dir,,,,} , db and http
 // should be also controller.plugin.vCtl.appWrap
 fwOnC;//require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
 
-let db,rest;
+let db,rest,Schema;
 let controller;
 console.log('\n starting FW initCmd ,dynJs:  ',dynJs);
 
@@ -54,14 +54,34 @@ let fwHelpers={};// base service function provided by framework. usually used in
 
 let init=function(){// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
 // db=db_,http_=http;// or better use them in services ??
+
+
+
+    /*   require('./fwHelpers')(fwHelpers,fwCb,db,rest) returns
+    fwHelp=refImplementation={
+    onChange_dynField(entSchema,text_,wheres,idspace,isDb_Aiax) interface to db manager engine to query entities with join relatations (in entSchemas ) and id/keys 
+                                                                the db manager ,recovering schema+url (in model.js) , can request a query to a db server
+    rest__: async function (entity, uri, params, method, outmap, limit) {// not used now,
+    run_jrest: async function (uri,formObj, method) returns the object if run_rest returns a json
+    run_rest: async function (uri,formObj, method) general rest interface
+    dynMatch:async function((url,)entity,text=searchterm,wheres,isDb_Aiax,cb) // put in a sort of interface TO complete in setSetvice of fwCb , or a default matcher template to custom in fwCb.asks/model
+                                                    interface to rest engine to query entities with minimum relation expressed by general properties ( terms + where )
+                                                                                                        ( url and where entity mapping can be recovered in model.js )
+
+                                                    customization (put in fwCb) can interface a data service adapter:
+                                                        - interfacing to db engine using onChange_dynField (internal db adapter) or similar interface 
+                                                        - a proper rest param invocation interfacing rest like adapter data service
+     
+    }    */
  
-let fwHelp=require('./fwHelpers')(fwHelpers,db,rest,fwOnC);// extend helpers base fw functions 
-
+let fwHelp=require('./fwHelpers')(fwHelpers,fwCb,db,rest,dynJs);// extend fwHelpers (using fwHelpers and fwCb) with other  base fw functions 
+// fwHelp={db,rest+refImplementation properties}
 //service=require('./service').setService(db,http,fwHelp,fwCb,dynJs);// db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
-service=require('./service').init(db,rest,fwHelp,fwCb,dynJs);// db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
-
-fwOnC.injService(service,fwCb);// pass in vCtl(=fwOnC) the services available for run time in case we add user onchange in onChange.js obj 
-
+service=require('./service').init(fwHelp,fwCb,dynJs);//extend fwHelp (using fwHelp and fwOnC) with other  user fw functions 
+                                                    // db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
+// service={db,rest+refImplementation properties + service provided properties}
+fwOnC.injService(service,fwCb);// now pass also in vCtl(=fwOnC) the services available for run time in case we add user onchange in onChange.js obj 
+                                // >>> but if the onchange comes from cms the services will be available with following initCmd !!!!
 
 initCmd("televita",{meds:[11,22,33],cur:'rossi'},['dyn_medicine']);// (cmd,usrAppSt,[keys in bank dynJs[myscript] to register])
 initCmd('televita_voice',{meds:[11,22,33],cur:'rossi'},['dyn_medicine'],'televita');
@@ -371,8 +391,8 @@ oo
             // + service and fwCb functions
             // + onChange =(fwOnC=onChange.js...).onChange[model][mkey] user provided onchange
 
-            let onChThis=Object.assign(directive.direc[mkey],service,fwCb);// service injection in directive.direc[mkey] user controller
-
+            //let onChThis1=Object.assign(directive.direc[mkey],service,fwCb);// service injection in directive.direc[mkey] user controller
+            let onChThis=Object.assign({},{cmdModels:directive},directive.direc[mkey],{service},{fwCb});// service injection in directive.direc[mkey] user controller
             //if(directive.direc[mkey].onChange_text)fwOnC.buildF(mkey,directive.direc[mkey].onChange_text);// text from cms,  build from text with eval
             if(directive.direc[mkey].onChange_text)onChThis.onChange=buildF(mkey,directive.direc[mkey].onChange_text);// text from cms,  build from text with eval
              // onchange injected from cms, todo: buildF must add services in scope/context
@@ -381,6 +401,11 @@ oo
             // if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])directive.direc[mkey].onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
             if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])onChThis.onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
 
+            // register also the schema on connection :
+            if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
+
+                db.model(onChThis.schemaurl,new Schema(onChThis.schema));
+            }
 
 
 
@@ -388,7 +413,93 @@ oo
             //let mkey='dyn_medicine';// TODO : for all direc do .....
 
              //let myoC1=dynJs[myscript_].direc[mkey].onChange;//.bind(dynJs[myscript]);
-             controller.plugins.cms.onChange(myscript_, mkey,async function(bot,convo,res){
+
+                // ERROR on context setting . probably cms.onChange will bind with something
+                // infatti in cms onchange si richiama convo.onChange(variable_name, handler=async function()....  di sopra );
+                //  ORA CONVO ONCHANGE PRENDE L'HANDLER E LO CARICA SUl bank  CONVO._changeHooks[variable]
+                /// quando si fire il onchange da onStep si chiama 
+                //                runOnChange(variable, value, dc, step) {......
+                //                  yield handler.call(this, value, convo, bot);......
+                // >>>>> quindi il context e' settato su convo stesso
+                // conclusioni    : passare il context onChThis in qualche parametro che viene passato al onChange 
+                //          MA NON ESISTONO !!!!
+                //              ad esempio non convo  che non viene passato al mio onchange perche si crea un nuovo convo
+                //          quindi banalmente lo inserisco in una closure CLO dove setto il mycontext=  onChThis
+
+
+                /* useless wrapper 
+               let myOnCh= async function(bot,convo,res){
+                    // let color_=color,myscript_=myscript_;// CORRECT put myscript_ in a closure !
+                     //return myoC1(a,b,c,myscript_,color_);
+                     //return dynJs[myscript][color].onChange(a,b,c,myscript_,color_);// this should be set 
+    
+    
+                     // the run context of function is  directive.direc[mkey] see X on chart RT1, shouldnt put also some context like excel??(instead of get it ...)
+                     // return directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey]
+                     return onChThis.onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey] > PERCHE ????
+    
+
+                    } // can i bind with its obj ?
+                    */
+                    /*
+            let myClosure=function(){// sol a : in onChThis.onChange i can get onChThis=convo.fwbase_this that is a additional  app context 
+                    
+                        mycontext=onChThis;
+                        // add that to a run time param or to a function property 
+                        return async function(bot,convo,res){
+                            convo.fwbase_this=mycontext;
+                           //  myOnCh(bot,convo,res);
+                           // NB myscript_ can change so dont copy 
+                           return onChThis.onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey] > PERCHE ????
+    
+                        }
+        
+        
+                    }
+                   // no  dont work returning not this 
+                    let wrapContextGen2=function(that){// nella sua closure ha le variabili che usera quando il factory verra chiamato 
+                        //cant :this=Object.assign(this,that,directive.direc[mkey],service,fwCb);
+                         this.onChangexx= onChThis.onChange;// method added on the object . so as added cant cover exixting obj 
+                        let newobj=Object.assign(this,that,directive.direc[mkey],service,fwCb);
+                        return newobj;
+                    }
+                    let myClosure2=function(bot,convo,res){// sol b : in onChThis.onChange i can get onChThis ....
+                    
+                        //mycontext=onChThis;
+                        // add that to a run time param or to a function property 
+                        new wrapContextGen2(this).onChangexx(bot,convo,res);
+        
+        
+                    }/*
+
+                    let myClosure3=function(bot,convo,res){// sol b : in onChThis.onChange i can get onChThis ....
+                    
+                        //mycontext=onChThis;
+                        // add that to a run time param or to a function property 
+                        onChThis.onChange.call(new wrapContextGen3(this),bot,convo,res);
+        
+        
+                    }
+                    let wrapContextGen3=function(that){// nella sua closure ha le variabili che usera quando il factory verra chiamato 
+                        this=Object.assign(this,that,directive.direc[mkey],service,fwCb);
+
+
+                    }*/
+
+
+                    let myClosure4=function(bot,convo,res){// sol bd : in onChThis.onChange i can get onChThis ....
+                    
+                        
+                        //let that=Object.assign(this,{cmdModels:directive},directive.direc[mkey],{service},{fwCb});
+                        let that=Object.assign(this,onChThis);
+                        //reassign the context 
+                        return onChThis.onChange.call(that,bot,convo,res,myscript_,mkey);// seems useless the call
+        
+                    }
+
+             controller.plugins.cms.onChange(myscript_, mkey,
+                /* was :
+                async function(bot,convo,res){
                 // let color_=color,myscript_=myscript_;// CORRECT put myscript_ in a closure !
                  //return myoC1(a,b,c,myscript_,color_);
                  //return dynJs[myscript][color].onChange(a,b,c,myscript_,color_);// this should be set 
@@ -396,9 +507,18 @@ oo
 
                  // the run context of function is  directive.direc[mkey] see X on chart RT1, shouldnt put also some context like excel??(instead of get it ...)
                  // return directive.direc[mkey].onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey]
-                 return onChThis.onChange(bot,convo,res,myscript_,mkey);// this should be set different from directive.direc[mkey]
+                 return onChThis.onChange(bot,convo,res,myscript_,mkey);}// this should be set different from directive.direc[mkey] > PERCHE ????
+                    */
 
-                } );// can i bind with its obj ?
+                   //myClosure() // or
+                   // myClosure2 // or
+                   //myClosure3 // or
+                    myClosure4
+
+
+
+
+                 );// can i bind with its obj ?
                      });
 
                      console.log( 'FW initCmd ended onchange set on  cmd ',myscript_,' ask ',monchange);
@@ -444,11 +564,12 @@ function buildF(ask,ftext){
 }// insert db and rest services
 
 // register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-module.exports =function (cnt){
+module.exports =function (cnt,db_,schema,rest_){
     controller=cnt;
     fwOnC=controller.plugins.vCtl;// is vCtl
-    db=fwOnC.db;
-    rest=fwOnC.rest;
+    db=db_;
+    rest=rest_;
+    Schema=schema;
     if(controller.plugins.cms)init();
 
 

@@ -131,7 +131,7 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 */
 
 let db,// the db connection 
-jrest;
+jrest_,jrest;
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 if (process.env.DB_URI) {
@@ -146,11 +146,11 @@ if (process.env.DB_URI) {
 }
 
 // in future add fw as plugin !!!
-let vctl=require('./nat/onChange.js')
+let vctl=require('./nat/onChange.js');//={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
 controller.addPluginExtension('vCtl', vctl);// will be available as controller.plugin.vCtl.xx
-
-jrest=require('./nat/rest.js');jrest.init(controller.http);
-vctl.init(db,jrest.jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
+const http = require("http");// not controller.http
+jrest_=require('./nat/rest.js');jrest_.init(http);jrest=jrest_.jrest;
+vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {
@@ -216,13 +216,28 @@ controller.ready(() => {
 
             // module containing the directive definition module.js can be got with cms download of all amd definition 
             //    TODO   problem How to add custom matcher function (matcher in specific conditions ): they must be eval in some context ........
-                let fwCtl=require('./nat/fwbase.js')(controller);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+                let fwCtl=require('./nat/fwbase.js')(controller,db,Schema,jrest);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
                                                                  // will propagate vct.db and vctl.rest on service and fwhelpers
                 // controller.usePlugin(fwCtl);
          
     }
 });
 
+/*
+todo 
+
+put directives restructuring :
+
+let static directive in models 
+- copy in vars.excel + direc  to have them available in convo ,template and onchange ( writed on onchange or downloaded with cms)
+- copy also in state.dir adding the dynamic var to control TI matching algo 
+- set session in state (not convo state but user state  to be available in different convo) to manage bl with appwrap ctl engine
+- put non fw matcher and func in user custom function set in fwCb (general custom fw function ) + service.js (specific bl functions and matchers). they will be referecied by models directives 
+- define a std matcher interface 
+- do fts https://docs.mongodb.com/manual/reference/operator/query/text/#match-operation-stemmed-words
+
+previous.collect.key > mkey
+*/
 
 
 
