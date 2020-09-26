@@ -3,7 +3,7 @@ dynJs=require('./models.js'),// dynJs=comands={cmddir,cmd2dir,,,,} , db and http
 //models_directives=dynJs,
 
 // should be also controller.plugin.vCtl.appWrap
-fwOnC;//require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
+fwOnC;// injected on the init of this module , require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
 
 let db,rest,Schema;
 let controller;
@@ -126,7 +126,7 @@ initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_res
 
 initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'televita_voice'
 initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'star hotel
-
+initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars.excell and vars.direc
 
 };// end register bank (dynJs)
 
@@ -135,9 +135,13 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
 
  // example usrAppSt={meds:[11,22,33],cur=user:'rossi'} , current user got from previous  botframework loging service call : TODO
  // should be like a frame connect a ws to a bot using login in main browser windows .......
-function initCmd(myscript_,usrAppSt,monchange,mod_dir){/*
-    (cmd: the cmd
-     usrAppSt: param to load on application server 
+function initCmd(myscript_,usrAppSt,monchange,mod_dir){
+    
+    // ***  will set dat to provide fw support (in onchange ) on monchange list of ask that are defined in fwOnC.onChange ( onChange.js)
+
+    /*
+    ((myscript_/cmd: the cmd
+     usrAppSt: param to load on application server to serve this convo 
      monchange : list of onChange ask function name on which i want vframework support monchange=[,,mkey_i,,]  , mkey is a ask name 
 
                  the functions mykey_i  will be registered in  directive.direc[mkey_i] 
@@ -178,9 +182,9 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
     //if(!dynJs[myscript_])return;// error
 
 
-    let model=mod_dir|| myscript_;// ATTENTION bad name,   MODEL IS REALLY the Command script !
+    let cmd=mod_dir|| myscript_;// was called model that was a bad name,   MODEL IS REALLY the Command script ! so we changed in cmd 
 
-    if(model){if(dynJs[model])directive=dynJs[model];// directive= ( model.js()=dynJs=comands={cmddir,cmd2dir,,,,} ) [acmd=model]  , model is a bad name for cmdname
+    if(cmd){if(dynJs[cmd])directive=dynJs[cmd];// directive= ( model.js()=dynJs=comands={cmddir,cmd2dir,,,,} ) [acmd=model]  , model is a bad name for cmdname
         else{ 
             console.log('\n starting FW initCmd ,cant find any models or directives for cmd   ',myscript_);
             return;
@@ -285,13 +289,21 @@ oo
 
             */
 
+           let values=convo.step.values,session=values.session,appWrap;
+
            // getappWrap(bot,convo) sets : appWrap=={aiax:function(actionurl,req),session,begin_def:function serverservice()}
          // example usrAppSt={meds:[11,22,33],cur:'rossi'} , current user got from previous  botframework loging service call : TODO
-           let appWrap=await fwOnC.getappWrap(bot,convo);// will recover user session status and application service , check  appWrap in vars.app ....
+
+            // ****  if we comes from a convo that passed a already set of vars continue with some , other specific x this convo will be replaced
+            //      but function like controller appWrap=values.app  must injected at every convo start !!!
+            // if(!values.app)// we could put app in context then wrap it with values.session here ? seems no better way 
+
+            // in start a child app is recovered from status but not the funcions , so them must be recovered by getappWrap 
+            values.app=await fwOnC.getappWrap(bot,convo);// ****  SESSION and app RECOVER : // will recover user session status and application service , check  appWrap in vars.app ....
                                             // getappWrap(bot,convo) sets : appWrap=fwOnC..appWrap ; vars={channel,user,....}
-           let values=convo.step.values,session=values.session;
+            appWrap=values.app;
            // appWrap=values.app,session=values.session; // now do here for clarity  :
-           values.app=appWrap;// we could put app in context then wrap it with values.session here ? seems no better way 
+
            /* infact appwrap just :
             appwrap= {   service,fwCb,
                     post:function(actionurl,req){// session and convovars cant change when i stay in the same convo
@@ -307,11 +319,11 @@ oo
 
 
             // inform server endpoint a major comand is requesting 
-            appWrap.begin_def(myscript_,usrAppSt);
+            appWrap.begin_def(myscript_,usrAppSt);// inform app server we start a new convo so continue serving 
+
+
              // get user status from db query 
-             appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}
-
-
+             appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}to goon this convo
 
              console.log('+++++++++++++ ùùùùùùùùùù convo begin : init fw vars for  cmd   ',myscript_);
              // alredy set  : convo.setVar('appSt/appWrap',appSt);
@@ -347,20 +359,57 @@ oo
             //              onChThis=Object.assign({},service,fwCb,appWrap);//
             //      so when run direc[mkey].onchange() will find services on this.service.some service 
 
-            convo.setVar('modsonask',fwOnC.modsOnAsk(script));//  modsOnAsk used in .out miss func 
+
+
+
+            ////////////////////   DO NOT INSERT TWO TIMES in A CONVO a proper structures addding structures  so no excel on the same excel   wheres ,,,,, 
+            // the case is call 2 times def thread so begin run twice !!!!!!!!
+
+            // ********     so never extend again in this Multidialog Status Chain ******
+
+            let injected=convo.vars.convoCont= convo.vars.convoCont||{};
+            if(!injected[myscript_]){
+                let exten=convo.vars.excel||{};
+            // convo.setVar('excel',directive.excel);// // ovewrite previous convo excel  data , corrected to be as was before
+            convo.vars.excel=Object.assign(exten,directive.excel);// extend present excel with current convo excel, avoid duplicate name !!!
+
+                        // let color_=color;
+            // info about current dialog definition , 
+            // convo.setVar('direc',directive.direc);//  // ovewrite previous convo excel  data , dir about current cmd asks as conversational tab . NOW also the static fields
+            let exten2=convo.vars.direc||{};
+            // convo.setVar('excel',directive.excel);// // ovewrite previous convo excel  data , corrected to be as was before
+            convo.vars.direc=Object.assign(exten2,directive.direc);// extend present excel with current convo excel, avoid duplicate name !!!
+                
+            find_wheres(convo.vars);// insert wheres on dependend dyn as mod_wh_Of of its depending wheres 
+
+            injected[myscript_]=true;// ********     so never extend again in this Multidialog Status Chain ******
+            }
+            
+            // every time ???????
+            convo.setVar('modsonask',fwOnC.modsOnAsk(script));//  modsOnAsk used in .out miss func x current script
+
+            /*
+            // portare fuori che lo faccia il framework questo e init da far fare al framework !!!!
+            if(!convo.vars.excel.Toinit){
             find_wheres(directive);// insert wheres on dependend dyn as mod_wh_Of of its depending wheres 
-             convo.setVar('excel',directive.excel);// corrected to be as was before
+            }
+            convo.vars.excel.Toinit=true;
+            */
 
 
              let loopDir={};// dialog directive. or if done later ,  insert in already present convo.values.loopDir
 
 
-            // let color_=color;
-            // info about current dialog definition , 
-             convo.setVar('direc',directive.direc);// dir about current cmd asks as conversational tab . NOW also the static fields
+
 
              // status of convo algo var and user navigation on convo
+
+             if(!convo.vars.matches)// previous matches in previous convo will be mantained
              convo.setVar('matches',{});// case $$ and $% : model and key matches ex :values.matches.color='red', see conversation.addMatcRes()
+             
+
+
+             if(!convo.vars.askmatches)
              convo.setVar('askmatches',{});// other : key matches ex :values.askmatches.akey={match=[{key:0},,,]}, see conversation.addMatcRes()
             
             });// end before()
@@ -373,7 +422,7 @@ oo
 
 
             // >>>>>  SET botkit convo onchange service/handler
-           monchange.forEach(function(mkey){
+           if(monchange)monchange.forEach(function(mkey){
 
             // set botkit convo onchange service/handler , can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
             // dynJs[myscript_].direc[mkey].onChange_text OR a text from cms trigger in json
@@ -399,7 +448,7 @@ oo
             // adds serviceson ctx via fwOnC=onChange.js extension ? 
 
             // if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])directive.direc[mkey].onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
-            if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])onChThis.onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
+            if(fwOnC&&fwOnC.onChange[cmd]&&fwOnC.onChange[cmd][mkey])onChThis.onChange=fwOnC.onChange[cmd][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
 
             // register also the schema on connection :
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
@@ -489,7 +538,9 @@ oo
 
                     let myClosure4=function(bot,convo,res){// sol bd : in onChThis.onChange i can get onChThis ....
                     
-                        
+                        // this is the context that called cms onChange=myClosure4
+                        // so add the onChThis custom onchange 
+
                         //let that=Object.assign(this,{cmdModels:directive},directive.direc[mkey],{service},{fwCb});
                         let that=Object.assign(this,onChThis);
                         //reassign the context 
@@ -528,20 +579,27 @@ oo
 function find_wheres(directive){
 // insert wheres on excel dyn model (model in vars.matches) that is depending from some (static/dyn) models
 // also x the model associated with a ask that in its onchange  fills also itself model (model in vars.askmatches)with aiax 
-// returns [depEnt1,depEnt2,,,]
+// returns after filled  direc.dependingAsk.wheres=[wheremod1,wheremod2,,,]  or   excel.dependingModel.wheres=[wheremod1,wheremod2,,,], mod is a model or a static entity 
 let p=directive.excel;
-    for (var key in p) {
-        if (p.hasOwnProperty(key)) {
-            if (p[key].mod_wh_Of) {
-                let ins;
-                if(directive.direc[key.mod_wh_Of]){
-                   ins= directive.direc[key.mod_wh_Of];// ads the depending model to dependant  ask dyn 
-                }
-                else if (p[key.mod_wh_Of] && p[key.mod_wh_Of].type && p[key.mod_wh_Of].type != 'static') {
 
-                   ins= p[key.mod_wh_Of];// ads the depending model to dependant not ask dyn 
+
+    for (var key in p) {
+        let amod;
+        if (p.hasOwnProperty(key)) {
+            amod=p[key];
+            if (amod.mod_wh_Of) {//key is a  model declaration (excel=p).key=amod={model:,mod_wh_Of:adependantModel} OR amod={model:,mod_wh_Of:adependantAsk}
+                let ins;
+
+                if(directive.direc&&directive.direc[amod.mod_wh_Of]){//  ins=  direc.adependingAsk
+                   ins= directive.direc[amod.mod_wh_Of];// ads the depending model to dependant  ask dyn 
                 }
-            if(ins){
+                else // if ( p[key.mod_wh_Of].type && p[key.mod_wh_Of].type != 'static') // ?? 
+                {
+                if(! p[amod.mod_wh_Of]) p[amod.mod_wh_Of]={};// insert a model declaration anyway
+                   ins= p[amod.mod_wh_Of];// ads the depending model to dependant not ask dyn 
+                }
+
+            if(ins){// set in =  direc.adependant_ask.wheres or in excel.adedendant_model.wheres its  where model key :  wheres=[key,wheremod1,wheremod2,,,]
                 ins.wheres = ins.wheres || [];
                 ins.wheres.push(key);// ads the depending model to dependant not ask dyn 
             }

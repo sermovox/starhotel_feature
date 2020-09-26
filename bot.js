@@ -146,8 +146,9 @@ if (process.env.DB_URI) {
 }
 
 // in future add fw as plugin !!!
-let vctl=require('./nat/onChange.js');//={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
-controller.addPluginExtension('vCtl', vctl);// will be available as controller.plugin.vCtl.xx
+let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
+
+controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
 const http = require("http");// not controller.http
 jrest_=require('./nat/rest.js');jrest_.init(http);jrest=jrest_.jrest;
 vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....

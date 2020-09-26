@@ -2010,11 +2010,28 @@ row :
 
 let _yourname={// starting with _ means that a goto cmd will fire a child !!
     
-    excel:{
+excel:{
 
-prov:{// registering in basefw will make available so in 
-mod_wh_Of:'paese'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
-}}};
+    mod_prov:{// registering in basefw will make available so in 
+
+    // error paese e' ask deve essere entity pioop 
+    mod_wh_Of:'pippo'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) , so dont put in notmatched prompt list if we already had the dyn_key matched 
+    },
+    pippo:{
+        schemaurl:'Master'// data service staff,,to be  pass to it !. to map entity pippo into the name of master collection on data service  wich run query 
+    }
+
+},
+
+direc:{
+    paese:{
+
+    loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+
+        goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+    }
+}   
+}};
 
 
 module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config,_yourname};

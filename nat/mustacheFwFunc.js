@@ -784,7 +784,7 @@ return mustacheF.nmList(el,null,count,true)}// will add e anche  dopo il primo e
   }// ends out 
 
 function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modsonask at  before cb of the cmd default thread 
-    //  from a conversation script create a map : ask > list of model tested in ask
+    //  From a conversation script create a map : ask > list of model tested in ask
     // we  want to know what model will be tested on script asks on all threads
     // in onchange  main dyn_ask will test major models gathered by y many asks that are visited in the dialog
     // so in a ask we'll find 
