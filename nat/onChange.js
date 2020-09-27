@@ -112,11 +112,11 @@ function injService(service_,fwCb_){// adds services on locale scope ( x onchang
 
 // service is the service bank , would be better extend its context with 
 
-Object.assign(service_,service);// adds local service
+Object.assign(service_,service);// adds local service to passed service obj 
   //   Object.assign(service,service_);// use service.rest(url,qs) to do rest from onchange
     fwCb=fwCb_;// just the structure to fill , with no func ?
 
-this.fwCb=fwCb;this.service=service_;
+this.fwCb=fwCb;this.service=service_; // adds to this Vcontroller fwCb and service
 
     let // ?
     def_rest_=service.rest;// to customize this as done x service.onChange_dynField, see fwhelpers refImplementation.rest: ....... 

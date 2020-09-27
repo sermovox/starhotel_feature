@@ -2018,7 +2018,76 @@ excel:{
     mod_wh_Of:'pippo'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) , so dont put in notmatched prompt list if we already had the dyn_key matched 
     },
     pippo:{
-        schemaurl:'Master'// data service staff,,to be  pass to it !. to map entity pippo into the name of master collection on data service  wich run query 
+        schemaurl:'Master',// old  data service staff,,to be  pass to it !. to map entity pippo into the name of master collection on data service  wich run query 
+        dbmeta:{// dbservice staff 
+            dburl:'mongodb://192.168.1.15:27017/',// db mongo server
+            db1:'emilia',// the mongo db
+            collect1:'J_1_m',// x collection name j_1_ms
+            schema1: // col mapping x cursor filling
+        
+            // receiving the cursor rows from db we can flat into a array of format med_data using :
+            // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+            //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+
+                // nb here got is number  not boolean like med_data
+      
+      // DEFAULT FIELDS :
+
+         {_id: Number,
+            patt: {type: String, required: true},// the vui key ( voice name)
+            value: {type: String, required: true},// the name or  bl key or the gui key shown in list
+           data: {type: String, required: false},// the fts added terms/relation x refine or some bl detail
+            descr: {type: String, required: false}
+
+          },
+          collect:'Master',
+          db:'starhotel',
+          schema:// must be in json format 
+          {
+            // receiving the cursor rows from db we can flat into a array of format med_data using :
+            // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+            //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+
+                // nb here got is number  not boolean like med_data
+      
+      // DEFAULT FIELDS :
+      _id: Number,// choosen numeric id !!!
+      // id/name
+          value: {type: String, required: true},// the name (if we want to use as patt a modified voice name or  bl key or the gui key shown in list, here the name
+      
+          patt: {type: String, required: true},// the vui key ( voice name to find entity itself)	// * post_title
+         descr: {type: String, required: true},// the find/query IR matching terms
+      // mobile reserveurl or a a detailed description
+         data: {type: String},// the fts added terms/relation x refine or some bl detail // the preparazione
+      
+      
+      // BL FIELDS : 
+      
+      loc: {type: String, required: true},
+      menu: {type: String},
+      news: {type: String},
+      where: {type: String, required: true},
+      how: {type: String, required: true},
+      whenfrom: {type: String},
+      whento: {type: String},
+      voicename: {type: String, required: true},
+      res: {type: String},
+      patt2: {type: String},
+      spare: {type: String},
+      time2from: {type: String},
+      time2to: {type: String},
+      det_master: {type: String},
+      det_item: {type: String},
+      got: {type: Number},
+      dat1: {type: String},
+      dat2: {type: String},
+      dat3: {type: String},
+      dat4: {type: String},
+      inputdata1: {type: String}
+
+        }
+
+        },
     }
 
 },

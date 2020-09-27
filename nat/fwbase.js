@@ -128,6 +128,7 @@ initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicin
 initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'star hotel
 initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars.excell and vars.direc
 
+return service;
 };// end register bank (dynJs)
 
 
@@ -452,8 +453,8 @@ oo
 
             // register also the schema on connection :
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
-
-                db.model(onChThis.schemaurl,new Schema(onChThis.schema));
+                // do not use db , debug only  :
+                db.model(onChThis.schemaurl,new Schema(onChThis.schema)); // register also the schema on std connection   : OLD just to debug never use it 
             }
 
 
@@ -628,7 +629,7 @@ module.exports =function (cnt,db_,schema,rest_){
     db=db_;
     rest=rest_;
     Schema=schema;
-    if(controller.plugins.cms)init();
+    if(controller.plugins.cms)return init();// return service pluginable 
 
 
 }

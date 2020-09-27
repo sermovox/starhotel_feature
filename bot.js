@@ -130,7 +130,7 @@ dynJs.hotel3pini.direc.colazione_dyn.onChange = testFunc;
 dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 */
 
-let db,// the db connection 
+let db,// the def  old  db connection used by some onchange ( available to service obj as std db connection )
 jrest_,jrest;
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -151,6 +151,9 @@ let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChang
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
 const http = require("http");// not controller.http
 jrest_=require('./nat/rest.js');jrest_.init(http);jrest=jrest_.jrest;
+
+
+// now db connection wont be used any more !
 vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
@@ -217,10 +220,18 @@ controller.ready(() => {
 
             // module containing the directive definition module.js can be got with cms download of all amd definition 
             //    TODO   problem How to add custom matcher function (matcher in specific conditions ): they must be eval in some context ........
-                let fwCtl=require('./nat/fwbase.js')(controller,db,Schema,jrest);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+
+                // in future do not use db and schema but the plugin dbs , ? where was used Schema ? 
+                // probabilmente da un onchange che si collegava a un db senza un service rest > gli serve lo schema per mappare il colection in cursor !
+                let service=require('./nat/fwbase.js')(controller,db,Schema,jrest);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
                                                                  // will propagate vct.db and vctl.rest on service and fwhelpers
                 // controller.usePlugin(fwCtl);
          
+                // extend services :
+                let dbeng=require('./nat/dbservice')(Schema,mongoose);
+                 // dbeng.mongoose=mongoose;dbeng.Schema=Schema;// TODO put in module as internal var ?
+                service.addPluginExtension('dbs', dbeng);// connection db will be set by dbs endpoint 
+
     }
 });
 
