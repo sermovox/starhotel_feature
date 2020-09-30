@@ -1980,9 +1980,86 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
     
         }, //end rest__
         
-        run_jrest: async function (uri,formObj, method) {
-           let response= run_rest(uri,formObj, method) ;
-         if(response)return JSON.parse(response);
+        run_jrest: async function (url,formObj, method) {
+          
+
+         if(true){
+            // let form;
+            let mr;//   return
+            if(url.substring(0,11)==':service//'){// :service//dbmatch'
+                //form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
+
+                if(url.substring(11,18)=='dbmatch'){   
+                    // route to internal db service ctl 
+                    
+                
+
+                let wt=false;// new db service , ok 
+                if(wt)mr=await this.restAdapter2Mongodb(form);// old , call specific caller to internal data service adapter that knowing additional scheme cal call a db
+
+                // a service pluging so we put here . if was a custom put in service.js 
+                else mr=await this.plugins.dbs.restAdapter2Mongodb_(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                //  // returns  res={rows,reason} reason  'err' or 'runned'
+
+                }else{
+                    let firstbar=url.substring(11).split('/');
+                    if(firstbar.length>0)
+                    if(this[firstbar]){ // usually url='service.plugins.apluginctl
+
+                    // pass qs in url into form if form is null
+
+                   form= form||querystring.parse(url); 
+
+                    // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
+                    mr=await this[firstbar](form);
+                    }else return null;
+                }
+               return mr;
+
+                }else if(url.substring(11,17)=='custom'){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
+                form={entity,term,wheres,meta};// excel is debug param, usually is in the service
+                let mr,custserv;
+                // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                if(!url.charAt(6)==':')return false;
+                custserv=url.substring(7);
+                if(this[custserv]){
+                   
+                // a service pluging so we put here . if was a custom put in service.js 
+                mr=await this[custserv](form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                //  // returns  res={rows,reason} reason  'err' or 'runned'
+                if(mr.reason=='err')return false;
+                else {
+
+                    cb(mr.rows);
+                    return true;
+                }}
+                 return false;
+
+
+
+
+
+            }else if(url.substring(0,7)==':http//'){// just map the post param wheres  if find excel[entity].restmap
+            // wheres=rmap(entDir.restmap); functopn rmap(){}
+
+            // std POST REST 
+
+             
+            let response= await run_rest(url,formObj, method) ;
+            if(response)return JSON.parse(response);
+            }else{
+                                    // look for a custom rest adapter 
+                                    //  if(fwCb.model[entity].matcher)cb(await fwCb.model[entity].matcher);
+                    return false;
+            }
+            return false;
+        }// ends if true
+
+
+
+
+
+
             
         },
         run_rest: async function (uri,formObj, method) {// if GET formObj(where clouse literal obj ) can be missing if alredy set into uri qs
@@ -1996,13 +2073,34 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             // .catch((err) => { console.error(err); });  or  .catch(console.error);
    
             // if(response)data=JSON.parse(response);
+
+            // 102020
+            // this can be also a general rest service to internal and external rest end point 
+            // so a request for a std service can be managed here with a std rest interface 
+            // a internal (get) request route the qs to a str internal service added to .service.js 
+
+
+
             if(!method)method='GET';
+            if(method='GET'){
+            // fill qs with term and wheres : https://stackoverflow.com/questions/332872/encode-url-in-javascript
+                // qs.stringify({a:"1=2", b:"Test 1"}); // gets a=1%3D2&b=Test+1
+
+                let qs_='';if(wheres)qs_=qs.stringify(wheres); // gets a=1%3D2&b=Test+1
+                const addqshere=false;
+                if(qs_&&addqshere){
+
+                    // ? mngement : .............
+                    // insert qs o let service do that ??
+                    uri+=qs_; // chech  !!!!!!!!!!!!!!!
+                }
+            }
    
             let response = await  this.rest(uri, method,formObj) 
-             .catch((err) => { console.error(' REST got ERROR : ',err); }); 
+                            .catch((err) => { console.error(' REST got ERROR : ',err); }); 
    
             if(response)return response;// if curssor should be an array of array of literal/string 
-               else;
+               else return null ;
            },
 
            intMatch:async function(){// returns entities mostly  resolved ( represented by key/descr/voicename , can be partially inflated expaded in tree for most important sub entities 
@@ -2012,7 +2110,16 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
         // 072020 : alredy set in onchange ???
         // ((url,)entity,text=searchterm,wheres,isDb_Aiax,cb)
-        dynMatch:async function//helper function , extract the param to fire a 'std' rest to service end point (POST andd GET based , depend from the url formatting get in model.js) 
+        dynMatch:async function
+        //helper function , serving convo fw matching loop request . will :
+        //  - get url from excel or macro
+        //  - add rest param according to url to send appropriate request x the endpoint 
+        //      normally :  url param ( url > url/entity) + where params in a form map form={entity,term,wheres,meta,whMmeta} (meta and whMeta used for internal url)
+        //      but if url='custom...'   .......
+        //  - firing a rest request to internal run_rest fw service that fire a std rest http request or route to internal controller if url =':service/myservice/.....' 
+
+        // so :
+            //   extract (from vars matchers)  the param to fire a 'std' rest to service end point (POST andd GET based , depend from the url formatting get in model.js) 
             // returns entity item(s) in rows : so row fields if not atomic represent the object item  property key/value/name and are not inflated/populated. can be in following query on chained threads  
             //  - if used as entity match : askmatches structure will store the results as the return row represent an entity match
             //  - if used as master query cursor  : askmatches structure will store the results as the return rows represent a  entity query items
@@ -2093,7 +2200,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             //let x=''; // find x ****************************************************************+
 
             // two places to get url : in excel(from model of cmd registered in basefw ) or in state.dir(from cms macro )
-            let url='internal';// default  fron url=excel.entity.url   >> entDir.url 
+            let url=':service//dbmatch';// default  fron url=excel.entity.url   >> entDir.url 
 
             if(dir&&dir.asks[key]&&dir.asks[key].cond[entity]&&dir.asks[key].cond[entity].url)
                 url=dir.asks[key].cond[entity].url;// get url from cms directive put in  macro 
@@ -2101,57 +2208,44 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             if(entDir&&entDir.url)
                 url=entDir.url;// get url from excel
 
-            let isGET=false;// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
-            if(url&&url.slice(-1)=='?')isGET=true;// url end with '?'
-            if(url){//&&url.su)
-            if(isGET){// 
-                
-                // fill qs with term and wheres : https://stackoverflow.com/questions/332872/encode-url-in-javascript
-                // qs.stringify({a:"1=2", b:"Test 1"}); // gets a=1%3D2&b=Test+1
-
-                let qs_='';
-                if(wheres)qs_=qs.stringify(wheres); // gets a=1%3D2&b=Test+1
-                if(term)qs_+='&term='+term;
-
-                cb(await run_jrest(url,null,'GET'));// external REST Data Service // TODO .catch .....   !!!!!
-                return true;
-
-            }else{// is POST/internal 
+            let isGET='GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
+            // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
+;
+            if(sentence.charAt(url.length-1)!='?')// url end with '?' means goon with a get request !!!
+                {sentence=sentence.substring(0,url.length-1);// leave trailing ?
+                isGET='POST';}
+            if(url){// is POST/internal 
 
             // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer duty  
             let meta;// as this is an entity matcher the schema is find in escel.model (too hard to put in macro ???)
 
 
 
-
+                /*
             if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
             if(dir&&dir.asks[key]&&dir.asks[key].cond[entity]&&(dbmeta=dir.asks[key].cond[entity].dbmeta));
             else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
+            */
+
+           meta=getMeta(excel,dir,entity,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            // relations :
+            let whMmeta={};// as this is an entity matcher the schema is find in escel.model (too hard to put in macro ???)
 
 
+            for(let wc in wheres) {
 
+                whMmeta[wc]=getMeta(excel,dir,wc,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // this fun get the excel or dir.asks[ask].cond   obj and get its dbmeta structure !!
 
+            }
 
+            let form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
 
-            let form;
-            
-            if(url=='internal'){
-                form={entity,term,wheres,meta};// excel is debug param, usually is in the service
-                let mr;
-                let wt=false;// new db service
-                if(wt)mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                // add entity param  :    :http....  >  /entity
+            url+='/'+entity;
 
-                // a service pluging so we put here . if was a custom put in service.js 
-                else mr=await this.plugins.dbs.restAdapter2Mongodb_(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
-                //  // returns  res={rows,reason} reason  'err' or 'runned'
-                if(mr.reason=='err')return false;
-                else {
-
-                    cb(mr.rows);
-                    return true;
-                }
-
-                }else if(url.substring(0,6)=='custom'){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
+            if(url.substring(0,6)=='custom'){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
                 form={entity,term,wheres,meta};// excel is debug param, usually is in the service
                 let mr,custserv;
                 // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
@@ -2174,21 +2268,20 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
 
 
-            }else if(url.substring(0,7)==':http//'){// just map the post param wheres  if find excel[entity].restmap
-            // wheres=rmap(entDir.restmap); functopn rmap(){}
-
-            // std POST REST 
-
-                form={wheres,term};
-                cb(await run_jrest(url,form,'POST'));// external REST Data Service // TODO .catch .....   !!!!!
-                return true;
             }else{
-                                    // look for a custom rest adapter 
-                   //  if(fwCb.model[entity].matcher)cb(await fwCb.model[entity].matcher);
-                    return false;
+
+
+           let  mr=await await run_jrest(url,form,isGET);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                //  // returns  res={rows,reason} reason  'err' or 'runned'
+                if(mr.reason=='err')return false;
+                else {
+
+                    cb(mr.rows);
+                    return true;
+                }
             }
-            return false;
-        }// ends POST
+
+
         return false;
         }// end is url
         },
@@ -2241,6 +2334,15 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
         }
     
     }// end refImplementation
+    function getMeta(excel,dir,entity,key){// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // this fun get the excel or dir.asks[ask].cond   obj and get its dbmeta structure !!
+        let meta;
+    if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
+    if(dir&&dir.asks[key]&&dir.asks[key].cond[entity]&&(dbmeta=dir.asks[key].cond[entity].dbmeta));
+    else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;  
+    return meta;
+
+    }
 
     /*function MatchSt(){// std matcher status constructor 
         // most used :

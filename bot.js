@@ -132,8 +132,14 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 
 let db,// the def  old  db connection used by some onchange ( available to service obj as std db connection )
 jrest_,jrest;
+
+var mongoosify = require("mongoosify");// alternative to convert-json-schema-to-mongoose
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+
+//const createMongooseSchema = require('./node_modules/convert-json-schema-to-mongoose/lib/json-schema').default;// npm i convert-json-schema-to-mongoose
+// import createMongooseSchema from 'convert-json-schema-to-mongoose';
+// dont work so TODO :  npm uninstall --save 'convert-json-schema-to-mongoose'   , see https://stackoverflow.com/questions/13066532/how-to-uninstall-npm-modules-in-node-js
 if (process.env.DB_URI) {
 
     mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
@@ -228,10 +234,12 @@ controller.ready(() => {
                 // controller.usePlugin(fwCtl);
          
                 // extend services :
-                let dbeng=require('./nat/dbservice')(Schema,mongoose);
+                //let dbeng=require('./nat/dbservice')(Schema,mongoose,createMongooseSchema);
+                let dbeng=require('./nat/dbservice')(Schema,mongoose,mongoosify);
+                let gCal=require('./nat/gCal');
                  // dbeng.mongoose=mongoose;dbeng.Schema=Schema;// TODO put in module as internal var ?
                 service.addPluginExtension('dbs', dbeng);// connection db will be set by dbs endpoint 
-
+                service.addPluginExtension('gcal', gCal);// 
     }
 });
 

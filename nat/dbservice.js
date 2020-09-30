@@ -1,12 +1,31 @@
 
 
 let  mongoose,Schema,conns={};
+// example json-schema references, see https://www.npmjs.com/package/convert-json-schema-to-mongoose
+const refs =
+{
+    yep:
+    {
+        type: 'string',
+        pattern: '^\\d{3}$'
+    },
+    idSpec: {
+        type: 'object',
+        properties:
+        {
+            id:
+            {
+                $ref: 'yep'
+            }
+        }
+    }
+};
 module.exports=// copy of db part of  refImplementation 
 
 // todo : give ref that in fwHelpers were found in closure !! : db, rest ....
 
-function(sc,mon){
-Schema=sc;mongoose=mon;
+function(sc,mon,cmsh){
+Schema=sc;mongoose=mon;cMSchema=cmsh;
 
 
 return  {//  fw api to do call to its db and http service to have convo.vars dyn_models/param loaded  
@@ -1759,7 +1778,7 @@ let res={// called by  exsec  , will call resolve_
 restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interface TO complete in setSetvice , or a default matcher template
     // >>> meta should be in local service directory to  map entity to find local data description to query  . as here we do not have such a dir we ,for debug, pass that
     // meta : used to resolve db mapping resources :schemaurl
-    let {entity,term,wheres,meta}=form;// form={entity,term,wheres,meta}
+    let {entity,term,wheres,meta,whMmeta}=form;// form={entity,term,wheres,meta}
     // THAT internal REST Data Service  is EQUIVALENT to a external EXPRESS AUTOCOMPLETE CONTROLLER x AIAX BROWSER REST EXPRESS SERVER 
     // ITS a DATA SERVICE END POINT :WILL prepare the query for the local db engine to 
     // to find resources need to map entity into a managed db resource so need  meta , that for semplicity is passed by bot model in model  
@@ -1793,19 +1812,65 @@ restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interfa
 
     // one entity query 
    let  mod;
+   let mysc=cMSchema(refs,schema);
+   let sc=new Schema(mysc);
+   if(!conn.model[collect])//mod=conn.model(collect);// alredy present 
+   mod=conn.model(collect,mysc);
 
-   mod=conn.model(collect,new Schema(schema));
 
-   try{mod=conn.model(collect);}
-   catch(err){mod=conn.model(collect,new Schema(schema));}
+  // try{mod=conn.model(collect);}   catch(err){mod=conn.model(collect,new Schema(schema));}
  
 
+// remember the format needed by onChange_dynField :
+// say a rel excel model (mod_xx) has meta:{schema,dburl,db,collect}  
+// dbr must be == bd
+// -let  wheres={'mod_xx':'val_mod_xx'} ,  'val_mod_xx' is got  wheres=['mod_xx']
+// so set x join with mod_xx= :
+//      entSchema[>0]= {
+//          name:schemaname=excel[mod_xx].meta.collect  , mandatory         +  loaded the model using conn.model(excel[mod_xx].meta.collect,excel[mod_xx].meta.schema);
+//              n_m:1/2,prevId:3,prevVal:'rome',id,   optional
+//          val:wheres[mod_xx],                         mandatory 
+//              refCol}             mandatory ???????
 
-    let entSchema=[ {name:collect,n_m:0}];
+// so set x join with mod_xx :
+//      whereCond= [{name:tabname,val:value,prevVal:'rome'},,,]
+
+let whClause=[];
+let entSchema=[ {name:collect,n_m:0}];
+
+for(let wc in wheres) {
+
+    let itMeta;
+    if((itMeta=whMmeta[wc])){
+        // wc is a excel model/entity , a where of master entity entity 
+        // itMeta its schema obj added with rel:0,1,2     0 a where cond , 1 a 1:n join , 2 a n:m join 
+        //  {schema,dburl,db,collect,rel}=meta in excel =itMeta
+        if(itMeta.rel==0){
+            // a where cond 
+            if(wheres[wc]){
+                whClause.push({name:whMmeta[wc].collect,val:wheres[wc]});
+            }
+
+        }else if(itMeta.rel==1||itMeta.rel==2){
+            // a 1:n or n:m 
+            if(wheres[wc]){
+                entSchema.push({name:whMmeta[wc].collect,val:wheres[wc],rel:itMeta.rel});// + refCol ????????
+            }
+
+        }else ;
+
+
+    }
+
+}
+
+
+ let deb=true;
+ if(deb)whClause=null;
 
     let idspace=null;
     // await 
-    return  this.onChange_dynField(conn,entSchema,term,wheres,idspace,true) ;// a promise , Data Service engine processing,  a promise , better  .catch
+    return  this.onChange_dynField(conn,entSchema,term,whClause,idspace,true) ;// a promise , Data Service engine processing,  a promise , better  .catch
 
     // TODO implement .catch !!!!
 
