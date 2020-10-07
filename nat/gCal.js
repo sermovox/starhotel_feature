@@ -9,9 +9,10 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = 'token.json';// token x api scaricato dal server di autorizzarione che consente l'accesso 
-
+let rep=0;
 let apicaller;
-function got(ac){apicaller=ac;}
+function got(ac){
+  apicaller=ac;}
 
 module.exports={
 
@@ -33,11 +34,20 @@ module.exports={
 
 init:function(){// returns immediately
 
-
+// init just once :
+//if(apicaller)return;
+if(rep==1){return}
+rep++;
+// debug:
+//return;
 
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
+  if (err) 
+  {
+   console.log('Error loading client secret file:', err);
+  return;
+}
   // Authorize a client with credentials, then call the Google Calendar API.
   authorize(JSON.parse(content), got);// build the authclient , ask/chech x token , than cb : listEvents(authclient)
 });
@@ -60,7 +70,11 @@ function authorize(credentials, callback) {
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) return getAccessToken(oAuth2Client, callback);
+    if (err) 
+    {
+    getAccessToken(oAuth2Client, callback);
+    return;
+  }
     oAuth2Client.setCredentials(JSON.parse(token));
     callback(oAuth2Client);
   });
@@ -84,32 +98,53 @@ function getAccessToken(oAuth2Client, callback) {
     input: process.stdin,
     output: process.stdout,
   });
-  rl.question('Enter the code from that page here: ', (code) => {
-    rl.close();
+
+// da terminale si aspetta un codice che ottengo navigando su un url generato 
+// il codice viene inviato al auth server via il auth client obj e si ottiene in risposta :
+//  il token da usare per inviare le richieste di api dalla app al google account su cui la app e' registrata 
+// il token viene registrato per successive richieste in token_path
+io=function(code){// the AUTHORIZATION CODE  entered by terminal
+  //  rl.close();
+  console.error('code is ',code);
     oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('Error retrieving access token', err);
+      if (err){
+         console.error('Error retrieving access token', err);
+         return;
+      }
       oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
       fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
-        if (err) return console.error(err);
+        if (err){ 
+          
+           console.error(err);
+          return;}
         console.log('Token stored to', TOKEN_PATH);
       });
       callback(oAuth2Client);
     });
-  });
+  }
+
+//  rl.question('Enter the code from that page here: ',io);
+io('4/4wFYXA-qJ77YxnLzs0G8GNqrJOpByUdfs4SY9A_p2qcRYSVLzKiElaw');
 }
+
+
 },
 /**
  * Lists the next 10 events on the user's primary calendar.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
 
- listEvents:async function(cal2book){
+ listEvents:async function(form){
 let res_,rey_;
-    if(apicaller)
-    return   new Promise(function(res,rey){res_=res;rey_=rey;listEvents(apicaller)});
+    if(apicaller){
+      // extract qs 
+      let cal;
+      if(form&&(cal=form.calend));// the calendar account
+    return   new Promise(function(res,rey){res_=res;rey_=rey;listEvents_(apicaller)});
+    }
  
- function listEvents(auth) {
+ function listEvents_(auth) {
 
   const calendar = google.calendar({version: 'v3', auth});// a request obj to run
   calendar.events.list({
@@ -123,17 +158,21 @@ let res_,rey_;
         rey(err);
         return console.log('The API returned an error: ' + err);}
     const events = res.data.items;
+    let ev='';
     if (events.length) {
       console.log('Upcoming 10 events:');
+      
       events.map((event, i) => {
         const start = event.start.dateTime || event.start.date;
         console.log(`${start} - ${event.summary}`);
+        ev+=start+event.summary+', ';
       });
     } else {
       console.log('No upcoming events found.');
         
     }
-    res_(events);
+   // res_(events);
+   res_({reason:'runned',rows:ev})
   });
 }
 }}

@@ -54,6 +54,9 @@ console.log('*** instantiating Botkit CMS');
     controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too 
         uri: process.env.uri,
         token: process.env.token,
+
+        // can we have separate ds x appid dedicated at some userspace ? ? , and load a appid ds from a def ds user registartion ? 
+
     }));
 }
 
@@ -133,16 +136,18 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 let db,// the def  old  db connection used by some onchange ( available to service obj as std db connection )
 jrest_,jrest;
 
-var mongoosify = require("mongoosify");// alternative to convert-json-schema-to-mongoose
-const mongoose = require('mongoose');
+const mongoose = require('mongoose');// npm i mongoose , better before mongoosify
+var mongoosify = require("mongoosify");// alternative to convert-json-schema-to-mongoose, npm i mongoosify
+
 const Schema = mongoose.Schema;
+mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
 
 //const createMongooseSchema = require('./node_modules/convert-json-schema-to-mongoose/lib/json-schema').default;// npm i convert-json-schema-to-mongoose
 // import createMongooseSchema from 'convert-json-schema-to-mongoose';
 // dont work so TODO :  npm uninstall --save 'convert-json-schema-to-mongoose'   , see https://stackoverflow.com/questions/13066532/how-to-uninstall-npm-modules-in-node-js
 if (process.env.DB_URI) {
 
-    mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
+ 
 	var conn      = mongoose.createConnection(process.env.DB_URI);
 	// now use conn to call std methods that was using a tandard connection :
 	//   trip = mongoose.model('master',stdModel1);   >>>>   trip = conn.model('master',stdModel1);
@@ -161,6 +166,7 @@ jrest_=require('./nat/rest.js');jrest_.init(http);jrest=jrest_.jrest;
 
 // now db connection wont be used any more !
 vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
+let app=require('./nat/app.js');
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {
@@ -229,24 +235,26 @@ controller.ready(() => {
 
                 // in future do not use db and schema but the plugin dbs , ? where was used Schema ? 
                 // probabilmente da un onchange che si collegava a un db senza un service rest > gli serve lo schema per mappare il colection in cursor !
-                let service=require('./nat/fwbase.js')(controller,db,Schema,jrest);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+ 
+                // should cfg only the def dialogset ?: 
+                let service=require('./nat/fwbase.js')(controller,db,Schema,jrest,app);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
                                                                  // will propagate vct.db and vctl.rest on service and fwhelpers
                 // controller.usePlugin(fwCtl);
          
                 // extend services :
                 //let dbeng=require('./nat/dbservice')(Schema,mongoose,createMongooseSchema);
                 let dbeng=require('./nat/dbservice')(Schema,mongoose,mongoosify);
-                let gCal=require('./nat/gCal');
+                let gCal=require('./nat/gCal');// npm install googleapis@39 --save
                  // dbeng.mongoose=mongoose;dbeng.Schema=Schema;// TODO put in module as internal var ?
                 service.addPluginExtension('dbs', dbeng);// connection db will be set by dbs endpoint 
-                service.addPluginExtension('gcal', gCal);// 
+                service.addPluginExtension('gCal', gCal);// 
     }
 });
 
 /*
 todo 
 
-put directives restructuring :
+>put directives restructuring :
 
 let static directive in models 
 - copy in vars.excel + direc  to have them available in convo ,template and onchange ( writed on onchange or downloaded with cms)
@@ -257,6 +265,23 @@ let static directive in models
 - do fts https://docs.mongodb.com/manual/reference/operator/query/text/#match-operation-stemmed-words
 
 previous.collect.key > mkey
+
+
+> leave level asks in macro loaded in .dir   .dir.askes[x].cond.... > .dir.cond.....
+
+> in convo every function will test vars.asksmatches to apply fw code ( so must run aso in ask that is not registered in basefw)
+
+
+>  start_dynField,  query exec launched on dyn field   undefined
+dbservice.js:1705
+(node:19837) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+warning.js:18
+MongoDB db  emilia  connection error:
+events.js:116
+MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first connect [MongoNetworkTimeoutError: connection timed out]
+
+
+
 */
 
 

@@ -12,7 +12,10 @@
     "botbuilder-storage-mongodb": "^0.9.5",
     "botkit": "^4.0.1",
     "botkit-plugin-cms": "^1.0.0",
+    "convert-json-schema-to-mongoose": "^0.3.1",
     "dotenv": "^7.0.0",
-    "mongoose": "^5.10.5"
+    "googleapis": "^39.2.0",
+    "mongoose": "^5.10.5",
+    "mongoosify": "^1.0.0"
   }
 }

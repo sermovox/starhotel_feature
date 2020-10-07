@@ -225,7 +225,7 @@ let vfwF = {// framework functions module used in convo obj
         , rematch// the regex matched extraction (....)
         , reset// reset matches ???? never called !!!!!!!!!!!!!!!
         , param,// not nul if this is a resolver selection ask
-        storeVal// a integer or string to get from user 
+        storeVal// old a integer or string to get from user  .02102020 : changed see below news 
         , step, previous
         //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
         //              if we need a var that knows if the matcher used is std regex static model or a custom matcher use isStatic_
@@ -233,6 +233,53 @@ let vfwF = {// framework functions module used in convo obj
 
 
     ) {// register model/entity match, last turn match asked with $$ or $% result 
+
+
+        /* 02102020 semplificazione da fare : new rules  x settaggio di matches[entity].match:
+         storeval e isStatic_ probabilmente da buttare 
+         nuovo concetto base : 
+         - storemat e' il valore matchato da settare come match della entity , se nn e' entity .....
+          puo essere atomico o obj std format {value, patt,descr,data + bl}
+          puo avere .type e cosi gestisco casi particolari ( intent,query cursor)
+         principalmente settero matches[entity] cosi :
+            se string : matches[entity] ={match:storemat,  
+                                        vmatch:( from excel entity item storemat)
+                                        }
+                            in vars.excel[entity] si potranno trovare altre proprietà  della entity (obj) storati in excel !!
+
+                            se storeval= not null , tipicamente 'value'  vuol dire che e' un regex match  che becca la entity atomica come semplice string :
+                                        cioe l'item in static model viene risolto come valore atomico 
+                                            quindi l'item ha senso sia uno , e gli altre proprieta della entity ( essondo un solo item) sono senza significato
+                                            se il valore non e' atomico allora vuol dire che e' un entity di cui si conosce solo il nome e andra querato  a parte per trovare le proprietà 
+                                        >    fare come si faceva con storemat='value' ma si mette il valore atomico risolto in storemat e in ogni caso per sapere che e' entity con singolo
+                                                item risolto si mette in storeval il nome item singolo ( di solito value perche  o il nome della entita risolta e' entita !! )
+
+             3 casi :
+             - entity nomatch   
+                                        set .match=null
+            - from   std matcher 
+                        isStatic_ = true 
+
+                        entity item singola risolta   descritti in excel o inline 
+                                        storeval=nome singolo item ('value'), 
+                                        .match={match:storemat,vmatch:storemat,mid:0}, storemat risolto come regex group match 
+
+                        entity con piu item descritti in excel o inline 
+                                        storeval = null 
+                                         .match={match:storemat,vmatch:storemat,mid:index}
+                                         ma in excel[entity]['someblpropname'][mid] posso trovare  proprieta addizionali 
+
+
+
+            se obj :   matches[entity] =storemat ; storemat.match=storemat.vmatch=storemat.value;
+                                        in storemat.type potro trovare type per differenziare casi particolari
+            - isStatic_ e true se ho std matcher
+
+    */
+
+
+
+
 
         /* if condition with entity ( $$ or $% case )  we register  a model match ( entity instance  = itemname) :
               adding  {key:entity} to  values.askmatches.askname.match array (  values.askmatches.askname={match:[{},,,,],nomatch:[]} )
@@ -291,7 +338,7 @@ let vfwF = {// framework functions module used in convo obj
         let askmatches = step.values.askmatches;
 
 
-        console.log(' ** addMatcRes called to set matching result  ,mat: ', mat, ',entity: ', entity, ',storemat: ', storemat, ', routing: ', routing);
+        console.log(' ** addMatcRes called to set matching result  ,mat: ', mat, ',entity: ', entity, ',model item ,name(static) or obj, storemat: ', storemat, ', routing: ', routing);
 
 
         if (reset) {
@@ -361,115 +408,149 @@ let vfwF = {// framework functions module used in convo obj
             //      explaination 2: thinks to dyn_medicine ask : in this case we run a ask dyn, so we load rest models using rest in onchange , in this case we dont use string as result because ........
             //  probably non correct , perhaps is better to add that as  a param !!!
 
-            let rT;
-            if(typeof storemat === 'string' || step.result instanceof String) rT=0;
-            else if(storemat == 'Ent' )rT=1;
-            else if(storemat == 'Int' )rT=2;
-            else if(storemat == 'Cur' )rT=3;
 
 
-            let isStatic = typeof step.result === 'string';// otherwire is  a no static model (dynmodel)returned by a matcher function a dynmodel
-            if (!(typeof isStatic_ == 'undefined')) isStatic = isStatic_;// prefer the param if is set
 
-            console.log(' result should be a string :',isStatic&&rT==1);            
 
-            let isVal = isStatic && storeVal && storemat == 'value';// a static model whose values are the regex group match ( user gives a integer, a name of something), not the item name declared in excel
+            /// ???????????
+            let isStatic = typeof step.result === 'string';//  old , otherwise is  a no static model (dynmodel)returned by a matcher function a dynmodel
 
-            mv = step.values.matches[entity] = step.values.matches[entity] || {};
+
+                                                            // now false means non std matcher
+            //if (!(typeof isStatic_ == 'undefined')) 
+            isStatic = isStatic_;// now false means non std matcher
+
+  
+
+            // ??????????????????
+            // 01102020 : probably means that we do not have any model defined in excel . the 'entity is resolved by a regex matching group or some ai entity resolver 
+            //              in this case the matcher set storematch='value' ( means the item name is resoled by ai , i donnt have models staic in excel ) and the entity value ( item name) is  storeVal
+            //              so if the model is static in xcel storemat is the item name and the item content (value/name , descr, vname ... ) is got from excel model 
+            //                  if the entity is got from external ai / regex group  then storemat='value' and the object properties are in storeval :
+            //                      storeval : 'voiceitemname' ( vname)   if atomic  ex a date  user entered name of  person , a date ....
+            //                                  a obj in std format if from db/entityfts  ={value(the vname in static model),descr,patt,data+blfields } 
+            let isVal = isStatic && storeVal && storemat ;// a static model whose values are the regex group match ( user gives a integer, a name of something), not the item name declared in excel
+
+
+
+            let mv=step.values.matches[entity]={};// reset
+
+
+           // mv = step.values.matches[entity] = step.values.matches[entity] || {};
             if (mat) {// matches
-                if (isVal) {// the entity is a value ( item is the regex match value)
-                    mv.match = storeVal;// register under values.matches.entity=itemvalue
-                    mv.mid = 1;// dont use this, usable to see if is match is good (mid>0) 
+
+
+                let rT;
+                if (typeof storemat === 'string'
+                 // || step.result instanceof String
+                 ) rT = 0;
+                 // id object :
+                else if (storemat.type == 'Ent') rT = 1;
+                else if (storemat.type == 'Int') rT = 2;
+                else if (storemat.type == 'Cur') rT = 3;
+    
+                console.log(' result should be a string :', isStatic && rT == 1);
+
+
+              
+
+
+
+                if (isVal&&rT==0) {// the entity is a value ( item is the regex match value)
+                    mv.match = storemat;mv.mid=0;// register under values.matches.entity=itemvalue
+                    //mv.mid = 0;// dont use this, usable to see if is match is good (mid>0) 
+                    // use storeval x  ??
                 } else {// a finit dimension entity
-                    if (isStatic) {// should be rT=0
-                                             // get   the type of match :
-                                            // string : normal entity value
-                                            // obj  : 
-                                            //      can be a dyn model match 
-                                            //      a dyn master query will have storematch.type=query
-                                            //      a intent  will have storematch.type=intent
+                    if (rT==0) {// should be rT=0
+                        // get   the type of match :
+                        // string : normal entity value
 
-                                            // GET the result Type 
-                        mv.match = storemat;// register under mv=values.matches.entity={match:itemvalue=storemat,id:6}
-                        mv.mid = storeMId;
+
+                        // GET the result Type 
+                        mv.match =mv.vmatch = storemat;mv.mid=storeMId;
                     } else // a non static matcher will provide the match obj
-                    if(rT=1){// a std model selected/matched entity item row {value,descr,,,,,, + bl fields }
-                    mv =storemat;storemat.vmatch=storemat.match=storemat.value;// bl fields can be recovered by vars.matches[].someblfiled
-                    }else if(rT==2){// int
-                    mv.match=null;
-                     }else if(rT==3){// query cursor
-                    mv.match= null;
-                     }else mv.match= null;// do no set matchers
-                    }
+                        if (rT = 1) {// a std model selected/matched entity item row {value,descr,,,,,, + bl fields }
+                        let mvv= Object.assign(mv,storemat);
+                          mv.vmatch = mv.value;// bl fields can be recovered by vars.matches[].someblfiled
+                          mv.match = mv.value;
+                        } else if (rT == 2) {// int
+                          //  mv.match = null;
+                        } else if (rT == 3) {// query cursor
+                           
+                        } else  mv.vmatch = null;// do no set matchers
+                }
 
-            } else mv.match = null;// tested (step.values.matches[entity] exists  ) but not matched // so not matched is matches[entity]=null???
+            } else   mv.vmatch = null;// tested (step.values.matches[entity] exists  ) but not matched // so not matched is matches[entity]=null???
 
             // ?? if(isStatic){
-                if(isVal){// anyway
+            if (isVal) {// anyway
 
-            if (param && param.group) {// this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
-                // the model that matches the cursor has the same  name as this desiredE ask :
-                // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
-                //      so is not the name of a declared model in excel ! or in line condition : &&model:....
+                if (param && param.group) {// this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
+                    // the model that matches the cursor has the same  name as this desiredE ask :
+                    // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
+                    //      so is not the name of a declared model in excel ! or in line condition : &&model:....
 
-                /* remember what said in bot.js onchange :
-                the cursor can be passed to a resolver ask that will find a single match , so will complete the setting of :
-                
-                param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
-                param.match=blResNam;//=blResItem[1];//  name  ex 'caffe top'
-                param.vmatch=blResItem[12];// voice name 
-                */
-
-
-
-                // entity is the on running generated model by the condition resolver with same name as the ask !
-                //  step.values.matches[entity]={match: storemat};// alredy done 
-                // adds matched item copyng from desidere ask :
-                // param=step.values.askmatches[desiredE].param
-
-                // UPdate the desire query param ( so add a match and a sel)
-
-
-                param.group.sel = {
-                    item: param.cursor.rows[storeMId]
-                    //,index:blRes
-                };// index storeMId refears to cursor.rows index not to table/data index !! so take care ! 
+                    /* remember what said in bot.js onchange :
+                    the cursor can be passed to a resolver ask that will find a single match , so will complete the setting of :
+                    
+                    param.group.sel={item:mydata[blRes],index:blRes};// can be default if no selection done ( in this case mydyn.param.group.def is null)
+                    param.match=blResNam;//=blResItem[1];//  name  ex 'caffe top'
+                    param.vmatch=blResItem[12];// voice name 
+                    */
 
 
 
-                param.match = storemat;// ?? touch the desire ask result ?
-                param.vmatch = param.cursor.resModel[storemat].vname;// ?? touch the desire ask result ?
-                param.selmatched = entity;// a way to see in param  if the match is a single row cursor or a following selection match,
-                // entity=previous.collect.key 
+                    // entity is the on running generated model by the condition resolver with same name as the ask !
+                    //  step.values.matches[entity]={match: storemat};// alredy done 
+                    // adds matched item copyng from desidere ask :
+                    // param=step.values.askmatches[desiredE].param
 
-                // now the generated mode . should i add  param ??? on model or on ask ? both ? 
-                //step.values.matches[entity].vmatch=step.values.askmatches[desiredE].param.group.sel[12];
-                mv.vmatch = param.vmatch;// pass in param ??
-
-                // attach param to model ( AND to this normal ask ? )
-                mv.param = param;
-                askmatches[previous.collect.key].param = param;
+                    // UPdate the desire query param ( so add a match and a sel)
 
 
+                    param.group.sel = {
+                        item: param.cursor.rows[storeMId]
+                        //,index:blRes
+                    };// index storeMId refears to cursor.rows index not to table/data index !! so take care ! 
 
 
 
-            } else {
+                    param.match = storemat;// ?? touch the desire ask result ?
+                    param.vmatch = param.cursor.resModel[storemat].vname;// ?? touch the desire ask result ?
+                    param.selmatched = entity;// a way to see in param  if the match is a single row cursor or a following selection match,
+                    // entity=previous.collect.key 
 
-                if (isVal) {
-                    mv.vmatch = step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
-                } else {// recover voice name  if there is registered  in excel :
+                    // now the generated mode . should i add  param ??? on model or on ask ? both ? 
+                    //step.values.matches[entity].vmatch=step.values.askmatches[desiredE].param.group.sel[12];
+                    mv.vmatch = param.vmatch;// pass in param ??
 
-                    if (step.values.excel[entity] && step.values.excel[entity].vmatches) mv.vmatch = step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+                    // attach param to model ( AND to this normal ask ? )
+                    mv.param = param;
+                    askmatches[previous.collect.key].param = param;
+
+
+
+
+
+                } else {// no .param
+                    /*
+                    if (isVal) {
+                        mv.vmatch = step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+                    } else 
+                    */
+                    {// recover voice name  if there is registered  in excel :
+
+                        if (step.values.excel[entity] && step.values.excel[entity].vmatches)
+                            mv.vmatch = step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+                    }
+                    // leave previous matches if '§',nb cant be used in vuluetype model !!      <<<< TODO : CHECH it is true 
+
+                    // add a  data to store regex extraction  to ......... ????
+                    if (rematch && rematch[1]) mv.data = rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
                 }
-                // leave previous matches if '§',nb cant be used in vuluetype model !!      <<<< TODO : CHECH it is true 
-
-                // add a  data to store regex extraction  to ......... ????
-                if (rematch && rematch[1]) mv.data = rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
-            }
-            // } //ends if(isStatic)
-        }
-        }
+                // } //ends if(isStatic)
+            }// ends if isval
+        }// ends if entity 
 
 
 
@@ -585,7 +666,7 @@ let vfwF = {// framework functions module used in convo obj
 
 
 
-let fsmfactory = function (cfg_) {// a fsm initilized / a rest server access point 
+let fsmfactory = function (cfg_) {// a default/TEMPLATE app ctl fsm initilized / a rest server access point 
     let cfg = cfg_;
     let botstatus = { processing: 0, log: [] };
     return {// application
@@ -678,22 +759,30 @@ WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
 */
 
  //convostatus=application.post('tourstart',convostatus,app_session,request);// request is a qs : ?ask=pippo&colore=giallo
- function wrapgen(session,convovars){// 
+ function wrapgen(session,convovars,app){// a relay to register ctl as listener of some events (form postback) 
+                                    // the ctl triggered can be in some session var of the browser ( the url downloaded) so can do a post back
+                                    // or we consider a big page that take session status on where the browser is and   wherethe browser want to go ( post througth to a actionurl)
+                                    // anyway the wrap will search some registered controller that can serv a post on action actionurl/postback + form data 
+                                    // that application will also manage page navigation ( the dialog set managed by cms) as a spa or using a express server
 
-    //function with no state vars like EXTRESS CONTROLLER !!!!
+
+                                    //function with no state vars like EXTRESS CONTROLLER !!!!
     //let app_session=session;convovars=convovars;// closure var
+    let app_;
+    if(app)app_=app;else app_=application;
+    if (app_)
     return {// that obj can be got inside a onchange ( do not has onchange in scope  ( is added on model ask directive , can come from cms !))
             // with vars.app
     service,
     fwCb,
-    post:function(actionurl,req){
-        application.post(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
+    post:function(actionurl,req){// pass session in closure !
+        app_.post(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
     },
     post_aiax_fw_chain:function(actionurl,req){
-       application.post_aiax_fw_chain(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
+        app_.post_aiax_fw_chain(actionurl,convovars,session,req);// session and convovars cant change when i stay in the same convo
    },
     begin_def:function(cmd,req){
-       application.begin_def(cmd,req);// session and convovars cant change when i stay in the same convo
+        app_.begin_def(cmd,req);// session and convovars cant change when i stay in the same convo
    }
     //session:app_session
     //,session //// warning session must not be reset ! so i would loose the new ref 
@@ -701,25 +790,58 @@ WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
 };
 //let convovars=values;
 // one or the other
-async function getappWrap(bot,convo){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
-    /* *********************    22052020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
+async function getappWrap(bot,convo,app){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
+
+    /* *********************    01102020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
+
+
+    premessa in a express app the ctl mantains its status in session vars condivise anche conil browser ( pensa a una spa )
+    - ma qui il livello browser e' fatto da convo che non ha proprio stato perche' lavora per tutti gli user, quindi anche lui ha uno status delle view che qui si chiama status
+     e che viene passato al onStep , quindi anche lo step ctl usa i servizi di status : controller inversion , better :controller-browser simmetry !!!
+     - a cio si aggiunge uno status di interconvo che sarebbe lo status del dialog set : lo stack 
+     >> il nostro problema e' connettere il dialog stack , ds, con il controller  che viene suddiviso in una parte nel convo ( la parte spa detta appwrap) 
+         che ha un livello superiore ( la pagina o il ds)  nel server esterno express
+
+
      nb the convo has access to vCtl   via vCtl=controller.plugins.vCtl
+
         the vCtl.application will be called using a session and vars wrapper (vars=values=convo.step.state.values).appWrap singlethon set at onbefore()
-    user entering in a new cmd will start a dialogstack status : all status of all cmd  (thread) called by first starting cmd
+   
+        user entering in a new cmd will recover a dialogstack status : all status of all cmd  (thread) called by first starting cmd
 
         let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
          userDstate={session,
                       dialogStack:[{convoid,convostate}// convostate > step.state
                           ,,,]
                     }
-    each cmd has its conversation=convo instance 
-    before active convo is called (check : dc.beginDialog?)will recover its status (convostate) from dialogStack ( the top of stack) 
-        so convo can start a step pass a convenient state obj: step
+
+    each cmd ( think a page of a browser spa app ) has its conversation=convo instance ( a convo controller), like any express controller 
+        after got the new user turn speech , before active convo is called (check : by dc.beginDialog?) its status is recovered  (convostate) from dialogStack ( the top of stack) 
+        so convo can start a step passsing a the state obj: 
             onStep(,step)
                 on which  can find convostate=step.state
 
-    someone ( can be dc.beginDialog ) must check if session singlethon  exists , init it and attach it in some step referencies
-        we do it in onbefore()  ( called from onStep()) that is easier because is a userstaff :
+                state obj is recovered by the status manager(dialogstate ) and will contain :
+                        - dialog status ( the status of the view/data gathering and command navigation level ) ,called the browsing level ) , so the dialogstack and ,at step level , its   the step.values=vars, and 
+                        - app status , the session , 
+
+
+    - ora quando lo user parla , onstep gestische l'equivalente dei browser  onclick abilitati  cercando di capire quale onclick e' stato firato ( il matcjhh dei ask condition )
+                    una volta trovato il onclick ( il condition matchato) , ovvero una volta che il onChange trova un match o lo predispone per i seguenti condition 
+                                                                            ovvero una volta che il match avviene si gestisce in match nel onChange successivo 
+                    >>> devo agganciare il listener che immaginiamo essere un spa ctl equivalente di un classico ( level app ) express controller 
+                        cioe il on click va a sparare il ctl registato a se stesso il che avviene con un onchange : appWrap.post( form data) 
+                            il appwrap estrae il ask e va a vedere se c'e' un listener ( detto controller , in genere di pagina che discrimina il thread e il step)
+                            abilitato/registrato che possa gestire il potenziale match 
+                            il listener in genere lavora sul session e decide se sparare un post a livello pagina al external express o gestire autonomamente la transazione
+                            - il appwrap portera il session al controller registrato . il appwrap sara ospitato in session itself !
+
+
+
+    /* *********************   previous comment  22052020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
+
+    someone ( can be also  dc.beginDialog ) must check if session singlethon  exists , init it and attach it in some step referencies
+        we do it in basefw...onbefore()  ( called from onStep()) that is easier because is a userstaff :
             - once got userDstate we check the singleton session then attach it 
                 - somewhere in onStep ,:
                     session=step.status.values.session (or step.values) //
@@ -788,7 +910,11 @@ nb
 
     // or directly
     // somewere before :
-    let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
+    let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// get status, AWE
+                                                                                            //  init if void ??
+                                                                                            // (nb dialog state (dialogState) was get/init already in   Dialogset.createContext:
+                                                                                            //       state = await this.dialogState.get(context, { dialogStack: [] });
+                                                                                            //  and put in dc.stack = state.dialogStack;
 
         if(userDstate.error);// error
         if(userDstate.session);//error 
@@ -798,7 +924,12 @@ nb
  // changing 052020 .  
   //  state.appstatus={appSt:'ok',dyn_match:{}};// status a livello app . per status tipo qs di newpage after a form usare  mydyn=askmatches['dyn_rest']
  
-  values.session=userDstate.session=userDstate.session||{};
+  values.session=userDstate.session=userDstate.session||{};;// ADD SESSION TO dialogState state, see AWE , init if void 
+
+// better, the same as  : 
+// let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true,session:{} });// must be found
+
+
  //here a onchange can call : 
  
 //  let convostatus=convo.vars,request={path:'cultura'};// >>>>>>>>>>>>>>>>>>>   put all fw staff under vars.frameW   !!!!  ex  vars.matches  > vars.frameW.matches
@@ -808,22 +939,22 @@ nb
 // put after : values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
 //values.app=new WrapApp(values.session,values);
 
- console.log( 'getappWrap, onchange/before recovered state , app wrapper (state.app) = ',values.app,'\n app session ',values.session);  
+ console.log( ' session recoverd from dialogState accessor ',values.session,' \n And app wrapper getappWrap registerd state.app) = ',values.app),' \n nb appwrapper will call app method passing session';  
     }
 
     // do in fwbase caller :
     // if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
-    return wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
+    return wrapgen(values.session,values,app);// session... and (values=vars).app application wrapper  appWrap
 }
 
 
 
-function init(db_,rest_,appcfg,session){
+function init(db_,rest_,appcfg,session){// appCfg :  init default application ctl
 
 // can we build fwAskOnChange automatically from models.js ???
 
     db=db_;    rest=rest_;// they will be propagated into service and fwHelper via fwbase
-    application=fsmfactory(appcfg);// init application
+    application=fsmfactory(appcfg);// init default application ctl
     // service and fwCb will be added later soon !!!!
     // they can be said injected in sense that they are instantiated outside the fw by user configuration code and registered on fw 
     //  ( that in service obj , that is the same as startup in .net, , or using some registration call to (service.js).register(servicename,func), 

@@ -7,6 +7,7 @@ fwOnC;// injected on the init of this module , require('./onChange.js'),//fw onC
 
 let db,rest,Schema;
 let controller;
+let app;
 console.log('\n starting FW initCmd ,dynJs:  ',dynJs);
 
 
@@ -80,6 +81,8 @@ let fwHelp=require('./fwHelpers')(fwHelpers,fwCb,db,rest,dynJs);// extend fwHelp
 service=require('./service').init(fwHelp,fwCb,dynJs);//extend fwHelp (using fwHelp and fwOnC) with other  user fw functions 
                                                     // db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
 // service={db,rest+refImplementation properties + service provided properties}
+
+// Load SERVICES in VCTL : 
 fwOnC.injService(service,fwCb);// now pass also in vCtl(=fwOnC) the services available for run time in case we add user onchange in onChange.js obj 
                                 // >>> but if the onchange comes from cms the services will be available with following initCmd !!!!
 
@@ -127,6 +130,27 @@ initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_res
 initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'televita_voice'
 initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'star hotel
 initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars.excell and vars.direc
+
+
+// autoregistration of OnCh_Register
+
+for (x in dynJs) {
+    let asks=[];
+    if(x.autoReg){// automatic registration of all onchange 
+
+        if(x=='manualreg'){// do here manual registration 
+
+            // initCmd(x,{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);
+        }else{
+        for (y in dynJ[x].direc) {
+            if(x.autoReg)// automatic registration of all onchange 
+            asks.push(y);
+          } 
+          initCmd(x,null,asks);
+        }
+    }
+  } 
+
 
 return service;
 };// end register bank (dynJs)
@@ -293,16 +317,78 @@ oo
            let values=convo.step.values,session=values.session,appWrap;
 
            // getappWrap(bot,convo) sets : appWrap=={aiax:function(actionurl,req),session,begin_def:function serverservice()}
-         // example usrAppSt={meds:[11,22,33],cur:'rossi'} , current user got from previous  botframework loging service call : TODO
+         // example usrAppSt={meds:[11,22,33],cur:'rossi'} , current user 'rossi' should be got from previous  botframework loging service call : TODO
 
             // ****  if we comes from a convo that passed a already set of vars continue with some , other specific x this convo will be replaced
             //      but function like controller appWrap=values.app  must injected at every convo start !!!
             // if(!values.app)// we could put app in context then wrap it with values.session here ? seems no better way 
 
-            // in start a child app is recovered from status but not the funcions , so them must be recovered by getappWrap 
-            values.app=await fwOnC.getappWrap(bot,convo);// ****  SESSION and app RECOVER : // will recover user session status and application service , check  appWrap in vars.app ....
-                                            // getappWrap(bot,convo) sets : appWrap=fwOnC..appWrap ; vars={channel,user,....}
+
+            // SESSION / APP MNG 
+            // > when cmd starts on def thread is like a page download so after some data gathering the user fire a onclick/onChange
+            //      THAT ONCHANGE CAN  
+            //      - DO AIAX/REST 
+            //      - POST BACK to the post host ctl that gave the page  waiting on the page end point to manage the user session data and the postback forms data 
+            //          the page can be tied to the cmd/thread so the user in onchange do a post with a form , thaen the post is received by
+            //          a relay that forward the post to a cmd ctl that can also add a level  searching for a ctl available for the sending thread 
+            // in start a child app is recovered from status but not the functions , so them must be recovered by getappWrap 
+            //          that ctl can also be thought as a on click available for the firing cmd/thread in a spa that can also fire 
+            //          a level up post to a external page controller waithing apostback on yhe page/cmd ctl
+            //          that external clt ( reached with a POST rest call ) can get the usersession , do the action available for the page post ctl
+            //          then rsetting the dialog set (as a page download) then prompt the user to start the dialog set triggering the first cmd on the dialog set 
+
+
+
+
+            // IF app is given by bot.js , better register session and app here or in onChange fwOnC ??
+
+            // IN THIS POSIION we suppose to KNOW what is the controller to manage the user request ( equivalent to express routing of controller from url of http request)
+            // usually the user start convo , then when trigger an application action to do , we start a app dialog/convo and this will route// attach the app 
+            // to manage the user application needs , so in a onClick ( a condition/onChange) i can run a app routine to manage the user transaction calling a closure function :
+            //      $$$$ - fire :vars.session.app.post(action,FORM)  so chiamiamo il listener come richiedo qualcosa al web server mandando un post alla pagina servente o a una altra pagina
+            //                                              che chiamera' la routing servente anche guardando gli altri param del FORM ( in effetti il action puo stare nel form stesso !)
+            //           - and set a vars.x with the cb as usual
+            // that association can be done in the custom field attaching a app that someone will add in service ( when we download the cms staff) like 
+            //          $$$$ vars.session.setApp='aservicefunction'
+            // OR here looking for some app registered on this cmd myscript_ in  bot.js  , 
+            // so to set the 'express' handler that will receve all appwrap.x request from any matched condition/onchange ( like onClick in a android/browser app)
+            //   x usually is 'post' but we can add some upper level (.begin_def)to manage the routing 
+                let trigApp,appcfg;
+
+             const dc=convo.dc;
+
+             let script=convo.script;// see conversation runBefore 
+
+
+            // ********     so never extend again in this Multidialog Status Chain ******
+
+            let injected=convo.vars.convoCont= convo.vars.convoCont||{};
+            if(!injected[myscript_]){
+
+                if(directive.excel)appcfg=directive.excel.appinit;
+
+                // check if this cmd is triggering a action/appctl (post) endpoint : the ctl/app will be routed for .x expecially .post request !
+
+                if(app){if((trigApp=app(null,rest,appcfg,null,myscript_) ));else trigApp=app(null,rest,appcfg,null,'def');}
+                if(trigApp){
+                    // also :
+                    // - set a filter on the dialog the cms can trigger (set the incontext )
+                    // OR , better, 
+                    // - CCDD : JUST manage the triggering of (all dialog related to) a app in a 'controller  dialog' ( level 0)
+                    //      so when triggered cmd ' order' we attach order app and launch the order controller entry dialog cmd='order' (level 1) that will promt used for a action on order app
+                    //       so we can do some order action and when finished we :
+                    //          - do not COMPLETE the dialog : because we let the base cmd triggering only to controller dialog  only 
+                    //          - but goto the order cmd that will trigger other action using condition match
+                    //      only when the user leave the order app we count the cms triggering the next app controller dialog 
+                
+            values.app=await fwOnC.getappWrap(bot,convo,trigApp);// ****  SESSION and app RECOVER : // will put in convo.vars  user session status and register a serving app , check  appWrap in vars.app ....
+                                                        // so attach in session.appWrap a relay where register in  a app that can manage events fired (appWrap.post() by  ( onchange/onclick/askconditions) fired by the view level 
+                                                        // 
+            // getappWrap(bot,convo) sets : appWrap=fwOnC..appWrap ; vars={channel,user,....}
+            app.service=service; // needed ? 
             appWrap=values.app;
+                }
+
            // appWrap=values.app,session=values.session; // now do here for clarity  :
 
            /* infact appwrap just :
@@ -318,12 +404,19 @@ oo
            // user example usrAppSt={meds:[11,22,33],cur=user:'rossi'}
 
 
+            // FOLLOWING we explore a different approach ( just studing ) 
+            //  - have a express endpoint .begin_def that prepare a routing ctl that can be served using a .post endpoint 
+            // supponiamo non ancora aver fissato il routed ctl per questo cmd , ma preferire di comunicare con i ctl non selezionandolo e poi avere connessione diretta 
+            //  ma sempre attraverso  la supervisione del router ( il express end point ) ,
+            //  quindi  vogliamo avvertire il serverexpress che lo user is in current cmd that could ask some request to the cmd controller to invoche later
+            //      > so the serve will init the cmd controller that will be ready to recive a following request from the bot
+            //  inform server endpoint a major comand is requesting ( so call .begin_def  a request to express service to use a routing ctl)
+            appWrap.begin_def(myscript_,usrAppSt);// inform app server we start a new convo so prepare/continue serving and the new context is usrAppSt  
+                                                // also can WARN FW code that user is using a app ctl , so dialogs/cmds are serving a bl specific app
+                                                // for example set in/out context can be set in 'controller  dialog' (see CCDD) to chain next triggered dialog ( a )
 
-            // inform server endpoint a major comand is requesting 
-            appWrap.begin_def(myscript_,usrAppSt);// inform app server we start a new convo so continue serving 
-
-
-             // get user status from db query 
+             // get user status from db query , so now request the 'register' action ( like a onclick listener ) on the previously declared myscript ctl ( so call .post to request some to the myscript_ ctl )
+             //     >> 
              appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}to goon this convo
 
              console.log('+++++++++++++ ùùùùùùùùùù convo begin : init fw vars for  cmd   ',myscript_);
@@ -335,9 +428,6 @@ oo
              //convo.step.mustacheF=// review template generator in convo the delete this !!!!!!!!!!!!!!!!!!!!!!!!!!!!
              // alredy done fwOnC.mustacheF=mustacheF;
 
-             const dc=convo.dc;
-
-             let script=convo.script;// see conversation runBefore 
 
             //  convo.setVar('app',appWrap);// transfer to fw convo works but  not x function obj ?
             
@@ -349,7 +439,7 @@ oo
 
             // >>>  fw function injection : functions that must be available in UserOnChange (cmd.direc[mkey].onchange() ) and not depend on user (session), (user) cmd, (user) turn 
             //  , now we  put the services in onChange.js (onChange.service)  , so :
-            //      (so  onchange can come also   from cms onchange in json) :
+            //      (so  onchange can come also dowloaded  from cms onchange in json) :
             //   - setting a convenient this context on cmd.direc[mkey]  :
             //          this={
             //          direc definition, 
@@ -362,14 +452,22 @@ oo
 
 
 
+            // extension : probably needed because of the child extends its vars from the father status, so the father vars are available in the child
+            // SO A beginDialog set its var extending the var of the father , and now her where we add excel and direc must extend current excel and direc 
+            //      and not overwrite them ! 
+            //  but as a thread can called more times we should check if the addition is alredy done ( a cmd add once excel and direc , not more  )
+            //  so set a counter vars.convoCont !!
 
             ////////////////////   DO NOT INSERT TWO TIMES in A CONVO a proper structures addding structures  so no excel on the same excel   wheres ,,,,, 
             // the case is call 2 times def thread so begin run twice !!!!!!!!
 
-            // ********     so never extend again in this Multidialog Status Chain ******
+            /* ********     so never extend again in this Multidialog Status Chain ******
 
             let injected=convo.vars.convoCont= convo.vars.convoCont||{};
             if(!injected[myscript_]){
+                */
+
+
                 let exten=convo.vars.excel||{};
             // convo.setVar('excel',directive.excel);// // ovewrite previous convo excel  data , corrected to be as was before
             convo.vars.excel=Object.assign(exten,directive.excel);// extend present excel with current convo excel, avoid duplicate name !!!
@@ -412,18 +510,29 @@ oo
 
              if(!convo.vars.askmatches)
              convo.setVar('askmatches',{});// other : key matches ex :values.askmatches.akey={match=[{key:0},,,]}, see conversation.addMatcRes()
+
+            // >>>>>> Chains user registered before for default thread cb :
+            // SERVICE INJECTION  in directive.thread['default'] User BEFORE CONTROLLER  ( directive=dynJs[cmd])
+
+            if(directive.thread&&directive.thread['default']){
+                let onChThis=Object.assign({},{cmdModels:dynJs[cmd]},directive.thread['default'],{service},{fwCb});// clone directive.thread['default'] + add extension contexts 
+                if(directive.thread['default'].before_text)onChThis.before=buildF('default',directive.thread['default'].before_text);// text from cms,  build from text with eval
+                if(fwOnC&&fwOnC.before&&fwOnC.before[cmd]&&fwOnC.before[cmd]['default'])onChThis.before=fwOnC.before[cmd]['default'];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
+            }
+
             
             });// end before()
+
+
+             // >>>>>> ADDS user registered before for other thread cb :
+            // SERVICE INJECTION  in directive.thread['default'] User BEFORE CONTROLLER  ( directive=dynJs[cmd])
+            //   .............................
 
             // >>>>>  SET Directive convo event(tyed to begin after th or step/ask example dynmatchers in ask condition loop  ) service/handler
             // add a directive fw cb bank, so put here 
 
-
-
-
-
-            // >>>>>  SET botkit convo onchange service/handler
-           if(monchange)monchange.forEach(function(mkey){
+            // >>>>>  SET botkit convo FW ONCHANGE ASK service/handler/controller
+           if(monchange)monchange.forEach(function(mkey){// for each ONCHANGE
 
             // set botkit convo onchange service/handler , can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
             // dynJs[myscript_].direc[mkey].onChange_text OR a text from cms trigger in json
@@ -441,6 +550,7 @@ oo
             // + service and fwCb functions
             // + onChange =(fwOnC=onChange.js...).onChange[model][mkey] user provided onchange
 
+            // SERVICE INJECTION  in directive.direc[mkey] User ASK CONTROLLER
             //let onChThis1=Object.assign(directive.direc[mkey],service,fwCb);// service injection in directive.direc[mkey] user controller
             let onChThis=Object.assign({},{cmdModels:directive},directive.direc[mkey],{service},{fwCb});// service injection in directive.direc[mkey] user controller
             //if(directive.direc[mkey].onChange_text)fwOnC.buildF(mkey,directive.direc[mkey].onChange_text);// text from cms,  build from text with eval
@@ -453,6 +563,7 @@ oo
 
             // register also the schema on connection :
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
+
                 // do not use db , debug only  :
                 db.model(onChThis.schemaurl,new Schema(onChThis.schema)); // register also the schema on std connection   : OLD just to debug never use it 
             }
@@ -549,6 +660,8 @@ oo
         
                     }
 
+            // REGISTER FW ASK CTL 
+
              controller.plugins.cms.onChange(myscript_, mkey,
                 /* was :
                 async function(bot,convo,res){
@@ -567,11 +680,9 @@ oo
                    //myClosure3 // or
                     myClosure4
 
-
-
-
                  );// can i bind with its obj ?
-                     });
+
+            });// end // for each ONCHANGE
 
                      console.log( 'FW initCmd ended onchange set on  cmd ',myscript_,' ask ',monchange);
 }
@@ -609,7 +720,7 @@ let p=directive.excel;
     }
 
 }
-function buildF(ask,ftext){
+function buildF(ask_th,ftext){
 
 
     // use ftext and get a function using :
@@ -623,12 +734,13 @@ function buildF(ask,ftext){
 }// insert db and rest services
 
 // register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-module.exports =function (cnt,db_,schema,rest_){
+module.exports =function (cnt,db_,schema,rest_,app_){
     controller=cnt;
     fwOnC=controller.plugins.vCtl;// is vCtl
     db=db_;
     rest=rest_;
     Schema=schema;
+    app=app_;   
     if(controller.plugins.cms)return init();// return service pluginable 
 
 

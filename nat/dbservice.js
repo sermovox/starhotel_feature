@@ -1,6 +1,6 @@
 
 
-let  mongoose,Schema,conns={};
+let  mongoose,Schema,conns={},cMSchema;
 // example json-schema references, see https://www.npmjs.com/package/convert-json-schema-to-mongoose
 const refs =
 {
@@ -456,7 +456,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
 
             // TODO: exclude if previous query was done on same val (curVal=val)so we take good the previous  idspace 
 
-
+            console.log(' REST FTS join db internal Service,doMatch(matc, isJoin, i)  fired on: ',matc.name,' current matching value: ',matc.val,'is join  :',isJoin,' id : ',matc.id); 
 
             if (!isJoin) {//is not Join so matc is  wheres[i]
                 // fills wm: the  master entity (entSchema[0]) where map 
@@ -602,11 +602,11 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
         var prefill = true;
 
         //if(paramList)
-        // MAIN code STARTS HERE
-            
-            
-            
-            
+
+            // ***********  MAIN code STARTS HERE
+                
+                
+            console.log('\n REST FTS join db internal Service for master entity: ',entSchema[0].name,' matching text: ',text_,'\n  entSchema :',entSchema,'  wheres: ',wheres);            
     /*
             082020
      doJoinWhere=false : none of joins and wheres changed from previous values , 
@@ -621,7 +621,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                         // will be used when we must decide to use previous partial matched set when 
                         //   after decided we need to relaunch the query because the last query was launche without all where / join relation extracted from the prrevious user speech turn,
                         //   relaunch the query with a new matching info
-    mJoinText;// policy ( match join entity with text too, dont expect to be alredy matched in previous turn text (before this turn text)
+    mJoinText=true;// policy ( match join entity with text too, dont expect to be alredy matched in previous turn text (before this turn text)
 
          
             
@@ -728,12 +728,11 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                                                     > the join reference :
                                                             'città':'$j_1_m',,,,,
             */
-
-
+     
             if(!(entSchema&&entSchema[0]&&entSchema[0].name&&entSchema[0].n_m==0))return ;
 
         var myschemaname1 =  entSchema[0].name;// >>>>>>>>  the master dyn field SCHEMA  name 
-
+        console.log(' REST FTS join db internal Service : master runquery fired on',myschemaname1,' matching text: ',text,'\n    join n1 entSchema :',entSchema[1],'\n    join n2 entSchema :',entSchema[2],'\n  wheres clause: ',wm_); 
         // difference with start_dynFields :
         // - that was thought as a cb in user skill that find in the cb param the ifo needed to do the rest 
         //      that info was  put in the vui config by himself and recovered  accordingly 
@@ -984,7 +983,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
 
                 if (!mymodel) { console.log('start_dynField ERROR , recover a null schema for name ', myschemaname1); return; }// process error ......
                 // following mymodel is not null 
-
+                else  console.log('start_dynField  , recover a model schema  for schema ', myschemaname1, 'model : ',mymodel);
 
 
 
@@ -1048,8 +1047,8 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                 */
 
                 let  query;inter='gui';full=false;
-                setSearc_resCol(query,text,regex,value,inter,full); // set query  search  term on column patt and set the output result cols 
-
+                query=setSearc_resCol(text,regex,value,inter,full); // set query  search  term on column patt and set the output result cols . (term,regex_,value,inter,full){  
+                if(!query)console.err('db service query ws not set ');
 
 
 
@@ -1062,8 +1061,10 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                 */
                 // alredy done ?
                 if(!full)
+
                 
-                 if(wm&&wm.length>0)query.where(wm_)   ;// ok ?
+                 if(wm_&&wm_.length>0)query.where(wm_)   ;// ok ?
+                 console.log('  QUERYSETTING   setting whereclouse .where : ',wm_);
 
                 /*  ??????
                 let bl=false;//join values
@@ -1152,6 +1153,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
         // lidset=idspace;// future use 
         // future use 
         if (lidset) query.where('_in').in(lidset);// IN clause
+        console.log('  QUERYSETTING   setting .in clause  : ',lindset);
         exec(query);// full table query with no where/join  clause
 
     }else{
@@ -1161,7 +1163,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
 
 
 
-                if(entSchema.length >0){// some joins requested (entSchema.length >0 ) 
+                if(entSchema.length >1){// some joins requested (entSchema.length >0 ) 
                 // NOW ADD Join CONDITION !! 
                 // old : , here where0 ='milano' : Insert  the join clause in query  for both guiautocomplete  and vui 
                     b5();
@@ -1175,8 +1177,8 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
     }
         
             function setSearc_resCol(term,regex_,value,inter,full){  // INTER WILL SET THE COLUMS OF RESULT CURSOR 
-                // 082020 set query  search  :
-                // - RUN term/regex on column patt and set the output result cols 
+                // 082020 set query  search  regex to match term on pattern field :
+                // - RUN term/regex on column patt and set the output result cols // why  do not return query????? so doit 
                 // or 
                 // - MATCH value field 
 
@@ -1189,7 +1191,7 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                                                     //'città':'$j_1_m',
                                                     'data':'$data'
                 */
-
+                let query;
 
                 // 072020  inter WILL SET the output data consider  only :
                 // bl case : all field
@@ -1214,7 +1216,8 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                 
 
                 // praticamente value not considered , goon to regex on term
-                if(term){regex= new RegExp(term, 'i');value=null;}
+                if(term){
+                    regex= new RegExp(term, 'i');value=null;}
                 else{   if(regex_){regex=regex_;value=null;}
 
                     }
@@ -1244,9 +1247,11 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                     console.log('B4A gui : setting query ' );
                     // >>> a aiax resolving starting keywords ( term) + join relation 
                     // now set the find {}: search the patt starting letter : use regex !
-                    if(term){findClouse.patt=regex;// {'_id':0, 'patt': 1,'descr':1 } result fields are patt + descr , _id must forced to be excluded !
+                    //if(term){findClouse.patt=regex;// {'_id':0, 'patt': 1,'descr':1 } result fields are patt + descr , _id must forced to be excluded !
+                    if(term){findClouse.patt={$regex:term,$options:"$i"};// {'_id':0, 'patt': 1,'descr':1 } result fields are patt + descr , _id must forced to be excluded !
+
                     }else;
-                    selClouse={'_id':0,'patt': 1,'descr':1 };// result fields are patt + descr , _id must forced to be excluded !
+                    selClouse={'_id':0,'patt': 1,'descr':1,'value':1};// result fields are patt + descr , _id must forced to be excluded !
                 }else if(inter=='deb'){// ???
                     console.log('B4A deb : setting query ' );
                     
@@ -1317,15 +1322,17 @@ async function dodyn(qs){// dyn field matcher : relay to a db or rest service
                     query = mymodel.aggregate(aggrClause, function (err, recs) {
                                                          if (err) {  console.log('err ',err);} else 	{    console.log('recs ',recs);}
                                                          });
+                    console.log('  QUERYSETTING   setting aggregate aggClause : ',aggrClause);
                 }else{
                     // SSD
                     query = mymodel.find(findClouse,selClouse);
+                    console.log('  QUERYSETTING   setting findClouse,selClouse : ',findClouse,' selClouse ',selClouse,' \n on model : ',mymodel);
                     if(distClause) query.distinct('_id');
                     if(sort) query.sort({score:{$meta:"textScore"}}) ;// fts 
                 }
 
-
-            }// end setSearc_resCol
+               return query;//queryA.push(query);// return query
+}// end setSearc_resCol
 
 function b5()
 {  
@@ -1358,14 +1365,17 @@ function b5()
                         if(entSchema[p].n_m==1){
                             // 1:n relation 
                         query.where(entSchema[p].refJ).equals(entSchema[p].id);
-                        console.log('setting the join ',entSchema[p].name,'  clause value : ', entSchema[p].val, ' id was ', entSchema[p].id);
+                        console.log(' ***  REST FTS join db internal Service for master entity:  JOIN ON MASTER : setting the join (1:n) condition  x join entity ',entSchema[p].name,' \n  master col ',refJ,
+                        ' master col shoud match the join entity id ', entSchema[p].id,' , so  value : ', entSchema[p].val);
                         }else if(entSchema[p].n_m==2){// n:m relation 
 
                             // TODO 
 
                             // to do  probably try to see if the id is in the column val that is a set/array : is id in [firstrelid,secondrelid,,,,] ? 
 
-
+                            console.err(' ***  REST FTS join db internal Service for master entity:  JOIN ON MASTER : setting the join (n:m) condition  x join entity ',entSchema[p].name,'  master col ',refJ,
+                            ' \n >>>>>>>>>>>>>>< STILL TO BE IMPLEMENTED !!!!!!!!!!!!!!!!!!!!!!!!');
+    
 
 
 
@@ -1550,7 +1560,9 @@ function exec(query){
     query//.limit(20)// debug . seems limit  cant be used with distinct ???????
     .exec(
     function(err, resta){
-    if (!err) {console.log('1.1.1.1  B9 query returned results : ',resta);//users.length);
+    if (!err) {
+        let nres=0;if(resta)nres=resta.length;
+        console.log('1.1.1.1  B9 query returned ',nres,' results : ',resta);//users.length);
         console.log('  B9a resta[0] is ',resta[0]);
                  // Method to construct the json result set
 
@@ -1687,6 +1699,7 @@ let res={// called by  exsec  , will call resolve_
     },
     results:function(  bytes,code ){// used 
         //let bytes;
+        console.error('db query failed :',bytes)
         if(code==0)resolve_({rows:bytes,reason:'runned'});
         else if(code==1)resolve_({rows:bytes,reason:'err'});// rows can be array?
     }
@@ -1805,17 +1818,66 @@ restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interfa
     let {schema,dburl,db,collect}=meta;// schema maps entity , thats in model !!
 
     // get conn :    TODO manage exit connection !!!!!!!!!!!!!!!!
-    let conn=this.getconn(dburl,db);
+    let conn;
+    let that=this;
+    let doasync=true;
+    if(!doasync){
+        conn=this.getconn(dburl,db);// beeing con a promise if we await it we chain the result promise but goon with code till :
+        //  we chain the promise with another await 
+        // at first await x.catch() we init the reject chain 
 
-    if(meta&&conn&&schema&&db&&collect)
+        let prom=new Promise(function(resolve,reject){
+        // we must returns the promise immediately without process its value. we must wait til it gets resolved to goon in resolve (.then()) or reject (.catch())
+        // but as conn is a promise and this is a async func we can also simply await it (sol TT)
+        conn.then( (conn_)=>{
+            if(conn_){
+            let res=goon(conn_);
+            //conn_.close();
+             resolve( res)}
+            else resolve({reason:'err_dbconn'});// if r error .then is executed anyway but conn_=null !!!!!!!!!!
+            })
+            .catch(error =>{ 
+                console.error(' getconn error j : ',error);reject(error);});
+
+
+        }
+        
+        
+        );// creates a promise that launch a function that wiil garantee tha sometime the promise resolve and reject cbs will be called (as middleware cb return resolve will be called )
+      
+    return prom;
+    }else{
+                // TT : but as conn is a promise and this is a async func we can also simply await it)
+                let myr;
+                let p1=this.getconn(dburl,db);
+                let a=0;
+                conn=await p1// beeing con a promise if we await it we chain the result promise but goon with code till :
+                //  we chain the promise with another await 
+                // at first await x.catch() we init the reject chain 
+                .catch((error) =>{ // ok
+                    console.error(' getconn error opr =1 : ',error);myr= {reason:'connErr',rows:error};return;});// NBNB return in catch func will be the conn value !!!
+        let res;
+        if(conn){
+            myr=await goon(conn);
+            //conn.close();
+            return myr;
+        }
+        else 
+        if(myr)return myr;else return {reason:'connErr2',rows:error};
+    }
+
+    function goon(conn){
+
+    if(conn&&meta&&conn&&schema&&db&&collect)// if meta conn
     {// useless schemaurl=meta.schemaurl;//'Master';// TODO entDir.schemaurl; here  excel.dyn_medicine.schemaurl='Master',
 
     // one entity query 
    let  mod;
-   let mysc=cMSchema(refs,schema);
+   let mysc=cMSchema(JSON.parse(schema));
    let sc=new Schema(mysc);
-   if(!conn.model[collect])//mod=conn.model(collect);// alredy present 
-   mod=conn.model(collect,mysc);
+   if(!conn.models[collect])//mod=conn.model(collect);// alredy present 
+   mod=conn.model(collect,sc);
+   //else mod=conn.model(collect);
 
 
   // try{mod=conn.model(collect);}   catch(err){mod=conn.model(collect,new Schema(schema));}
@@ -1865,19 +1927,20 @@ for(let wc in wheres) {
 }
 
 
- let deb=true;
+ let deb=true;// TODO  to review , can also be  a join query , so check  whClause
  if(deb)whClause=null;
 
     let idspace=null;
     // await 
-    return  this.onChange_dynField(conn,entSchema,term,whClause,idspace,true) ;// a promise , Data Service engine processing,  a promise , better  .catch
+    return  that.onChange_dynField(conn,entSchema,term,whClause,idspace,true) ;// a promise , Data Service engine processing,  a promise , better  .catch
 
     // TODO implement .catch !!!!
 
     // returns  res={rows,reason} reason  'err' or 'runned'
 
-}
-return {reasor:'err'};
+}// ends  if meta conn
+return {reason:'err'};
+    }// end goon
 },
 
 
@@ -1897,7 +1960,16 @@ return {reasor:'err'};
 
 
 // getconn:function getconn(db,Master__,J_1_m__,J_n_m__,url){// no schema management till now so Master__,J_1_m__,J_n_m__ = null
-    getconn:function getconn(url,db){// no schema management till now so Master__,J_1_m__,J_n_m__ = null
+    getconn:  
+     // async function 
+      function 
+    getconn(url,db){// no schema management till now so Master__,J_1_m__,J_n_m__ = null
+
+// https://gist.github.com/emilioriosvz/abdbe137737b830b21d66dc5f1236311
+// https://stackoverflow.com/questions/54890608/how-to-use-async-await-with-mongoose
+//https://stackoverflow.com/questions/60366248/how-to-make-nodejs-wait-for-mongodb-connection-before-continuing-calling-async
+//https://gist.github.com/emilioriosvz/abdbe137737b830b21d66dc5f1236311
+
 
 // see http://mongoosejs.com/docs/connections.html
 
@@ -1922,17 +1994,105 @@ if(J_n_m__)schemarest.push([J_n_m__,J_n_m]);
 
 
 
-if(conns.hasOwnProperty(db))return conns[db];
+if(conns.hasOwnProperty(db))return Promise.resolve(conns[db]);
 else{// load a conn in the singleton array
 //	if(!schemasets.hasOwnProperty(db))return null;
+let autoPromise;
+let that=this;
+const run = async (url) => {
+    // https://gist.github.com/emilioriosvz/abdbe137737b830b21d66dc5f1236311
+    //await mongoose.connect('mongodb://localhost:27017/emilioriosvz', {
+        autoPromise=mongoose.createConnection(url, {
+            autoReconnect: true,
+            reconnectTries: 1000000,
+            reconnectInterval: 3000
+          });
+    //let conn=await autoPromise;
+    let conn=await autoPromise
+    
+    //.catch(error =>{ // await return a promise chaining the await promise 
+    //    console.error('atopromise  getconn error , conn was already returned  null : ',error,'\n following cathes are not fired ');return;})
+        
+        ;
+    return conn;//autoPromise ;//conn;
+  }
 	
-	// alredy done in bot.js    mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
-	var conn      = mongoose.createConnection(url+db);
+    // alredy done in bot.js    mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
+    /* ref : https://mongoosejs.com/docs/api.html#mongoose_Mongoose-createConnection
+          >>> Returns:
+            «Connection» the created Connection object. Connections are thenable, so you can do await mongoose.createConnection()*/
+
+
+                var conn;
+
+                let opr=2;// option a 0,b 1, c 2 
+                // option a) : return the conn obj : is a obj thenable 
+                
+                if(opr==0){conn= mongoose.createConnection(url+db);
+
+                // option b) : let a async func run()  get the thenable conn  , then await it (await con) 
+                //              NB 'AWAIT con;'  WILL RESOLVE THE PROMISE/THENABLE  (con.then(... return y)) and return con.then() that is a promise  (x),
+                //              so AWAIT chain promise !!!!
+                //      so the async run() will return the chained promise  : is a obj thenable again : SO USELESS ,
+                //      so  
+                //              take option a) so we can await and catch in calling function !!!
+                //              take option c)  so we can await and catch in calling function !!!
+                return conn;
+
+                }else if(opr==1){
+                conn=
+                // await 
+                    run(url+db).catch(error =>{ 
+                        console.error(' getconn error opr =1 : ',error);return;});
+                                    // ERROR a async function returns MUST be managed as PROMISE , so if in a async func use AWAIT or if not .then
+                                    // see ref : https://stackoverflow.com/questions/54890608/how-to-use-async-await-with-mongoose
+                                    // BUT mongo conn is a abj that can also used as is working on its functions , so COULD BE OK !?
+                //if(conn)return goon(conn);// if error it will be null 
+
+
+                 if(conn){goon(autoPromise);return autoPromise;}// if error it will be null 
+ 
+
+                }else if(opr==2){
+                    conn=
+                    // await 
+                        run(url+db);// a promise
+                                        // ERROR a async function returns MUST be managed as PROMISE , so if in a async func use AWAIT or if not .then
+                                        // see ref : https://stackoverflow.com/questions/54890608/how-to-use-async-await-with-mongoose
+                                        // BUT mongo conn is a abj that can also used as is working on its functions , so COULD BE OK !?
+                    //if(conn)return goon(conn);// if error it will be null 
+                    let chprom=
+                    conn.then((con)=>{if(con)goon(con);
+                        console.error.bind(console, 'hhhhhh conn is  ',con);
+                        return con;});// promise chaining. if i were in a async func , just use the await result !!!
+                    
+                        console.error.bind(console, 'ppppppppp conn is  ',conn);
+                    //return conn; // a promise 
+                    return chprom; // a promise 
+    
+                    }
+                return;
+
+    /*If you create a custom connection, use that connection's model() function instead.
+    const connection = mongoose.createConnection('mongodb://localhost:27017/test');
+    const Tank = connection.model('Tank', yourSchema);*/
+
+
+function goon(conn){
+
 	// now use conn to call std methods that was using a tandard connection :
 	//   trip = mongoose.model('master',stdModel1);   >>>>   trip = conn.model('master',stdModel1);
 
 	if(conn){
-		conn.on('error', console.error.bind(console, 'MongoDB db ',db,' connection error:'));
+        conn.on('error', console.error.bind(console, 'MongoDB db ',db,' connection error:'));
+        /*(node:17514) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). (rejection id: 1)
+warning.js:18
+(node:17514) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+        */
+        conn.on('connected', () => {console.log('Connection Established') });          
+       /*   conn.on('reconnected', () => { console.log('Connection Reestablished') });          
+          conn.on('disconnected', () => { console.log('Connection Disconnected') });          
+          conn.on('close', () => { console.log('Connection Closed')});/*
 
 		/*forEach(function (item, index) {
 		schemasets[db].forEach(function (item, index) {
@@ -1943,10 +2103,17 @@ else{// load a conn in the singleton array
 			//conn.model('J_1_m', J_1_m);
 			//conn.model('J_n_m', J_n_m);
 
-		
-		return conns[db]=conn;
-	}else return null;
+            conns[db]=conn;
+            console.error.bind(console, 'uuuuuuuuooo conn is  ',conn);
+		return conn;
+    }else return null;
+    
 }
+
+}
+
+
+
 }
 
 

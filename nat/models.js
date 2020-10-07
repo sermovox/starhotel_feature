@@ -2008,7 +2008,9 @@ row :
 }// ends direc all dyn cb and bl 
 };// ends museoAQ
 
-let _yourname={// starting with _ means that a goto cmd will fire a child !!
+/// Preferred registration method : fillOnCh_Register :
+let OnCh_Register={
+_yourname:{// starting with _ means that a goto cmd will fire a child !!
     
 excel:{
 
@@ -2085,14 +2087,44 @@ excel:{
 
     // DEFAULT FIELDS :
 
-       {_id: 'number',
-          patt: {type: 'string', required: true},// the vui key ( voice name)
-          value: {type: 'string', required: true},// the name or  bl key or the gui key shown in list
-         data: {type: 'string', required: false},// the fts added terms/relation x refine or some bl detail
-          descr: {type: 'string', required: false}
-
+    JSON.stringify(
+        {type:'object',
+        properties:{
+            
+            _id: {type: 'integer'},//, required: true},//'number',
+          patt: {type: 'string'},//, required: true},// the vui key ( voice name)
+          value: {type: 'string'},//, required: true},// the name or  bl key or the gui key shown in list
+         data: {type: 'string'},//, required: false},// the fts added terms/relation x refine or some bl detail
+          descr: {type: 'string'}//, required: false}
         }
-
+        })
+        // "{"_id":{"type":"integer"},"patt":{"type":"string"},"value":{"type":"string"},"data":{"type":"string"},"descr":{"type":"string"}}"
+        ,schemax:'{'+
+            '"type":"object",'+
+            '"properties":{'+
+            /*
+              '"address":{'+
+                '"type":"object",'+
+                '"properties":{'+
+                 '"street":{"type":"string"},'+
+                 ' "house":{"type":"string"},'+
+                  '"city":{"type":"string"}'+
+                '}'+
+              '},'+*/
+              '"firstName":{"type":"string"},'+
+              '"lastName":{"type":"string"},'+
+              '"title":{'+
+                '"type":"string",'+
+               ' "enum":["Dr","Prof.","Ph.D."]'+
+              '},'+
+              '"email":{'+
+                '"type":"array",'+
+               ' "items":{"type":"string"}'+
+              '},'+
+             ' "age":{"type": "integer"}'+
+             ', "_id":{"type": "integer"}'+
+           ' }'+
+          '}'
 
         },
     }
@@ -2106,8 +2138,15 @@ direc:{
 
         goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
     }
+//, autoReg=true
+//
 }   
-}};
+}}// ends  _yournam
+}// ends OnCh_Register
 
+for (x in OnCh_Register) {
+    OnCh_Register.autoReg=true;// automatic registration of all onchange 
+  } 
 
-module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config,_yourname};
+module.exports =Object.assign(OnCh_Register,{hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config});
+
