@@ -1,4 +1,5 @@
 let mustacheF={ };
+const enumer=false,congi=' oppure ';// da le liste numerate o usa congi
 
 // global helper to be run in context of ......  
 //mustacheF.nmList=function (map,step,clVars){// map can be the notmatching model list item =[{name:modelx},{}] on ask condition 
@@ -103,7 +104,7 @@ params :
 
             // firstname is a string  fn , so first call fn='.', following  fn='-'
             if(firstname=='.'||(firstname!='-')&&firstname==mapname)retur= '';// first item
-            else retur= ' inoltre ' ;
+            else retur= congi ;
         }
 
         if(!morecompl){// return the value rendered by function using  context (the calling f context)
@@ -259,7 +260,7 @@ mustacheF.qeA=function(qstring){
             <template start >
               ** puoi  specificare  {{#vars.excel.queryL}} se vuoi automaticamente listare la colonna col del adyn_ask query cursor loaded by onchange on : vars.askmatches[adyn_ask].param.itemS
                                     o un tuo string matrix o un array string array {{#arr}} ex : {{#vars.askmatches[adyn_ask].param.itemS}}
-                                            {{mustacheF.rendQuery}} will list the above
+                                            {{mustacheF.rendQuery}} will list the above vars.excel.queryL
                                     {{/vars.excel.queryL}}
                                     chiudere array {{/arr}}
                 oppure continuare o ritornare al menu principale 
@@ -271,7 +272,7 @@ mustacheF.qeA=function(qstring){
 
 
 
-            example1 :
+            example1 , intesto la lista con template , estraggo la colonna 11 di un matrix {{#vars.askmatches.dyn_rest.param.item.res.item}}, usando    {{mustacheF.rendQuery}}, poi do chiusura :
              {{#mustacheF.out}}$$list&11&
             {{#vars.askmatches.dyn_rest.param.item.res.item}}
             {{mustacheF.rendQuery}}
@@ -281,10 +282,11 @@ mustacheF.qeA=function(qstring){
 
             example2
                 {{#mustacheF.out}}$$list&5& col 5 
-                le medicine che devi ancora prendere questa mattina sono :<br>
-                {{#dyn_medicine.param.cursor}}
-                 {{mustacheF.rendQuery}}
+                le medicine che devi ancora prendere questa mattina sono :<br>      // intesto la lista con template 
+                {{#dyn_medicine.param.cursor}}                                         // array matrix to list (col5)
+                 {{mustacheF.rendQuery}}                                                // the function that lists items 
                 {{/dyn_medicine.param.cursor}}
+                                                                                    // chiusura
                 {{/mustacheF.out}}
 
 */
@@ -701,10 +703,13 @@ if(Array.isArray(this)){el=this[col];
                         if(Array.isArray(el)&&el.length==1&&Array.isArray(el[0]))el=el[0];// 3 dim array is cursor.items case only
                     }
                     else el=this;
-//return mustacheF.nmList(el,null,fn,true)}// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+
+if(!enumer)
+return mustacheF.nmList(el,null,fn,true);// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
 
 // 29042020 :
-return mustacheF.nmList(el,null,count,true)}// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+else return mustacheF.nmList(el,null,count,true)// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+}
 
 }
     
