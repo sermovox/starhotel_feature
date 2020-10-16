@@ -2279,7 +2279,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
             */
 
-           meta=getMeta(excel,dir,entity,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           meta=getMeta(excel,dir,entity,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT/get off / discard !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             // relations :
             let whMmeta={};// as this is an entity matcher the schema is find in escel.model (too hard to put in macro ???)

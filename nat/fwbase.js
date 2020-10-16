@@ -143,7 +143,7 @@ for (x in dynJs) {
             // initCmd(x,{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);
         }else{
         for (y in dynJ[x].direc) {
-            if(x.autoReg)// automatic registration of all onchange 
+            if(x.autoReg)// automatic registration of all onchange declared on .direc
             asks.push(y);
           } 
           initCmd(x,null,asks);
@@ -560,7 +560,7 @@ oo
 
             // if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])directive.direc[mkey].onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
             if(fwOnC&&fwOnC.onChange[cmd]&&fwOnC.onChange[cmd][mkey])onChThis.onChange=fwOnC.onChange[cmd][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
-
+                                                                                                                // now onChange is fuond in './onChangeFunc.js'
             // register also the schema on connection :
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
 

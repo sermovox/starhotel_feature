@@ -280,7 +280,9 @@ MongoDB db  emilia  connection error:
 events.js:116
 MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first connect [MongoNetworkTimeoutError: connection timed out]
 
+> parse tempate to find js  &&  >>   &&& so i can write if(a&&b)  
 
+> catch per sintax on condition $$$$
 
 */
 

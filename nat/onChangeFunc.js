@@ -5379,7 +5379,7 @@ module.exports ={// onchange functions , = fwAskOnChange={modelname:{askname1:fu
 
 // these function declaration will be asked to be registerd on fw base. we can also register from here so we do not have to do twice the same staff
 
-// use mapping , double work but clear
+// can use mapping , double work but clear (?)
 televita:{dyn_medicine:dyn_medi_f},
 museoAQ:{dyn_medicine:dyn_museo_f},
 hotel3pini_vox :{ dyn_rest:dyn_rest_f},
