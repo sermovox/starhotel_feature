@@ -60,44 +60,31 @@ console.log('*** instantiating Botkit CMS');
     }));
 }
 
-///*
+/*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
-let xmpp_adapter
-// activate xmpp:
-xmpp_adapter=new XmppAdapter({});
-
-
-configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
-function configureWebhookXmpp(webserver,uritest){
+let xmpp_adapter=new XmppAdapter({});
+// as in botkit core
 if (xmpp_adapter) {
-    // as in botkit core
     // MAGIC: Treat the adapter as a botkit plugin
     // which allows them to be carry their own platform-specific behaviors
-    controller.usePlugin(xmpp_adapter);// chi usa il controller potra recuperare il xmpp_adapter : cio avviene quando .....
-
-   let logic=controller.handleTurn.bind(controller);// bot entry 
+    controller.usePlugin(this.adapter);
+}
+if (xmpp_adapter) {
+   let logic=controller.handleTurn.bind(controller);
    /*).catch((err) => {// like in core
     // todo: expose this as a global error handler?
     console.error('Experienced an error inside the turn handler', err);
     throw err;
-    });*/
+    });* /
 
 
 
    // let logic=this.handleTurn.bind(this);
-   // al posto di registrare con webserver.post(url,function {
-    //  ... 
-    //   inner function che verra chiamata per gestire il request : 
-    //  adapter.processActivity(req, res, logic=this.handleTurn.bind(this))// servono adapter e logic 
-
-    // ...} ) 
-    //  registro su xmpp2adapter  logic e adapter 
-    xmpp2adapter(webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test !!
+    xmpp2adapter(null, xmpp_adapter,logic);//(webserver,ad,logic) 
 }
-}
-//*/
+*/
 
 
 
@@ -185,7 +172,7 @@ let app=require('./nat/app.js');
 controller.ready(() => {
 
     // load traditional developer-created local custom feature modules
-   // after cms ?       controller.loadModules(__dirname + '/features');
+    controller.loadModules(__dirname + '/features');
 
     /* catch-all that uses the CMS to trigger dialogs */
     if (controller.plugins.cms) {// picms
@@ -239,9 +226,6 @@ controller.ready(() => {
         
 
     }// end picms
-    // load traditional developer-created local custom feature modules
-   controller.loadModules(__dirname + '/features');// on modules registered after on cms 
-
     if (controller.plugins.vCtl) {// 
                 // register cmdDirectives, will injeci a ref of some fw var in controller so that fw functions will be accessible from controller  instance (ex conversation!)
 
@@ -296,12 +280,9 @@ MongoDB db  emilia  connection error:
 events.js:116
 MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first connect [MongoNetworkTimeoutError: connection timed out]
 
-> parse tempate to find js  &&  >>   &&& so i can write if(a&&b)  
 
-> catch per sintax on condition $$$$
 
 */
-
 
 
 

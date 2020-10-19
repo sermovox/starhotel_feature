@@ -1,0 +1,371 @@
+
+to complete intent,vname,group,,,,,,,,entities 
+nb askmatches and matches can be the matcher/agent result
+askmatches={aask:{
+
+                                                            match:'aval',
+                                                            matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
+                                                            nomatches:[{key:'aval'},,,],// only models
+                                                            ... some onchange added fields , ex : matched complete desire param ...
+                                                        }}
+
+
+__________________________________
+
+
+app status app bl status ( cioe status relativo a uno activity user/conversation ) that maintained conversational status managed using state var in convo organized in a stack structure
+                                                                                     so we must add a app var in dialogState 
+
+            is managed by dialogState got from status management fw ... see how to create it in .........
+
+    so  dialogState  allows to get convo state and app  from any tc coming to bot 
+
+
+            state = bot._controller.dialogSet.dialogState= dialogState.get(convo.dc.context, { dialogStack: [dialodInst1{id:dialogname,status:{} },,,] );
+
+
+    > status are recovered at each turn start in     beginDialog(dc, options)  and  continueDialog(dc) via resumeDialog() 
+
+    > in runStep we set the step status :
+                const step = {
+
+                //msgSent,// here usually call index with user answere to previous msg 
+
+                index: index,
+                thread: thread_name,
+                state: state,
+                options: state.options,
+                reason: reason,
+                result: result,
+                values: state.values,
+                next: (stepResult) => __awaiter(this, void 0, void 0, function* () {
+                    if (nextCalled) {
+                        throw new Error(`ScriptedStepContext.next(): method already called for dialog and step '${this.id}[${index}]'.`);
+                    }
+                    return yield this.resumeDialog(dc, botbuilder_dialogs_1.DialogReason.nextCalled, stepResult);
+                })
+            };
+
+
+    > status are updated in vcontroller :
+
+        let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
+
+        if(userDstate.error);// error
+        if(userDstate.session);//error 
+
+        // changing 052020 .  
+
+        values.session=userDstate.session=userDstate.session||{};
+
+
+status are mainly put in :
+status  .step : convo ask/step management 
+        .values : convo vars used in template and onchange  
+                    .direc      =dynJs[dialogid].excel : a extraction of model.js convo directives setting :  for ask management 
+                    .excel      =dynJs[dialogid].direc                                                    :  for TI dialog general convo/thread management  
+                    .session    bl status   see appwrap
+
+        .dir ={static:{copy of direc ?},run/dynloopvar:{repeat:3,,,}}
+                keyDir=state.dir.asks[previous.collect.key];
+                                keyDir.cond[entity]= JSON.parse(condition.macro);( alternative to ask directives in step.values.direc)
+
+
+        others .goon mssSent ...
+
+
+
+    > status are updated at start of any convo using begin def thread in fwbase in wich we inject static info from models.js
+
+    - appwrap=getappWrap(bot,convo);// will recover user session status and application service , check  appWrap in vars.app .... ,  vars={channel,user,....}... 
+        create the appwrap  obj containing the app function got from app func defined in onchange and app (bl) status info :
+
+
+            ?? to be reviewed :
+            appWrap={aiax:function(actionurl,req),session,begin_def:function serverservice()}
+                also :
+                = {   service,fwCb,
+                    post:function(actionurl,req){// session and convovars cant change when i stay in the same convo
+                                        application.post(actionurl,convovars,session,req);},
+                    ,,,}
+
+             appWrap.begin_def(myscript_,usrAppSt);
+            usrAppSt={meds:[11,22,33],cur=user:'rossi'}
+            ....
+
+
+    > directive status are updated at each condition macro ( formatted json)  and custom field ( also json formatted ) as alternative to model.js
+
+_________________________________________________________
+
+directive=dynJs[model/cmd/convo/dialog] =require(model.js)
+
+
+    directive.direc ={
+
+	adependingAsk:{
+	  wheres_=['mod_city',,,] filled by fwbase.find_wheres().   is the list of models on which it depends  ( list of the where to do when querred )  
+	}
+
+
+
+        dyn_medicine:{// used in  associazione a    :
+
+		url :'http://therestserverpost'      nb no params like http://therestserverpost/cities/rome	 but use form post data on POST request
+		or
+		url: :'http://therestserverget?' in this case we add qs to GET url 
+ 
+        	schemaurl:'Master',// schemaname of master collection, url is  'mongodb://localhost:27017/'
+        	schema: 'schema'   to map collection into object
+
+        	loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+                	nomain:true,// a context var  in some msg 
+                	max_repeat:1// then default 
+                	goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+            	}
+
+		wheres=['mod_city',,,]   added by fw
+
+
+
+        	med_data:
+                       [
+                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vai al piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
+                [1,'hall','hall','è la sala principale del hotel','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra','col',,,,,'è la sala principale del hotel , apre alle 7 ','è la sala principale del hotel , apre alle 7 e ha servizio di branch all americana',true,,,,,''],
+                [2,'giardino','giardino','è immerso nel verde del giardino , aperto solo la sera ','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ','col',,,,,'è immerso nel verde del parco acquatico , con sale private , apre alle 20','è immerso nel verde del parco acquatico naturale, con tavoli riservati per una colazione appartata apre alle 20',true,,,,,''],
+                [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [6,'da toni','toni','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''],
+                [7,'da genio','genio','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''],                ]
+
+        	,
+        	Gdata:
+
+        	[
+        	[0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
+        	],
+
+
+
+        	onChange_text:null,//testFunc.toString,// without async !!
+
+        	onChange:null//function(new_value, convo, bot,script,ask){return dyn_medi_f.call(this,new_value, convo, bot,script,ask) ;    }
+    
+
+                      }
+
+
+
+		NB onChange context set in fwbase : Object.assign({},{cmdModels:directive},directive.direc[mkey],{service},{fwCb});
+
+
+              directive.excel  ={
+
+                            vname:'hotel cinque stelle',
+    
+                            news:'oggi grande festa della amicizia alle 20 tutti in piscina!' ,
+    
+    
+
+                                        .....
+                               askkey:{// are they ??
+
+                                        }
+
+
+                               amodel:{// static model entity
+                                        name:// ? 
+                                        vmatches: { dove: 'dove', come: 'come', quando: 'quando' ,per:'motivo'},// model specification , item voice name 
+            				vlist: ['dove ', 'come', 'quando','motivo,significato'],//temporaneo , è duplicato di vmatches con different format !
+                                        notMatPr:''
+
+
+
+                               		model: 'bar-bar&rest-medicamen&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-\bsala 1|\bsala uno',
+					model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',
+					NBNB   in condition can be prefixed by {-&}
+      				      	// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+         				//      {bar:{
+            				//          patt='ristorant*|pranzo|cena|trattoria',
+            				//            ai_url='',
+            				//            vname=''
+            				//      },,}
+
+
+
+
+                               		matcher="dynMatch"
+
+					url:
+					schemaurl:'location'  ( also in model ?) 
+
+	
+                              		wheres: filled on fwbase.find_wheres(directive) if this dyn model depends on other models value ( the wheres condition clause in query)
+						se dichiaro un entity come where di un model che non esiste in excel esso viene creato ( puo essere def il line in cms )
+						e' alternativo a mod_wh_Of !!
+
+					mod_wh_Of:'paese'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) ,
+						 so dont put in notmatched prompt list if we already had the dyn_key matched 
+
+
+
+	
+
+                                        out:function ....
+                                 }
+				,,,,,
+			}
+
+
+
+
+
+
+
+
+
+
+
+keyDir=state.dir.asks[previous.collect.key]=......
+
+
+_________________________________________________________
+
+fwCb={fWService1:null,askS:{dynMatch......},thS:{},models:{}}
+
+fwHelp=refImplementation={
+    onChange_dynField(entSchema,text_,wheres,idspace,isDb_Aiax) interface to db manager engine to query entities with join relatations (in entSchemas ) and id/keys 
+                                                                the db manager ,recovering schema+url (in model.js) , can request a query to a db server
+    rest__: async function (entity, uri, params, method, outmap, limit) {// not used now,
+    run_jrest: async function (uri,formObj, method) returns the object if run_rest returns a json
+    run_rest: async function (uri,formObj, method) general rest interface
+    dynMatch:async function((url,)entity,text=searchterm,wheres,isDb_Aiax,cb) // put in a sort of interface TO complete in setSetvice of fwCb , or a default matcher template to custom in fwCb.asks/model
+                                                    looking at url in model.excel  can call the interface (data service) pgm  to process the query 
+                                                    can be a 
+                                                        - properties/wheres rest mapping to a rest external dataservice that will have the schema info ( url and where entity mapping can be recovered in vars.excel...)
+                                                        - custom rest caller (can be a service fwCb.model[entity].matcher function) to a non rest style external dataservice that will have the schema info 
+                                                                                ( url and params of caller can be recovered in vars.excel...)
+
+                                                        - internal data service restAdapter2Mongodb() that knowing data structure info ( schema info of wheres param recovered in  vars.excel. ) 
+                                                                    can call the db engine manager onChange_dynField()  ( schemaurl to call the db server can be also recovered in vars.js )
+
+
+     
+    }
+
+service extend fwHelp,db,rest,...
+
+
+____________________________________
+
+vars.matches=	{// can be a static match or a dyn match 
+		.........
+		match
+		vmatch
+		
+
+		if dyn : extend a dyn entity :{value,patt,descr, bl filed} + the info that static model find in excel[entity]
+		
+
+		}
+
+var.askmatches={// used to store both query result and resoved intent with entity  object values/property ( city='rome')  
+
+
+
+        match:'aval',
+        matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
+        nomatches:[{key:'aval'},,,],// only models
+        ... some onchange added fields , ex : matched complete desire param ...
+        matched:'match', or null or ''
+                also set session.dyn_match={};session.dyn_match[ask]={match:blResNam};
+
+
+
+        complete:'miss' or 'inter'(interrups)    ...
+
+
+
+
+
+
+    /* param is inserted by the query/intent  service , see dyn_star_f() : 
+     question :  vursor can be different from the usual std format of db entities :
+
+         db cursor=	[
+				[id,'panda','a small fiat auto','\bpand','1200cc',,,,],//  panda is the instance item name > id,value,descr.patt,data,bl fields in this order 
+				[id,'tipo','a medium fiat auto','\btip','1500cc',,,,]  panda is the instance item name 
+				,,,]
+
+        ????
+
+
+     */
+    param:{
+        match,
+        vmatch,
+        templatef:{ishall}
+        info,
+
+
+
+        // cursor=[['type','a small fiat auto','\bpand','1200cc',,,,],,, ]  // so different from db cursor ?
+
+
+    /*
+        // format : resu={reason,rows}, rows in std format 
+        resu=await services.onChange_dynField(entSchema,null,wheres,null,true);// dbEntFw=services.onChange_dynField
+    
+        if(resu.reason=='runned'){
+        mydata=toArray(resu.rows);// flat cursor to array with rigth format
+        console.log(' onchange star hotel : querying services.onChange_dynField() returned  ',mydata);
+
+        res=runQuery__(mydata,matches.mod_Serv.match,matches.mod_loc,matches.colazione_menu);// query locally
+
+         format : res={ind:[3,6,8],rows:[mydata[3],mydata[6],mydata[8]]}=runQuery(mydata,cq)
+
+
+    */
+
+
+
+
+
+        cursor:{rows:res.rows,medSyntL:[value1,,,],
+        
+                resModel:{val1:{
+                                patt:regexstr,
+                                vname:'pippo' // set as array also in medSyntL x list in template
+                                }
+                          ,,,,
+                }
+
+        //or 
+        intent:{......}
+
+        group:{
+                name,
+                vname,
+                best,
+                calce,
+                what,
+                nextserv,
+            
+            
+                sel:{item:mydata[blRes],index:blRes},
+                def:{item:mydata[gr[4]]},,
+                }
+
+
+
+    // obsolete if( mydyn.param.group.sel)mydyn.param.group.isdef=true;else mydyn.param.group.isdef=false;// seems ok , ? to do 
+    mydyn.param.group.vgroup=gr[5];
+
+
+        }
+
+		}
+
+
+_________________________________________________________

@@ -1,0 +1,111 @@
+for(p=1..n)
+	{ // start CONDITION SCAN
+		if()	{
+		}else if (condition.type === 'regex'||condition.type.substring(0,5) === 'macro') 
+			{ //REGEX_MACRO
+			function jVar(cod,vars){}
+			if(!mgot)// mgot=false
+				{//hyt
+				if (condition.pattern.substring(0, 2) == '$$' || condition.pattern.substring(0, 2) == '$%') 
+					{//  $xy cases 
+					if (condition.pattern.substring(0, 3) == '$$$'){
+
+					}else 	{// $x case can be $$
+
+						if (itr > 0) {// start case model match with a $X(Z) case 
+							if (condition.pattern.charAt(itr + 1) == ':') {// $%%mod_Serv:: 
+								pattArray = step.values.excel[entity].model;
+								setAskDir(entity,previous,condition,state);
+							} else if (condition.pattern.charAt(itr + 1) == '>') {// // $$dyn_medicine:>
+							}else {// condition in line declaration  >  $$entityname: or $$%entityname: or $%entityname: or $%%entityname:
+								pattArray = condition.pattern.substring(itr + 1, condition.pattern.length);//substring(itr,nextitem-1)
+                                            entity = condition.pattern.substring(2 + sk_, itr);
+								 matcher=setAskDir(entity,previous,condition,state);
+							}
+						} // ends case model match
+                        else { // match text against single condition pattern
+							pattArray = condition.pattern;
+						}
+						if (!retest && chkMatcRes(entity)) {
+						}
+
+						// DO MATCHING PHASE using previuosly detected : entity, pattArray,matcher ....
+						if (!matched) {// start  if didnt match do it  , or retest , or chmatch to do , do it 
+								if(!matcher){
+
+                                        for (ii = 0; ii < itr1.length; ii++) {// gh for all item in model test it 
+                                       		// start  condition try matching 
+										    if (pArray) {
+                                                						patt = pArray[itr1[ii]].patt;
+                                                						storemat = itr1[ii];
+										    }else{}
+                          					// *** TRY MATCHING iesimo item in Entity Model
+                           					if (!notest && (rematch = ttest(tomatch, patt))) {
+                              						console.log(' \n * MATCH Detected on MODEL :$$ or $% condition, at thread ', 
+											    }
+									    }
+
+								}else{// a not std matcher (regex)
+									if(matchTyp==0){
+										if(state.dir){
+                                             							matched_=yield this._vcontroller.service[matcher]
+														(tomatch,this.id,previous.collect.key,entity,step,(val)=>{..
+                 
+       					                                     			if(matched_&&res){ 
+  
+                                                						// store the RESULT (Management)
+                                                						// the dyn result can be ( depend from TYPE of the condition )
+                                                						//      - a ask query cursor ,                          > store in askmatches structure 
+                                                						//      - ask testing a intent resolution        > askmatches structure set in way like 
+																	                                                        a dynquery are storen in a onchange 
+                                                						//      - or a simple model match               > matches structure     set in way like 
+																	                                                        a intent are storen in a onchange 
+                                                						// if the turn will not change we cn store the result in the same ask , 
+																                                                otherwise a child will manage the turns needed
+                                                						// add fields so that addMatcRes() knows the type of result to insert 
+                                                							res.type=mT;// storemat.value must exists !!!!
+                                                							step.values.__conf +=res;// 
+                                                							storemat=res;// OR a object ??? 
+                                                							matched=matched_;// true
+												}
+										}
+									}else if(matchTyp==1){
+									}
+								}// ends a not std matcher (regex)
+
+                                // ******* Register the match/no match *** calling addMatcRes(false, entity, null, ii, linematch)
+                                if (matched) {
+                                			if (storemat) {
+								        	}else{
+									        }
+								}else{
+								}
+						}// ends start  if didnt match do it
+                        // ends DO MATCHING PHASE
+
+					}//  end $x case can be $$
+				}// ends $xy case 
+				else {// no $$$ , no $$ ,no $% case
+						patt = condition.pattern;
+                                // TODO: Allow functions to be passed in as patterns
+                                // ie async(test) => Promise<boolean>
+                        if (!notest && ttest(tomatch, patt)) {	// no model, just test tomatch (text or a var) against patt	
+                                    addMatcRes(true, null, null, p, true,true);// if a condition with no model matches we register a match {ind:4} and not {key:value}
+                                    path = condition;
+                                    break;// break p index
+						}
+				}
+			}// ends hyt
+
+			function addMatcRes(){}
+			function chkMatcRes(entity){}
+	 	}// ends  REGEX_MACRO
+}// end CONDITION SCAN
+                  
+console.log('\n\n  *** FINISHED MATCHING CONDITION ON ' , previous.collect.key);
+
+                  
+console.log('\n\n  *** FINISHED MATCHING CONDITION ON ' , previous.collect.key);
+_______________________________________________
+to est a bank od interrupt :
+

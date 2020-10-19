@@ -328,7 +328,11 @@ si costruisce clVars={notmatlist:['po','pi'],notMatchL:[{name:'po'},{name:'pi'}]
 
         // considerati i model che sono nel pattern $$ e $% di un condition ( di askA, ask in cui nel msg si trova {{#mustacheF.out}}$$miss&...)  e in futuro askB)
         // si riempie clVars.notmatlist con nomi di model che :
-        //  - non sono wh model di dyn_ask matchati e
+        //  - non sono wh model di dyn_ask matchati 
+        // 		(nb : e' caso un po particolare in cui tra i model da testare si vuole evitare quelli che 
+		        hanno gia risolto ( sono where) la query di un dyn_filed che si vuole tendenzialmente mantenere cercando  match su altri parametri 
+                (influenzano solo come la query e' displeiata ))
+            e
         //  - non matchano secondo matches.model.match
         // quindi si costruisce la funzione mustacheF.rendnotmatch=listAitem() che messa come nel template di un array come notMatchL  lista gli item.name del suo context notMatchL
 
@@ -440,12 +444,12 @@ x {{vars.matches.mod_Serv.vmatch}}
         //method A old , long :
     am=vars.askmatches[askname];// testing ask  present ask matches status :am={matches:[],match:not$%match,nomatches:[]} , to calc the model still to  match
 
-        ma=vars.modsonask[askname];// models that are testing for get matches in testing ask  ( $$ or $% ), a string array
+        ma=vars.modsonask[askname];// models that are testing for get matches in testing ask  ( $$ or $% ), a string array. ma[i]=entity/model name
 
     
     for(ii=0;ii<ma.length;ii++){// for each model tested in the ask (ma[ii]) find if was already matched
 
-
+        let nmpDir;
 
         // in pratica : si scartano i model che sono where di dyn_ask che matchano dyn_ask=excel[modelname].mod_wh_Of 
         //           tra questi si considerano quelli che non matchano ( in matches)
@@ -455,34 +459,51 @@ x {{vars.matches.mod_Serv.vmatch}}
         // old comments 
         // check id the model is alredy matched 
         // still do not match
-        let ism=false;// this model (ma[ii]])is not matched and isrequired only as a where join to query the master dyn mod_wh_Of
+
+           let ism=false;// ism=true :insert on notmatchlist. this model (ma[ii]])is not matched and isrequired only as a where join to query the master dyn mod_wh_Of
             if(vars.excel[ma[ii]]&&vars.excel[ma[ii]].mod_wh_Of&&vars.askmatches[vars.excel[ma[ii]].mod_wh_Of] // main=vars.excel[ma[ii]].mod_wh_Of : tell to put the model in nmp notmatchedprompt list only if the main entity is matched
                 &&vars.askmatches[vars.excel[ma[ii]].mod_wh_Of].match)    {                 // if mod_wh_Of not exist try to put in nmlPrompt 
-                ;}else{
+        // caso particolare 
+        //      per ogni ask model see in excel.model se il model e' usato come where in un dyn_ask (dyn_ask =excel[model].mod_wh_Of ove si fa una query) che già matcha
+        //      in tale caso si esclude di richiederlo nel notmatched prompt
+                    ism=true;
+                    ;}else{
+
+                // standard : insert in notmatched list the model that do not are already matched 
+
+                // ONLY if a directive say it is a entity in a matching intent ( same name as ask )
+                
+                if(vars.session&&vars.session.dir&&vars.session.dir.asks[askname]&&vars.session.dir.asks[askname].cond){
+                    if(vars.session.dir.asks[askname].cond[ma[ii]]&&vars.session.dir.asks[askname].cond[ma[ii]].notMatchPrompt){
+                        nmpDir=vars.session.dir.asks[askname].cond[ma[ii]].notMatchPrompt;//state.dir=session.dir
+                        ism=true;
+                    }
+                }
+
                 // method A complicated and long :
                 //if(am){ for(it=0;it<am.matches.length;it++){
                 //    if(am.matches[it].key==ma[ii]){ ism=true;break;}
                 //}else isn=true;
 
                 // method B easy and fast:
-                if(vars.matches[ma[ii]]&&!vars.matches[ma[ii]].match)ism=true;
+                if(ism&&vars.matches[ma[ii]]&&vars.matches[ma[ii]].match)ism=false;// dont insert on notmatchlist
 
                 }
 
 
             
-        if(!ism)clVars.notmatlist.push(ma[ii]);
+        if(ism)if(nmpDir)clVars.notmatlist.push(nmpDir);else clVars.notmatlist.push(ma[ii]);
     }
     }
 
    // excel_.notmatlObj=
-   clVars.notMatchL=[];//=[{name:thenotmname}] why not simple string array ?
+   clVars.notMatchL=[];//=[{name:thenotmname},,,] array containing the missing model .why not simple string array ?
    excel_.notMatchL=clVars.notMatchL;// must be available in context to be referencied in template 
    // excel_.notmatlist.forEach(key => excel_.notmatlObj.push({name:key}));
 
    // fill notMatchL from notmatlist
    if(clVars.notmatlist)clVars.notmatlist.forEach(key => clVars.notMatchL.push(
-                                    {name:key
+                                    {name:key// name is not correct should be called nmpText !!!!!!!!!!!!!!!!!
                                     // some other param to specialize the item renderer function 
                                     })
                         );
@@ -632,7 +653,8 @@ else;
 
 // PROBABLY NOW WE HAVE STEP JUST IN CONTEXT SO THIS closure is useless 
 if(firstname==null)firstname='.';// first
-let count=0;
+let count=0,max=2;
+if(step.state.dir.maxnmp)max=step.state.dir.maxnmp;
 
 // the closure AAD
 //let step=stepp;// or step_
@@ -651,7 +673,7 @@ console.log('  ***** we are in rendnotmatch and this is : ' ,this);
 let npm,fn;
 if(step.values.excel&&step.values.excel[this.name]&&step.values.excel[this.name].notMatPr)npm=step.values.excel[this.name].notMatPr;
 if(firstname=='.'){firstname='-';fn='.';}else fn=firstname;
-if(count++<2)return mustacheF.nmList(this.name,npm,fn)}// call an external function ( can be put in the same excel obj ? !)
+if(count++<max)return mustacheF.nmList(this.name,npm,fn)}// call an external function ( can be put in the same excel obj ? !)
 return null;
 
 }
@@ -766,12 +788,13 @@ else return mustacheF.nmList(el,null,count,true)// will add e anche  dopo il pri
     return myBoundF;//.bind(step_);// probably don work and useless so delete it 
   }// ends out 
 
-function modsOnAsk(script) {// from a conversation script create a map : ask > list of model tested in ask
+function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modsonask at  before cb of the cmd default thread 
+    //  From a conversation script create a map : ask > list of model tested in ask
     // we  want to know what model will be tested on script asks on all threads
     // in onchange  main dyn_ask will test major models gathered by y many asks that are visited in the dialog
     // so in a ask we'll find 
-    //  -the models that we test for matching in the ask and 
-    //  - the most important goon ask in its condition routing 
+    //  -the models that we test for matching in the ask (excluding ... ) and 
+    //  - the most important goon ask in its condition routing (TODO)
 
 
 // **************************    // seems modsOnAsk do not give right ouput !!!
@@ -797,16 +820,26 @@ function modsOnAsk(script) {// from a conversation script create a map : ask > l
                     let paths = line.collect.options;
                     name = line.collect.key;// line key name
 
+                    if(modsOnAsk_[name]){
+                        console.error('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var (askname)  ', name, '.\n WARNING :  DUPLICATED ASK  NAME ');
+ 
+
+                    }else{
+
 
                     for (let pp = 0; pp < paths.length; pp++) {// a condition on step  ( compreso default)
                         let condition = paths[pp];
 
-                        if (condition.type && condition.type === 'regex') {
+                        if (condition.type && (condition.type === 'regex'||condition.type.substring(0,5) === 'macro')) {
                             if (condition.pattern.substring(0, 2) == '$$' || condition.pattern.substring(0, 2) == '$%') {
-                                let itr = condition.pattern.indexOf(':');
+                                
 
-                                if (itr > 0) {
-                                    entity = condition.pattern.substring(2, itr);
+                                let itr = condition.pattern.indexOf(':'),str=2;
+
+                                if (itr > 3) {
+                                    let trd=condition.pattern.charAt(2);
+                                    if (trd == '$' || trd == '%'  || trd == '§')str=3;
+                                    entity = condition.pattern.substring(str, itr);
                                     mods.push(entity);
                                 }
 
@@ -825,7 +858,7 @@ function modsOnAsk(script) {// from a conversation script create a map : ask > l
                     }
                     console.log('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var  ', name, ' testing model (type $$ and $%): ', mods);
                     if (mods.length > 0) modsOnAsk_[name] = mods;
-
+                }
                 }// a step with ask
             }// end a step
         }// thread

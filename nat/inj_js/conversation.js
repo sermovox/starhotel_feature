@@ -785,9 +785,7 @@ class BotkitConversation extends botbuilder_dialogs_1.Dialog {
 
             let msgSent=-777,// text result do not available
             state=step.state,
-            askmatches=step.values.askmatches=step.values.askmatches||{};//;// to avoid error in case there is not fw support on this cmd
-            step.values.matches=step.values.matches||{};//;// to avoid error in case there is not fw support on this cmd
-
+            askmatches=step.values.askmatches;// 
             let goonDir = true,// default : do goon(mixedinitiuative) tech
                             // after will be overwritten by : excel.direc[previous.collect.key].loopDir.goon=false
                 goonDir2=true; // after will be overwritten by: excel.direc[previous.collect.key].loopDir.goon2=false
@@ -1010,14 +1008,10 @@ class BotkitConversation extends botbuilder_dialogs_1.Dialog {
                     ......
                     
                     */
-
+                   // step.values.askmatches[previous.collect.key]=null;// reset all match key fields but not param (set by onchange) at start conditions loop p
                    
-                    // 092020
-                    // already done askmatches=askmatches||{},matches=matches||{};//;// to avoid error in case there is not fw support on this cmd
-
-                    // step.values.askmatches[previous.collect.key]=null;// reset all match key fields but not param (set by onchange) at start conditions loop p
-                    if(askmatches[previous.collect.key]&&(askmatches[previous.collect.key].param||askmatches[previous.collect.key].params))
-                        askmatches[previous.collect.key]={param:askmatches[previous.collect.key].param,complete:askmatches[previous.collect.key].complete,params:askmatches[previous.collect.key].params}
+                    if(askmatches[previous.collect.key]&&askmatches[previous.collect.key].param)
+                    askmatches[previous.collect.key]={param:askmatches[previous.collect.key].param,complete:askmatches[previous.collect.key].complete}
                     else askmatches[previous.collect.key]=null;
 
                     function setAskDir(entity,previous,condition,state){
@@ -1088,11 +1082,11 @@ class BotkitConversation extends botbuilder_dialogs_1.Dialog {
                         let matcher=null;// standard matcher is ttest , in this case matcher=null
 
                         let condition = paths[p];
-                        if(lv>2)console.log('\n - TRYING CONDITION MATCHING  on thread: ',thread_name,' ,on PREVIOUS step index: ', step.index,', ask: ',is_prevCollKey,'  try matching condition  number ',p,'\n     condition patt: ', condition.pattern,' condition obj : ', condition);
+                        if(lv>2)console.log('\n - CONDITION MATCHING  on thread: ',thread_name,' ,on PREVIOUS step index: ', step.index,', ask: ',is_prevCollKey,'  try matching condition  number ',p,'\n     condition patt: ', condition.pattern,' condition obj : ', condition);
                         let test;
                         let notest = false;
                         let patt;
-                        let tomatch = step.result, // , ? rename it. per evidenziare ingresso da testare che puo essere user text, result from resume o altro obj settato in questo condition test testing code 
+                        let tomatch = step.result, 
                         storemat = null,storeVal;// storemat is the item name (or model value) for menu model(static model in excel) 
                                                 //  OR 'value' if is an  integer or string entered /date  .... (match > storeVal) ex : user say 'il 3 ottobre' so storeval='03102020', storemat='value'  
 
@@ -1164,7 +1158,7 @@ class BotkitConversation extends botbuilder_dialogs_1.Dialog {
                                             }*/
                                         
 
-                           function jVar(cod,vars){// returns the value of a vars.matches[cor].match  . cod can be :1  cod='avarwithnopoint' returns vars.matches[cod].match ,:2  cod='vars.askmodel.match.pippo' return the obj val
+                           function jVar(cod,vars){// returns the value of a cod vars . 2 formats ,1  cod='avarwithnopoint' returns vars.matches[cod].match ,2  return   a vars obj cod=vars.......)
                             /*if(!cod)return rr, where rr is :
                             
  
@@ -1220,14 +1214,14 @@ class BotkitConversation extends botbuilder_dialogs_1.Dialog {
 
 
 
-let mgot=false;// .......
+let mgot=false;
 
 if(condition.type.substring(0,5) === 'macro') {// macro only 
 
 }// end  macro only
 
 
-                       if(!mgot){//hyt
+                        if(!mgot){//  hyt
 
                             if (condition.pattern.substring(0, 2) == '$$' || condition.pattern.substring(0, 2) == '$%') {// $xy cases : todo add a $% that means try match , register , but no stop current condition testing
                                 //  console.log(' condition matching : $$ case pattern is  ',condition.pattern, ' patt is : ',condition.pattern.substring(2,condition.pattern.length));
@@ -1346,7 +1340,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                                 // and < 20  , a model match with entity name (<entityname>) declared : $X(Z)<entityname>:...  Z can be % or § ,  X can be $ or % 
                                         
 
-                                        if (condition.pattern.charAt(itr + 1) == ':') {// $%%mod_Serv:: , second ':'  means look in model definition. see excel .....
+                                        if (condition.pattern.charAt(itr + 1) == ':') {// &%%mod_Serv:: , second ':'  means look in model definition. see excel .....
                                             // case  $$mod_Serv::   >>>   excel declaration : of entity mod_Serv
 
                                             //  in cms condition :        '$$mod_Serv::' as regex type
@@ -1378,32 +1372,6 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                             // matcher=// no custom matcher needed
                                             setAskDir(entity,previous,condition,state);// get macro to set session.dir run time directive but not use the matcher setting , we use std REGEX matcher 
                                             //if(state.dir.asks[previous.collect.key].cond[entity]= JSON.parse(condition.macro))
-
-                                        } else if (condition.pattern.charAt(itr + 1) == '£') {// $£:: 
-
-                                             // HERE WE CAN GET A INTERRUPT BUNCH as a list of entity model found in askmatches associated with the chaild :askmatches._child.params.inter=[amodel_in_excel_1,,,,]
-                                                let ints;
-                                                if(askmatches[this.id]&&askmatches[this.id].params.inter&&(ints=askmatches[this.id].params.inter.length)>0){
-                                                    for(let ii=0;ii++;ii<ints)
-                                                    
-                                                    {let int=askmatches[this.id].params.inter[ii];
-                                                                if(step.values.excel[int].model){
-                                                                    pattArray = step.values.excel[entity].model;
-                                                                    let stdmres=stdMatch(pArray,pattArray,linematch,step);//return {matched,path,rematch,storeVal,notest};
-                                                                    if(stdmres.matched){// int got 
-
-                                                                        addMatcRes(true, null, null, p, true,true);// if a condition with no model matches we register a match {ind:4} and not {key:value}
-                                                                        // add int match also in askmatches complete 
-                                                                        askmatches[this.id].complete='inter';
-                                                                        path = condition;
-                                                                        break;// break ii index
-
-                                                                    }
-                                                                }
-
-                                                    }
-                                                    if(ii==ints)break;// break index p
-                                                }
 
                                         } else if (condition.pattern.charAt(itr + 1) == '>') {// $$dyn_medicine:>
                                             /* **** this condition,
@@ -1465,8 +1433,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
 
 
                                             cursor = null;// calclate param from desire ask onchange()
-                                            entity = previous.collect.key;// on running generated modell (same name of the ask !!!!!!!!!!), ;
-                                            // its a model generated at run time to select an item of a dyn_ask master/ detail query ((askmatches.someask.param.cursor....))  (same name of the ask !!!!!!!!!!)
+                                            entity = previous.collect.key;// on running generated modell (same name of the ask !!!!!!!!!!)
                                             // reset the entity just in case alredy matched in past 
                                             if (step.values.matches[entity]) {
                                                 step.values.matches[entity].match = null;
@@ -1496,7 +1463,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
 
 
 
-                                            }else pArray={};// a void model : never match no match
+                                            }
                                             // like in onchange runQuery we define a param result (passed to addMatcRes()) of  a query ask match:
                                             // mydyn=askmatches[entity]={matched:null,complete:'fail'};
 
@@ -1569,15 +1536,44 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
 
 
                                         if(!matcher){// special matcher is missing , so  a std matcher regex
-
-                                           let stdmres=stdMatch(tomatch,pArray,pattArray,linematch,step);//return {matched,path,rematch,storeVal,notest};
-                                           matched=stdmres.matched;path=stdmres.path;rematch=stdmres.rematch;storeVal=stdmres.storeVal;if(stdmres.notest)notest=true;
-
-                                    /* moved to stdMatch()
-
                                         let  itr1;// when 0 stop while
 
+                                    /* no good :
+                                    // pattern description x regex entity
+                                    // base format pattArray={itema-regexa&itemb-regexb&.......}
+                                    // if firse 4 char is : {xy}, take x instead of - and y instead of &
+                                    let itemSep='&',nameSep='-';
+                                    if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y
+                                        itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
+                                        pattArray=pattArray.substring(4);
+                                    }
 
+                                    if(pArray)itr1=Object.getOwnPropertyNames(pArray);
+                                    else {
+                                        // TODO TODO todo : do the same on mod_feature branch
+                                        if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y
+                                            itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
+                                            pattArray=pattArray.substring(4);
+                                        }
+                                        itr1=pattArray.split(itemSep);
+                                    }
+                                    for(ii=0;ii<itr1.length;ii++){// gh for all item in model test it 
+
+
+                                    if(pArray){
+                                        patt = pArray[itr1[ii]].patt;
+                                        storemat = itr1[ii];
+                                        console.log(' condition try matching : $$ case , ii: ',ii,' storemat(matched item value/name)  is  ', storemat, ' patt is : ', patt);
+                                    }else{
+                                    let sar=itr1[ii].split(nameSep);//itr1[ii].indexOf('-');
+                                    if (sar.length > 1) {
+                                        patt = sar[1];
+                                        storemat = sar[0];
+                                        console.log(' condition try matching : $$ case , ii: ',ii,' storemat(matched item value/name)  is  ', storemat, ' patt is : ', patt);
+
+                                    } else notest = true;
+                                    // end for 
+                                    }*/
 
 
 
@@ -1652,12 +1648,18 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                                 } else {// manage a entity item name : recover the vname from excel model 
                                                     storeVal = null;
                                                     // recover vmatch if present on model
-                                                    if (step.values.excel&&step.values.excel[entity] && step.values.excel[entity].vmatches) step.values.__conf += step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
+                                                    if (step.values.excel[entity] && step.values.excel[entity].vmatches) step.values.__conf += step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
                                                     else step.values.__conf += storemat;
                                                 }
 
                                                 if (linematch) path = condition;// do not route if is $%
-
+                                                /* put in addMatcRes :
+                                                if(mydyn){// a cursor selection case ii is the matched index 
+                                                        mydyn.param.group.sel=step.values.askmatches[desiredE].cursor.data[ii];
+                                                        //todocheckvname vmatches; now we can find in data[][]=mydyn.param.group.sel[12];
+                                                        //=mydyn.param.group.sel[12];
+            
+                                                }*/
 
                                                 matched = true; break;// break ii loop, (loop: in a $xy condition for all item in model test it )
                                             } else {// 
@@ -1666,9 +1668,6 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
 
 
                                         }//  end condition try matching. gh  end ii for , test item in model
-                                         // ends moved to stdMatch()
-                                         */
-
                                     }else{// a not std matcher (regex)
 
                                         // ****  MFM code section : fire a matcher and insert the result depending on the request type ( usually looking at condition.type  )
@@ -1761,7 +1760,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                                 // get surely known filed , other can be retrived in template by vars.matches:
 
                                                 // match can be the same as vmatch
-
+                                                if(res){
 
                                                   
                                                     
@@ -1774,7 +1773,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                                 step.values.__conf +=res;// toString() ??  // if(matched_.vmatch)step.values.__conf +=matched_.vmatch;
                                                 storemat=res;// OR a object ??? 072020 matching in a not standard matcher ( static model enitity described in excel ) is a obj with .match and .type
                                                 matched=matched_;// true
-                                                
+                                                }
 
                                             }else;// matched=false 
 
@@ -1864,7 +1863,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
 
                                     if (linematch && matched) break;// dont break in $% case (linematch is false). break condition loop  for (p= ....)
 
-                                }// end $x case can be $$
+                                }// end $$ case
 
                             } // end $xy cases 
 
@@ -1895,150 +1894,7 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                         }// end hyt
         // ******* model matching section ends 
 
-                        function stdMatch(tomatch,pArray,pattArray,linematch,step){//  a std matcher regex
-                            // from pArray ( the pattArray format in case $$aaskquery:> )or    
-                            //  pattArray the static regex entity in excel or online , 
-                            // taking care of linematch (// do not route if is $%)
-                            // calc :return {matched,path,rematch,storeVal,notest};
 
-
-                            let storemat,patt,rematch,storeVal,notest=false,matched=false;
-
-                            let  itr1;// when 0 stop while
-
-                        /* no good :
-                        // pattern description x regex entity
-                        // base format pattArray={itema-regexa&itemb-regexb&.......}
-                        // if firse 4 char is : {xy}, take x instead of - and y instead of &
-                        let itemSep='&',nameSep='-';
-                        if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y
-                            itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
-                            pattArray=pattArray.substring(4);
-                        }
-
-                        if(pArray)itr1=Object.getOwnPropertyNames(pArray);
-                        else {
-                            // TODO TODO todo : do the same on mod_feature branch
-                            if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y
-                                itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
-                                pattArray=pattArray.substring(4);
-                            }
-                            itr1=pattArray.split(itemSep);
-                        }
-                        for(ii=0;ii<itr1.length;ii++){// gh for all item in model test it 
-
-
-                        if(pArray){
-                            patt = pArray[itr1[ii]].patt;
-                            storemat = itr1[ii];
-                            console.log(' condition try matching : $$ case , ii: ',ii,' storemat(matched item value/name)  is  ', storemat, ' patt is : ', patt);
-                        }else{
-                        let sar=itr1[ii].split(nameSep);//itr1[ii].indexOf('-');
-                        if (sar.length > 1) {
-                            patt = sar[1];
-                            storemat = sar[0];
-                            console.log(' condition try matching : $$ case , ii: ',ii,' storemat(matched item value/name)  is  ', storemat, ' patt is : ', patt);
-
-                        } else notest = true;
-                        // end for 
-                        }*/
-
-
-
-                        // 072020
-                        // pattern description x regex entity
-                        // base format pattArray={itema-regexa&itemb-regexb&.......}
-                        // if firse 4 char is : {xy}, take x instead of - and y instead of &
-                        let itemSep='&',nameSep='-';
-
-
-
-                        
-                            if (pArray) itr1 = Object.getOwnPropertyNames(pArray);
-                            else {
-                                // TODO TODO todo : do the same on mod_feature branch
-                                if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y : the separator 
-                                    itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
-                                    pattArray=pattArray.substring(4);
-                                }
-                                itr1=pattArray.split(itemSep);
-                            }
-
-                            for (let ii = 0; ii < itr1.length; ii++) {// gh for all item in model test it 
-                                // start  condition try matching 
-
-
-                                // TESTING from the declared entity in excel :  
-                                //                                      if the entity is described in excel ( in excel every item has a name and a patt and a vname , and can have description and some bl values )
-                                //                                              we test its item :
-                                //                                              itemname storemat with pattern patt  
-                                //                                     if the entity is described in excel just with the entity name and the algo/external REST url that will resolve
-                                //                                               we call the name resolved by external algo 'value' and the resolved  matching entity ( atomic or obj ) are put in storeval
-                                if (pArray) {
-                                    patt = pArray[itr1[ii]].patt;
-                                    storemat = itr1[ii];
-                                    console.log(' condition try matching : $$ case , ii: ', ii, ' item (storemat) :  ', storemat, ' on patt : ', patt);
-                                } else {
-                                    let sar;//=itr1[ii].split('-');//better as the regex can contains '-' , so itr1[ii].indexOf('-');
-                                    //sar = itr1[ii].indexOf('-');
-                                    sar = itr1[ii].indexOf(nameSep);
-                                    if (sar >= 0 && sar < itr1[ii].length + 2) {// >1 2 ?
-
-                                        storemat = itr1[ii].substring(0, sar);
-                                        patt = itr1[ii].substring(sar + 1);
-                                        console.log(' condition try matching : $$ case , ii: ', ii, ' item (storemat) :   ', storemat, ' on patt : ', patt);
-
-                                    } else notest = true;
-                                    // end for 
-                                
-                                }
-                                
-
-                                // test = new RegExp(patt, 'i');
-
-
-                                // TODO: Allow functions to be passed in as patterns
-                                // ie async(test) => Promise<boolean>
-
-                                // *** TRY MATCHING iesimo item in Entity Model
-                                if (!notest && (rematch = ttest(tomatch, patt))) {// rematch means 'match result'. match if ttest returns a not null rematch. rematch[1]>matches.entity.
-                                    // ok : 
-                                    console.log(' \n * MATCH Detected on MODEL :$$ or $% condition, at thread ', thread_name, ',step ', step.index, ' ,previous ask key ', previous.collect.key, ' ,ask condition index ', p, '\n  model  ', entity, ', matched model item : ', storemat, ', model index : ', ii, ', extracts: ', rematch);
-                                    step.values.__conf = step.values.__conf || '';// confirm  the user matched something 
-                                    //if(data !== null && data !== ''  && data!==undefined) {}  You can use below simple code
-                                    // if(Boolean(value)){ 
-                                    if (rematch.length > 1 && Boolean(rematch[1]) && storemat == 'value') {// manage a value :the 'item name' is 'value' , it assumes the matched val that must be first group
-
-                                        storeVal = rematch[1];
-
-                                        // step.values.excel[entity].vmatches.value;// is not used 
-                                        step.values.__conf += storeVal;
-                                    } else {// manage a entity item name : recover the vname from excel model 
-                                        storeVal = null;
-                                        // recover vmatch if present on model
-                                        if (step.values.excel&&step.values.excel[entity] && step.values.excel[entity].vmatches) step.values.__conf += step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
-                                        else step.values.__conf += storemat;
-                                    }
-
-                                    if (linematch) path = condition;// do not route if is $%
-                                    /* put in addMatcRes :
-                                    if(mydyn){// a cursor selection case ii is the matched index 
-                                            mydyn.param.group.sel=step.values.askmatches[desiredE].cursor.data[ii];
-                                            //todocheckvname vmatches; now we can find in data[][]=mydyn.param.group.sel[12];
-                                            //=mydyn.param.group.sel[12];
-
-                                    }*/
-
-                                    matched = true; break;// break ii loop, (loop: in a $xy condition for all item in model test it )
-                                } else {// 
-                                    //  addMatcRes(false,entity);
-                                }
-
-
-                            }//  end condition try matching. gh  end ii for , test item in model
-                            return {matched,path,rematch,storeVal,notest};
-                        }// ends function  stdMatch()
-         
                             // STARTING MOOVING FUNCTIONS ON vCtl :
                             // put on top of this function let addMatcRes=this._vcontroller.vfwF.addMatcRes;
                             function addMatcRes(mat,// true : matched
@@ -2295,12 +2151,11 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
  
 
                                     }else{
-                                        if(step.values.excel){
+
                                         if(isVal){
                                             mv.vmatch=step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
                                        }else{// recover voice name  if there is registered  in excel :
                                         if(step.values.excel[entity]&&step.values.excel[entity].vmatches)mv.vmatch=step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
-                                        }
                                         }
                                     // leave previous matches if '§' nb cant be used in vuluetype model !!
                                     if(rematch&&rematch[1])mv.data=rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
@@ -2424,8 +2279,8 @@ if(condition.type.substring(0,5) === 'macro') {// macro only
                                 // returns matched model item name/value ($$ case), otherwise null
 
                                 // debug 
-                                if(!step.values.matches) console.error('  ERR   chkMatcRes cant find values.matches !!! on entity  ', entity);
-                                else 
+                                if(step.values.matches);
+                                else  console.error('  ERR   chkMatcRes cant find values.matches !!! on entity  ', entity);
 
 
                                 if(entity)if(step.values.matches[entity]&&step.values.matches[entity].match) {// register under values.matches.entity=itemvalue
@@ -2965,9 +2820,9 @@ DO GOON ( do a chance to condition to match also the previous step user answere 
            // console.log(' XXXXXX >>>>>>>>>>  testing in key nam ',knam, ' askmatches: ',vars.askmatches);
             for (var key in vars.askmatches) {
              //   console.log('       >>>>>>>>>>  test key on askmatches ',key, ' obj ',vars.askmatches[key]);
-            if(vars.askmatches[key]&&vars.askmatches[key].match)askmatches.push(key);// also =matchval ?
+            if(vars.askmatches[key]&&vars.askmatches[key].match)askmatches.push(key);
             }
-        outgoing.channelData.askmatches = askmatches;// shown as mathedStep
+        outgoing.channelData.askmatches = askmatches;
         }
 
 
@@ -3185,8 +3040,8 @@ function looseJsonParse(templ,vars,step,jsfunc,service,par){
         // usually used in case we want to generate same text (substituing the &&x&& x with the out calc) without use a onchange 
         // or also when in a msg we want to use a {{y}} a context var y ( calc as before)  depending from past status  
         // or 
-        //  - in a condition we want to test not the user speech but the current vars values  
-        //      in this case we can call :
+        //  - in a condition we want to test not the user speech but the passed var got 
+        //      in this case we ca call :
         //          looseJsonParse(null,vars=Object.assign({},context.vars,{text}),conditionStringasFunctionjscode) 
         //          so in js code we can access  in js code to vars and also to user text as vars.text 
 
@@ -3206,14 +3061,16 @@ function looseJsonParse(templ,vars,step,jsfunc,service,par){
 
       if(templP.length==3||templP.length==5){
       // evaluate fcorpus in context 
-        fc=templP[1];// jsfunctionText
+        fc=templP[1];
         console.log('looseJsonParse in ...&&fc&&... evaluating fc js code , fc is :',fc);
         let myf='"use strict";' + fc;
         // calc=Function(myf)();
         //calc=Function('"use strict";' + fc)();
          //calc=Function( fc).call(vars);
         //calc=Function( fc).call(vars);
-        calc=eval( fc);// eval has this scope to work with ! so also vars. eval() will return the last calculated expression 
+
+        calc=eval( fc);// eval has this scope to work with ! so also vars
+
         // OK calc=eval(myf);
         //   console.log('looseJsonParse  calc :',calc);
         if(calc)ret=templP[0].concat(calc).concat(templP[2]);else ret=templP[0].concat(templP[2]);
@@ -3237,7 +3094,7 @@ function looseJsonParse(templ,vars,step,jsfunc,service,par){
           console.log(' && case transformer text is ret= ',ret);return ret;}else return templ;
                                           
      // return Function('"use strict";return (' + obj + ')')();
-      }else{// jsfunc case , we dont need template, just eval jsfunc // if there is a jsfunc (or template is void) : calc jsfunction on current this extended with vars 
+      }else{// jsfunc case , we dont need template, just eval jsfunc
         fc=jsfunc;
         console.log('looseJsonParse : evaluate a boolean fc condition function :',fc);
         let myf='"use strict";' + fc;
