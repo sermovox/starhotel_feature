@@ -47,6 +47,9 @@ const controller = new Botkit({
     storage
 });
 
+let rootDef=require('./nat/cfgWebPost.js');
+rootDef(controller.webserver);
+
 if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');
 
@@ -160,8 +163,11 @@ mongoose.Promise = global.Promise;// >>>>>> alredy did in std db module ???
 // dont work so TODO :  npm uninstall --save 'convert-json-schema-to-mongoose'   , see https://stackoverflow.com/questions/13066532/how-to-uninstall-npm-modules-in-node-js
 if (process.env.DB_URI) {
 
- 
-	var conn      = mongoose.createConnection(process.env.DB_URI);
+    let conn;
+    // do connection after x specific db to connect 
+    
+    // that only if want a def connection x all bot :
+    // var conn      = mongoose.createConnection(process.env.DB_URI);
 	// now use conn to call std methods that was using a tandard connection :
 	//   trip = mongoose.model('master',stdModel1);   >>>>   trip = conn.model('master',stdModel1);
 
@@ -299,6 +305,8 @@ MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first con
 > parse tempate to find js  &&  >>   &&& so i can write if(a&&b)  
 
 > catch per sintax on condition $$$$
+
+> askmatches and matches are set anyway so do not need tochech foe existence in convo !!!! vars.matches=var.matches||{}
 
 */
 

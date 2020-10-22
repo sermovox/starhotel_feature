@@ -205,7 +205,7 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
     let myth='default',
     directive,// directive= ( dynJs=comands={cmddir,cmd2dir,,,,} ) .acmd
     nodirective=false;// if true we'll give minimum support with no directive and no user onchanges monchange
-
+                        // if this convo do not have fw support must not use father fw structures (matches,asmatches,,,,)so null it , otherwise set if not alredy done by father
     //if(!dynJs[myscript_])return;// error
 
 
@@ -299,7 +299,7 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
    console.log('\n starting FW initCmd , so registering convo.before for cmd   ',myscript_,' thread default ');
             //let  myscript_='televita';// launch a closure with a internal var the script well be registering :
             controller.plugins.cms.before(myscript_,myth, async(convo, bot) => {// default thread will be enougth
-
+                // convo can be eredited from father , but if this convo do not have fw support must not use father fw structures (matches,asmatches,,,,)so null it 
                 if(nodirective){
                     convo.setVar('matches', {});// case $$ and $% : model and key matches ex :values.matches.color='red', see conversation.addMatcRes()
                     convo.setVar('askmatches', {});// other : key matches ex :values.askmatches.akey={match=[{key:0},,,]}, see conversation.addMatcRes()
@@ -527,7 +527,7 @@ oo
 
              // status of convo algo var and user navigation on convo
 
-             if(!convo.vars.matches)// previous matches in previous convo will be mantained
+             if(!convo.vars.matches)// previous matches in previous convo ( father) will be mantained
              convo.setVar('matches',{});// case $$ and $% : model and key matches ex :values.matches.color='red', see conversation.addMatcRes()
              
 
@@ -589,7 +589,7 @@ oo
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
 
                 // do not use db , debug only  :
-                db.model(onChThis.schemaurl,new Schema(onChThis.schema)); // register also the schema on std connection   : OLD just to debug never use it 
+                // if(db)db.model(onChThis.schemaurl,new Schema(onChThis.schema)); // register also the schema on std connection   : OLD just to debug never use it 
             }
 
 

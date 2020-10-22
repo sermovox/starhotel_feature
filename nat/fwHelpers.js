@@ -1990,7 +1990,9 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             //          :service//dbmatch  : route to :service//plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
             //              if form is null filling form with qs
             // :http//host...  call run_rest: and return the json obj of http result
-            // std return ; return {reason:runned,rows:JSON.parse(response)};  rows is obj (std obj so take value ) or [] of 
+            // std return ; return {reason:'runned',rows:JSON.parse(response)};  rows is row obj (std obj so take value ) or [row1,,,]  
+            //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( asmatches.param format if we run a query )
+            //              if failed :{reason:something,'err string'}
 
 
             if (true) {
@@ -2050,8 +2052,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
                         } 
                     }
-                    if(mr)console.log(' returning from rest service request :  {reason:',mr.reason,',stdformatrows} =',mr);// service runned
-                    else console.log(' returning NULL from rest service request  ');// not found serevice
+                    if(mr)console.log(' service run_jrest(url=',url,') returning from rest service request :  {reason:',mr.reason,',stdformatrows} =',mr);// service runned
+                    else console.log(' service run_jrest(url=',url,') returning NULL from rest service request  ');// not found serevice
                    return mr;
                 } else
 
@@ -2162,7 +2164,30 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
         // 072020 : alredy set in onchange ???
         // ((url,)entity,text=searchterm,wheres,isDb_Aiax,cb)
+
+        dynQuery:async function  (term,cmd,key,entity,step,cb){
+                    // news 19102020 API 
+        //  Query type matcher  API: (text,id,key,entity,cb(val=[{_doc:result}||result,,]||{_doc:result}||result)), 
+        //   cioe il cb param, val,  puo essere oggetto o array , se array prendo il primo item come oggetto . se l'oggetto ha un field _doc, prendo val=object._doc altrimenti val=object
+        //   val puo essere direttamnte nel formato askmatches.ask.param format 
+        //  returns :true/false ');
+
+
+                        //      val is usually  asmatches.param format if we run a query using a apropriate service.run_jrest () mr=await await this.run_jrest(url,form,isGET);)
+                                    // so run_jrest () should return {reason:'runned',rows:JSON.parse(response)}; 
+                                    //      response  is usually a row or [row1,,,] but in this case can be directly  asmatches.param format
+                                    //            
+            // implement .....................
+        },
+
         dynMatch:async function
+        // news 19102020 API 
+        //  Ent type matcher  API: (text,id,key,entity,cb([{_doc:result}||result,,]||{_doc:result}||result)), 
+        //   cioe il cb param, val,  puo essere oggetto o array , se array prendo il primo item come oggetto . se l'oggetto ha un field _doc, prendo val=object._doc altrimenti val=object
+        //   val deve essere estensione di un std row={id,value,patt,descr,data, bl.....}
+        //  returns :true/false ');
+
+
         //helper function , serving convo fw matching loop request . will :
         //  - get url from excel or macro
         //  - add rest param according to url to send appropriate request x the endpoint 
@@ -2183,9 +2208,9 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
 
             //  RETURNS true/false ( the match) and if true cb will be called with the result cb(result=rows):
-             // rows=[modelitem1,,,,] 
+             // rows=[modelitem1,modelitem2,,,] 
              //     - in case of entity match, modelitem  can be set in matches[entity] as:
-             //             modelitem={a std model db ob + bl fieldsj} + optional info that will be available if the model was static and declared in excel[entity] like vmatch,notMatPr ...
+             //             modelitem=rows[0]={a std model db ob + bl fieldsj} + optional info that will be available if the model was static and declared in excel[entity] like vmatch,notMatPr ...
              //     - so in case of   we can fill askmatches rows/cursor/params in the format expected :
              //             .............
 
@@ -2260,6 +2285,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             if(entDir&&entDir.url)
                 url=entDir.url;// get url from excel
 
+                console.log(' service:dynMatch, a type Ent API matcher , queryng service url : ',url,', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ',entity,' , key  ',key);
+
             let isGET='GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
             // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
 
@@ -2287,7 +2314,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
             for(let wc in wheres) {
 
-                whMmeta[wc]=getMeta(excel,dir,wc,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                whMmeta[wc]=getMeta(excel,dir,wc,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!! ( significa the le info vanno messe in dir e non in dir.ask)
                 // this fun get the excel or dir.asks[ask].cond   obj and get its dbmeta structure !!
 
             }
@@ -2320,12 +2347,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
 
 
-            }else{
+            }else{// no custom so use run_jrest() api
 
 
            let  mr=await await this.run_jrest(url,form,isGET);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                 //  // returns  res={rows,reason} reason  'err' or 'runned'
-                if(!mr||mr.reason=='err'||!mr.rows)return false;
+                if(!mr||mr.reason!='runned'||!mr.rows)return false;
                 else {
 
                     cb(mr.rows);

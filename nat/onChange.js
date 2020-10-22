@@ -26,7 +26,6 @@ const logger=function(message,ch,send){//logger({user,text},ch,'')
 
 }
 
-let application;
 
 
 //function setService(fwHelpers,fwCb_){}// ported on service.js
@@ -784,7 +783,7 @@ WrapApp.prototype.post_aiax_fw_chain=function(cmd,req){
 
 //let convovars=values;
 // one or the other
-async function getappWrap(bot,convo){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
+async function getappWrap(bot,convo,app){// now is a session recover (into values.session) from dialogstate and put in values.app appWrap (wrapper of  application with convo vars )
 
     /* *********************    01102020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
 
@@ -951,7 +950,7 @@ nb
 
  console.log( ' session recoverd from dialogState accessor ',values.session,' \n And app wrapper getappWrap registerd state.app) = ',values.app),' \n nb appwrapper will call app method passing session';  
     }
-    if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
+    // useless that are done in fwbase caller if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session and vars application wrapper  appWrap
     // do in fwbase caller :
     // if( !(values.app&&Object.keys(values.app).length))values.app=wrapgen(values.session,values);// session... and (values=vars).app application wrapper  appWrap
     return wrapgen(values.session,values,app);// session... and (values=vars).app application wrapper  appWrap

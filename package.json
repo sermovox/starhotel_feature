@@ -17,7 +17,7 @@
     "convert-json-schema-to-mongoose": "^0.3.1",
     "dotenv": "^7.0.0",
     "googleapis": "^39.2.0",
-    "mongoose": "^5.10.5",
+    "mongoose": "^5.10.9",
     "mongoosify": "^1.0.0"
   }
 }

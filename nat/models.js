@@ -1,4 +1,4 @@
-let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config;
+let hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,config;
 
 
 
@@ -2504,4 +2504,5 @@ let star_desk={// REFERENCE . all var dyn added at containers values.excel/match
     };// ends star_desk
 
 
-module.exports ={hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,star_desk};
+//module.exports =                            {hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,star_desk,config};
+module.exports =Object.assign(OnCh_Register,{hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config});
