@@ -308,6 +308,8 @@ MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first con
 
 > askmatches and matches are set anyway so do not need tochech foe existence in convo !!!! vars.matches=var.matches||{}
 
+> for performance in convo  previous.collect.key > prevName
+
 */
 
 

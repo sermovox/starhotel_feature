@@ -205,10 +205,10 @@ let vfwF = {// framework functions module used in convo obj
     // we can think to add some context var to be used instead to pass such vars  every call we do
 
     addMatcRes: function (mat,// true : matched
-        entity,             // ................................
+        entity,             // entity name if static model , ... if value regex group , the ask containing $$xxx:> if param not null 
         storemat, // a string for simple static model match , a obj if we matched a entity , intent , or a query result 
-        // storematch='thematchedvalue'
-        // storematch={type:'Ent'/'Int'/'Cur',.....}
+        // storemat='thematcheditem' or 'value'
+        // storemat={type:'Ent'/'Int'/'Cur',.....} can be obj in case of nt std matcher
 
         
         storeMId // storemat is
@@ -218,9 +218,9 @@ let vfwF = {// framework functions module used in convo obj
         //          dyn matcher returns : see dynMatch in fwhelpers.js
 
         , routing// routing=linematch is true if not $% case ( not routing case ) so this condition will stop the cond loop
-        , rematch// the regex matched extraction (....)
+        , rematch// the regex matched extraction (....) , in revision 102020 seems to be changed with storeVal
         , reset// reset matches ???? never called !!!!!!!!!!!!!!!
-        , param,// not nul if this is a resolver selection ask
+        , param,// not nul if this is a resolver selection ask, entity is the askname !
         storeVal// old a integer or string to get from user  .02102020 : changed see below news 
         , step, previous
         //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
@@ -228,11 +228,55 @@ let vfwF = {// framework functions module used in convo obj
         , isStatic_ // will decide to put std static match or use 
 
 
-    ) {// register model/entity match, last turn match asked with $$ or $% result 
+    ) {
+        
+        /* no returns but 
+        - set condition matchers model with entity  mv =step.values.matches[entity] ,
 
+
+
+                     3 casi :
+                - entity nomatch   
+                                        set .match=null
+                - from   std matcher 
+                        isStatic_ = true 
+
+                        entity item singola risolta   descritti in excel o inline with a single item = storemat='value'
+                                        storeval=nome singolo item ('value'), 
+                                        .match={match:storeval,vmatch:storeval,mid:0}, storeVal risolto come regex group match 
+                                        
+                                        ??????????
+                                        .data=storeVal 
+
+                        entity con piu item descritti in excel o inline 
+                                        storeval = null 
+                                         .match={match:storemat,vmatch:storemat,mid:index}
+                                         ma in excel[entity]['someblpropname'][mid] posso trovare  proprieta addizionali 
+
+
+
+                se obj :   matches[entity] =storemat =  the row got from db , usually std format {value,patt,shortdescr,,,,}
+                                                    + 
+                                                    storemat.match=storemat.vmatch=storemat.value;
+                                                    +
+                                                    storemat.type dove potro trovare type per differenziare casi particolari
+                - isStatic_ e true se ho std matcher
+
+
+
+                in case of askmatches param master model  , in addition to fill the model that is assigned to the ask containing the $$xxx:>  condition , fills the model match inside dynask  params 
+        - set .param 
+
+        - set the match in ask condition container that contains the condition matched (or if no condition ........)
+
+        */
+        
+        // register model/entity match, last turn match asked with $$ or $% result 
+
+        // revision 102020   storeval da tenere , rematch sembra inutile 
 
         /* 02102020 semplificazione da fare : new rules  x settaggio di matches[entity].match:
-         storeval e isStatic_ probabilmente da buttare 
+         storeval e isStatic_ probabilmente da buttare ??? 
          nuovo concetto base : 
          - storemat e' il valore matchato da settare come match della entity , se nn e' entity .....
           puo essere atomico o obj std format {value, patt,descr,data + bl}
@@ -250,26 +294,7 @@ let vfwF = {// framework functions module used in convo obj
                                         >    fare come si faceva con storemat='value' ma si mette il valore atomico risolto in storemat e in ogni caso per sapere che e' entity con singolo
                                                 item risolto si mette in storeval il nome item singolo ( di solito value perche  o il nome della entita risolta e' entita !! )
 
-             3 casi :
-             - entity nomatch   
-                                        set .match=null
-            - from   std matcher 
-                        isStatic_ = true 
-
-                        entity item singola risolta   descritti in excel o inline 
-                                        storeval=nome singolo item ('value'), 
-                                        .match={match:storemat,vmatch:storemat,mid:0}, storemat risolto come regex group match 
-
-                        entity con piu item descritti in excel o inline 
-                                        storeval = null 
-                                         .match={match:storemat,vmatch:storemat,mid:index}
-                                         ma in excel[entity]['someblpropname'][mid] posso trovare  proprieta addizionali 
-
-
-
-            se obj :   matches[entity] =storemat ; storemat.match=storemat.vmatch=storemat.value;
-                                        in storemat.type potro trovare type per differenziare casi particolari
-            - isStatic_ e true se ho std matcher
+                                        see matcher format mv above 
 
     */
 
@@ -295,7 +320,7 @@ let vfwF = {// framework functions module used in convo obj
 
         // mat      : true if entity is matched, false 
         // entity   : model name ($$ case) otherwise null condition  index 
-        // storematch, storeMId is 
+        // storemat, storeMId is 
         //              if condition is $$ $% ( model match) : the name/value matched () entity not null),
         //              storeMId is the id of matching condition 
 
@@ -453,7 +478,8 @@ let vfwF = {// framework functions module used in convo obj
 
 
                 if (isVal&&rT==0) {// the entity is a value ( item is the regex match value)
-                    mv.match = storemat;mv.mid=0;// register under values.matches.entity=itemvalue
+                    mv.match = mv.vmatch=storeVal;// storemat;// 'value'
+                    mv.mid=0;// register under values.matches.entity=itemvalue
                     //mv.mid = 0;// dont use this, usable to see if is match is good (mid>0) 
                     // use storeval x  ??
                 } else {// a finit dimension entity
@@ -464,7 +490,7 @@ let vfwF = {// framework functions module used in convo obj
 
                         // GET the result Type 
                         mv.match =mv.vmatch = storemat;mv.mid=storeMId;
-                    } else // a non static matcher will provide the match obj
+                    } else // a non static matcher (db call) will provide the match obj
                         if (rT = 1) {// a std model selected/matched entity item row {value,descr,,,,,, + bl fields }
                         let mvv= Object.assign(mv,storemat);
                           mv.vmatch = mv.value;// bl fields can be recovered by vars.matches[].someblfiled
@@ -477,11 +503,22 @@ let vfwF = {// framework functions module used in convo obj
                 }
 
             } else   mv.vmatch = null;// tested (step.values.matches[entity] exists  ) but not matched // so not matched is matches[entity]=null???
-
             // ?? if(isStatic){
-            if (isVal) {// anyway
+            //if (isVal) 
+            {// anyway
 
-                if (param && param.group) {// this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
+                if (param && param.cursor) {
+                    
+                    /* - set inside these fields :  param={
+                                                        match:,vmatch:,selmatched:,
+                                                        group:{sel:{item: param.cursor.rows[storeMId]}}
+
+                        -  attach param to model ( AND to this normal ask ? )
+                            mv.param = param;
+                            askmatches[previous.collect.key].param = param;
+                    }*/
+                    
+                    // this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
                     // the model that matches the cursor has the same  name as this desiredE ask :
                     // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
                     //      so is not the name of a declared model in excel ! or in line condition : &&model:....
@@ -503,7 +540,7 @@ let vfwF = {// framework functions module used in convo obj
 
                     // UPdate the desire query param ( so add a match and a sel)
 
-
+                    if(param.group)
                     param.group.sel = {
                         item: param.cursor.rows[storeMId]
                         //,index:blRes
@@ -512,6 +549,7 @@ let vfwF = {// framework functions module used in convo obj
 
 
                     param.match = storemat;// ?? touch the desire ask result ?
+                    if(param.cursor.resModel&&param.cursor.resModel[storemat])
                     param.vmatch = param.cursor.resModel[storemat].vname;// ?? touch the desire ask result ?
                     param.selmatched = entity;// a way to see in param  if the match is a single row cursor or a following selection match,
                     // entity=previous.collect.key 
@@ -536,13 +574,17 @@ let vfwF = {// framework functions module used in convo obj
                     */
                     {// recover voice name  if there is registered  in excel :
 
-                        if (step.values.excel[entity] && step.values.excel[entity].vmatches)
+                        if (!storeVal&&step.values.excel[entity] && step.values.excel[entity].vmatches)
                             mv.vmatch = step.values.excel[entity].vmatches[storemat];// get voice entity name from excel
                     }
                     // leave previous matches if '§',nb cant be used in vuluetype model !!      <<<< TODO : CHECH it is true 
 
                     // add a  data to store regex extraction  to ......... ????
-                    if (rematch && rematch[1]) mv.data = rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
+                    //if (rematch && rematch[1]) mv.data = rematch[1];// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
+                    
+                    // ????
+                    if ( storeVal ) mv.data = storeVal;// see ttest() return ( returns regex catch () ) ,store matched data to run on a routed displayng dyn key onchange (the thread msg on a $$ condition gotothread )
+                    
                 }
                 // } //ends if(isStatic)
             }// ends if isval

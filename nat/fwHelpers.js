@@ -2165,7 +2165,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
         // 072020 : alredy set in onchange ???
         // ((url,)entity,text=searchterm,wheres,isDb_Aiax,cb)
 
-        dynQuery:async function  (term,cmd,key,entity,step,cb){
+        dynQuery:async function  (term,cmd,key,entity,step,cb){// cb to call cb(val) 
                     // news 19102020 API 
         //  Query type matcher  API: (text,id,key,entity,cb(val=[{_doc:result}||result,,]||{_doc:result}||result)), 
         //   cioe il cb param, val,  puo essere oggetto o array , se array prendo il primo item come oggetto . se l'oggetto ha un field _doc, prendo val=object._doc altrimenti val=object
