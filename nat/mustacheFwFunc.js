@@ -790,6 +790,8 @@ else return mustacheF.nmList(el,null,count,true)// will add e anche  dopo il pri
 
 function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modsonask at  before cb of the cmd default thread 
     //  From a conversation script create a map : ask > list of model tested in ask
+    // returns modsOnAsk_:{askname:[mode1,model2]},askMod_:{mod1:itsAsk,,,,}
+    // so i can say if a name is a ask or a mod ! (if unique name )
     // we  want to know what model will be tested on script asks on all threads
     // in onchange  main dyn_ask will test major models gathered by y many asks that are visited in the dialog
     // so in a ask we'll find 
@@ -802,7 +804,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
 
     let modsOnAsk_ = {
         //aask:[model1,model2]
-    };
+    },askMod_={};
     console.log(' modsOnAsk *** script is : ', script)
 
     for (var thread in script) {// thread is a name 
@@ -811,7 +813,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
             // thread is a []
             let thread_ins = script[thread];// a array 
 
-            for (let p = 0; p < thread_ins.length; p++) {// line: a step in thread
+            for (let p = 0; p < thread_ins.length; p++) {// line: a step in thread (ask if has a name)
                 let mods = [];
                 let line = thread_ins[p], name;// name is a askvar
                 if (line.collect && line.collect.options)// line has a key to collect
@@ -841,6 +843,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
                                     if (trd == '$' || trd == '%'  || trd == '§')str=3;
                                     entity = condition.pattern.substring(str, itr);
                                     mods.push(entity);
+                                    askMod_[entity]=name;
                                 }
 
                             }
@@ -863,7 +866,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
             }// end a step
         }// thread
     }
-    return modsOnAsk_;
+    return {modsOnAsk:modsOnAsk,askMod:askMod_};
     
 }// ends modsOnAsk
 module.exports ={ mustacheF,modsOnAsk};

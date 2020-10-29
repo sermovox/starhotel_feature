@@ -2,7 +2,7 @@ let fwCb,dynJs;
 qs=require("qs"),
 querystring=require('querystring');
 module.exports =
-function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http manager , receives from user cfg the managers, add refernce od aiv3 and refIplementation beginning a inner of them.  an object to new   returning FwHelpers :a obj with methods 
+function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http manager , receives from user cfg the managers, add refernce od aiv3 and refIplementation beginning a inner of them.  an object to new   returning FwHelpers :a obj with methods 
 
     /*
 
@@ -58,6 +58,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
         services.db = db_;// A FIXED UNIQUE  DB CONNECTION GOT in bot.js
          services.rest = rest_;// ok ??
+         services.ai=ai_;// witai rest info
          fwCb=fwCb_,dynJs=dynJs_;// the models 
         // or
         // this.onChange_dynField=_onChange_dynField;this.rest=rest;
@@ -1907,6 +1908,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
     
         rest__: async function (entity, uri, params, method, outmap, limit) {// not used now, this rest works with require('response') module 
 
+        // https://nodejs.org/api/http.html#http_http_request_options_callback
+
              // to review , take onChange_dynField as reference api
             // simple rest fw function 
             // outmap must be ['firstprop','secondprop'] or  ['firstprop'] x param ( only first row will be got)
@@ -1984,7 +1987,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
     
         }, //end rest__
         
-        run_jrest: async function (url, formObj, method) {// return a val or null ?
+        run_jrest: async function (url, formObj, method,head) {// return a val or null ?
 
             // :service// : check if can route to internal controller put in this ( service extension)
             //          :service//dbmatch  : route to :service//plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
@@ -1993,6 +1996,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
             // std return ; return {reason:'runned',rows:JSON.parse(response)};  rows is row obj (std obj so take value ) or [row1,,,]  
             //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( asmatches.param format if we run a query )
             //              if failed :{reason:something,'err string'}
+
+            // method='GET'   accept formObj map instead of qs 
 
 
             if (true) {
@@ -2081,13 +2086,13 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
 
 
-                    } else if (url.substring(0, 7) == ':http//') {// just map the post param wheres  if find excel[entity].restmap
+                    } else if (url.substring(0, 4) == 'http') {// just map the post param wheres  if find excel[entity].restmap
                         // wheres=rmap(entDir.restmap); functopn rmap(){}
 
                         // std POST REST 
 
 
-                        let response = await run_rest(url, formObj, method);
+                        let response = await this.run_rest(url, formObj, method,head);
                         if (response) return {reason:'runned',rows:JSON.parse(response)};
                     } else {
                         // look for a custom rest adapter 
@@ -2105,7 +2110,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
 
 
         },
-        run_rest: async function (uri,formObj, method) {// if GET formObj(where clouse literal obj ) can be missing if alredy set into uri qs
+        run_rest: async function (uri,formObj, method,head) {// if GET formObj(where clouse literal obj ) can be missing if alredy set into uri qs
+            // uri  can be :
+            //  "postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
+            //  "http://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
+            // "https://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
 
             // fire e http request on .rest service
             // if method null take GET
@@ -2150,16 +2159,86 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,rest_,dynJs_){// db & http mana
                 }
             }*/
    
-            let response = await  this.rest(uri, method,formObj) 
+            let response = await  this.rest(uri, method,formObj,head) 
                             .catch((err) => { console.error(' REST got ERROR : ',err); }); 
    
             if(response)return response;// if curssor should be an array of array of literal/string 
                else return null ;
            },
 
-           intMatch:async function(){// returns entities mostly  resolved ( represented by key/descr/voicename , can be partially inflated expaded in tree for most important sub entities 
+        intMatch:async function(term,cmd,key,entity,step,cb){// returns entities mostly  resolved ( represented by key/descr/voicename , can be partially inflated expaded in tree for most important sub entities 
             // if returns false the intent was not matched
-            // askmatches structure will store the results as the return rows represent a object property nin expected format 
+            // askmatches or matches structure will store the results as the return rows represent a object property nin expected format . see caller and addMatchRes()
+
+            // do very like dynMatch :
+
+            if(this.ai){// witai conn info 
+            let vars=step.values;
+            let session=vars.session,
+                excel=vars.excel,
+                direc=vars.direc,
+                dir=step.state.dir;// the loop ctl dyn var
+
+
+                let url;// or get from excel/dir , just to sborone.  url='https://api.wit.ai/message?v=20201025'
+                
+
+                // FIND REST PARAM in dir or in excel :
+                if(dir&&dir.cond[entity]&&dir.cond[entity].url)
+                    url=dir.cond[entity].url;// get url from cms directive put in  macro 
+                let entDir=excel[entity];
+                if(entDir&&entDir.url)
+                    url=entDir.url;// get url from excel
+    
+                    console.log(' service:intMatch, a type Int API matcher , queryng ai agent service  url : ',url,', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ',entity,' , key  ',key);
+    
+                let isGET='GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
+                // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
+
+
+                if(url){// sborone, 
+
+                    if(url.indexOf('?')<0)// url end with '?' means goon with a get request !!!
+                    
+                    isGET='POST';
+                    
+    
+                // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer duty  
+                let ag,agi,tk;if((agi=url.indexOf('?v='))>0){ag=url.substring(agi+3);tk=this.ai.agents[ag];}
+                
+                    if(tk&&isGET=='GET'){// must be , sborone
+
+                        // curl >  -H 'Authorization: Bearer 2FZVYQTXU5WPBT3ITYFLNFABFQTGDZNH'   'https://api.wit.ai/message?v=20201025&q=hy%20weather%20best%20prevision%20in%20pordenone%20at%207%20pm'
+                       //  url=url.substring(0,agi);
+                         let form;//={v:ag}// x post 
+
+                        let enc=false;
+                         if(enc)url+='&q='+encodeURI(term);
+                        else{
+                         url=url.substring(0,agi);// with or without a trailing /
+                         form={v:ag,q:term};
+                        }
+                        let head={Authorization: 'Bearer '+tk };
+                let  mr=await await this.run_jrest(url,form,isGET,head);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                //  // returns  res={rows,reason} reason  'err' or 'runned'
+                if(!(mr&&mr.reason=='runned'&&mr.rows.intents))return false;
+                else {
+
+                    cb(mr.rows);
+                    return true;
+                }
+                }
+
+                }
+                else return false;
+            }
+
+
+
+
+
+
+            
             },
 
         // 072020 : alredy set in onchange ???

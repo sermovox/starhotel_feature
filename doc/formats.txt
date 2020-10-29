@@ -259,7 +259,7 @@ service extend fwHelp,db,rest,...
 
 ____________________________________
 
-vars.matches=	{// can be a static match or a dyn match 
+vars.matches.amodel=	{// can be a static match or a dyn match 
 		.........
 		match
 		vmatch
@@ -270,20 +270,20 @@ vars.matches=	{// can be a static match or a dyn match
 
 		}
 
-var.askmatches={// used to store both query result and resoved intent with entity  object values/property ( city='rome')  
+var.askmatches.aask={// used to store both query result and resoved intent with entity  object values/property ( city='rome')  
 
 
 
-        match:'aval',
+        match:'aval',// the condition matched 
         matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
-        nomatches:[{key:'aval'},,,],// only models
+        nomatches:[{key:'aval'},,,],// only x ask containing models ,only models not matching 
         ... some onchange added fields , ex : matched complete desire param ...
         matched:'match', or null or ''
                 also set session.dyn_match={};session.dyn_match[ask]={match:blResNam};
 
 
 
-        complete:'miss' or 'inter'(interrups)    ...
+        complete:'miss' or 'inter'(interrups)    ...// info like matched but x different scope
 
 
 
@@ -341,8 +341,24 @@ var.askmatches={// used to store both query result and resoved intent with entit
                           ,,,,
                 }
 
-        //or 
-        intent:{......}
+        //or instead of param :
+        intent:{name,
+		conf,
+		matched:{'miss','match','err'}
+		entities:{
+			ent:{// like ....
+				name:'ent',/// needed?
+				matched:
+				match:   itemname or {ent:itemname}
+			}
+
+		}
+
+
+
+
+
+	}
 
         group:{
                 name,

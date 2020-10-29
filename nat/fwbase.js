@@ -5,7 +5,7 @@ dynJs=require('./models.js'),// dynJs=comands={cmddir,cmd2dir,,,,} , db and http
 // should be also controller.plugin.vCtl.appWrap
 fwOnC;// injected on the init of this module , require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
 
-let db,rest,Schema;
+let db,rest,Schema,ai;
 let controller;
 let app;
 console.log('\n starting FW initCmd ,dynJs:  ',dynJs);
@@ -73,7 +73,7 @@ let init=function(){// register bank (dynJs) function onChange x script/dynfield
      
     }    */
  
-let fwHelp=require('./fwHelpers')(fwHelpers,fwCb,db,rest,dynJs);// extend fwHelpers (using fwHelpers and fwCb) with other  base fw functions 
+let fwHelp=require('./fwHelpers')(fwHelpers,fwCb,db,ai,rest,dynJs);// extend fwHelpers (using fwHelpers and fwCb) with other  base fw functions 
 // fwHelp={db,rest+refImplementation properties}
 //service=require('./service').setService(db,http,fwHelp,fwCb,dynJs);// db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
 service=require('./service').init(fwHelp,fwCb,dynJs);//extend fwHelp (using fwHelp and fwOnC) with other  user fw functions 
@@ -509,7 +509,9 @@ oo
             }
             
             // every time ???????
-            convo.setVar('modsonask',fwOnC.modsOnAsk(script));//  modsOnAsk used in .out miss func x current script
+            let {askMod,modsOnAsk}=fwOnC.modsOnAsk(script);
+            convo.setVar('modsonask',modsOnAsk);//  modsOnAsk used in .out miss func x current script
+            convo.setVar('askmod',askMod);// find the ask of a mod
 
             /*
             // portare fuori che lo faccia il framework questo e init da far fare al framework !!!!
@@ -758,10 +760,11 @@ function buildF(ask_th,ftext){
 }// insert db and rest services
 
 // register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-module.exports =function (cnt,db_,schema,rest_,app_){
+module.exports =function (cnt,db_,schema,ai_,rest_,app_){
     controller=cnt;
     fwOnC=controller.plugins.vCtl;// is vCtl
     db=db_;
+    ai=ai_;
     rest=rest_;
     Schema=schema;
     app=app_;   

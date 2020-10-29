@@ -33,6 +33,12 @@ if (process.env.MONGO_URI) {
         url : process.env.MONGO_URI,
     });
 }
+let ai = null;// witai agent 
+if (process.env.WITAI) {
+
+    ai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
+
+}
 
 
 const adapter = new WebAdapter({});
@@ -55,7 +61,7 @@ console.log('*** instantiating Botkit CMS');
 
     // TODO What if many cms (app) to run ? ( and deallocate when finish ?)
     controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too 
-        uri: process.env.uri,
+        uri: process.env.uri,// must be set/updated  by app when redirects. probably we open a admin cms (with map user_app/data_map + sub page/data_page datamap x each user_app) to set a current page data file + its wellcome prompt 
         token: process.env.token,
 
         // can we have separate ds x appid dedicated at some userspace ? ? , and load a appid ds from a def ds user registartion ? 
@@ -179,13 +185,13 @@ if (process.env.DB_URI) {
 let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
 
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
-const http = require("http");// not controller.http
-jrest_=require('./nat/rest.js');jrest_.init(http);jrest=jrest_.jrest;
+const https = require("https");const http = require("http");// not controller.httpconst http = require("http");// not controller.http
+jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;
 
 
 // now db connection wont be used any more !
 vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
-let app=require('./nat/app.js');
+let app=require('./nat/app.js');// must set the cms endpoint port that gives the cms set of app, and the wellcome msg prompt 
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
 controller.ready(() => {
@@ -228,7 +234,7 @@ controller.ready(() => {
         //  - will not redirect with a new page + qs to receive a new page with a title prompt but :
         //  - will get the
         // will send lastreview testtrigger 
-        controller.on('message,direct_message', async (bot, message) => {
+        controller.on('message,direct_message', async (bot, message) => {// no need x centralino trigger ? with middleware extraction ?
             let results = false;
             results = await controller.plugins.cms.testTrigger(bot, message);
 
@@ -259,7 +265,7 @@ controller.ready(() => {
                 // probabilmente da un onchange che si collegava a un db senza un service rest > gli serve lo schema per mappare il colection in cursor !
  
                 // should cfg only the def dialogset ?: 
-                let service=require('./nat/fwbase.js')(controller,db,Schema,jrest,app);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
+                let service=require('./nat/fwbase.js')(controller,db,Schema,ai,jrest,app);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
                                                                  // will propagate vct.db and vctl.rest on service and fwhelpers
                 // controller.usePlugin(fwCtl);
          
@@ -313,5 +319,21 @@ MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first con
 */
 
 
+function witAiAg (string) {
+    if (!string) {
+        string = '';
+    }
 
+    var creds = string.split(/\s+/);
+
+    var users = {};
+    creds.forEach(function(u) {
+        var bits = u.split(/\:/);
+        users[bits[0]+''] = bits[1];
+    });
+   // let rr='20201025',a=users[rr];
+
+    return users;
+
+}
 

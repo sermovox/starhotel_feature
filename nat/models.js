@@ -2049,6 +2049,9 @@ _yourname:{// starting with _ means that a goto cmd will fire a child !!
     
 excel:{
 
+
+    witai:{  },// alredy set in .rid
+
     mod_prov:{// registering in basefw will make available so in 
 
 

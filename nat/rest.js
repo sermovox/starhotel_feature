@@ -154,23 +154,30 @@ myRequest.end()
 }
 */
 //const URL = require('url');
-let http,request;
+let http,https,equest;
  module.exports ={
-     init:function(http_,request_){http=http_;request=request_},
-     jrest:function(url,method,data){// data ={prop1:value1,,,}
+     init:function(http_,https_,request_){http=http_;https=https_;request=request_},
+     jrest:function(url,method,data,head){// data ={prop1:value1,,,}
          // use :
-         // response = await jrest("https://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
-         //   or  response = await jrest("https://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:11,format:'plain',rnd:'new'})
+         // response = await jrest("http://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
+         // response = await jrest("http://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:1,base:10,format:'plain',rnd:'new'})
+         // response = await jrest("postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
+         // response = await jrest("https://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null,{Authorization:'bearer ....'})
+                  // response = await  jrest("https://postman-echo.com/someendp',POST,{title: "Make a request with Node's http module"})
+         //   NO : or  response = await jrest("https://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:11,format:'plain',rnd:'new'})?? NO
          // .catch((err) => { console.error(err); });  or  .catch(console.error);
 
-
-         // response = await  jrest("https://postman-echo.com/someendp',POST,{title: "Make a request with Node's http module"})
          // .catch((err) => { console.error(err); });  or  .catch(console.error);
 
          // if(response)data=JSON.parse(response);
+         let du,h=http;
+         if(url.substring(0,4)=='http'){
+         if((du=url.charAt(4))==':');else if((du=url.charAt(4))=='s')h=https;
+         else return;// or return a rejected promise 
+         }else url='http://'+url;
 
-         if(http){if(method=='GET')return new Promise((resolve, reject) => jhttpget(url,data,resolve,reject));
-                 else if(method=='POST')return new Promise((resolve, reject) => jhttppost(url,data,resolve,reject));}
+         if(http){if(method=='GET')return new Promise((resolve, reject) => jhttpget(h,url,data,head,resolve,reject));
+                 else if(method=='POST')return new Promise((resolve, reject) => jhttppost(h,url,data,head,resolve,reject));}
      }
      /*
      ,
@@ -192,8 +199,8 @@ let http,request;
 
  }
 
- function jhttpget(url,data_,resolve,reject){// we can have   url with qs OR  url is host and  data is a literal obj 
-
+ function jhttpget(h,url,data,head,resolve,reject){//data not used ,  we can have   url with qs OR  url is host and  data is a literal obj 
+// url=:http......
 
 
 /*
@@ -232,7 +239,24 @@ myRequest.end();}
 
 // from https://www.twilio.com/blog/2017/08/http-requests-in-node-js.html
 
-http.get('http://'+url,//'https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', 
+/*
+const options = {
+  hostname: 'httpbin.org',
+  path: '/get',   // also '/planetary/apod?api_key=DEMO_KEY' ???
+  headers: {
+      Authorization: 'authKey'
+  }
+}*/
+// accept data instead of qs 
+if(url.indexOf('?')<0&&data)
+url+='?'+toParam(data);// should be used : /?
+
+
+let opt;
+if(head)// opt={   eaders: { Authorization: ''}}
+opt={headers:head};else opt={};
+h.get(url,//'https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', 
+opt,
 (resp) => {
   let data = '';
 
@@ -262,20 +286,23 @@ http.get('http://'+url,//'https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY',
 
 
 
-function jhttppost(url,data_,resolve,reject){// data is json string 
+function jhttppost(h,url,data_,head,resolve,reject){// data is json string 
   let body ='';
   if(data_) body=JSON.stringify(data_);//{    title: "Make a request with Node's http module"  })
   
   let options = {
-    hostname: url,//"postman-echo.com",// can i "postman-echo.com/post" ?
+  // xxxxx  hostname: url,//"postman-echo.com",// can i "postman-echo.com/post" ?
     //path: "/post",// port: 443,
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Content-Length": Buffer.byteLength(body)
     }
-  }
-  http.request(options, res => {
+  };
+  if(head)Object.assign(options.headers,head);
+  h.request(
+    url,// or in xxxxx
+    options, res => {
       let data = ""
       res.on("data", d => {
         data += d
@@ -323,8 +350,10 @@ var stringifyParam = function(data, topLevel, keyProp) {
     },
     toParam = function(data){
         var string = stringifyParam(data,data);
-        return encodeURI(string.substring(0,string.length-1).split(' ').join('+'));
+        //return encodeURI(string.substring(0,string.length-1).split(' ').join('+'));// case 1 :  ' '  >  +
+        return encodeURI(string.substring(0,string.length-1));// case 2 :   ' ' > %20
     };
 
-//console.log(toParam(data)); //apple%5B0%5D%5Bkiwi%5D=orange&apple%5B1%5D%5Bbanana%5D=lemon&pear=passion+fruit
+//console.log(toParam(data)); //apple%5B0%5D%5Bkiwi%5D=orange&apple%5B1%5D%5Bbanana%5D=lemon&pear=passion+fruit < case 1
+//                            "apple%5B0%5D%5Bkiwi%5D=orange&amp;apple%5B1%5D%5Bbanana%5D=lemon&amp;pear=passion%20fruit"  < case 2
 
