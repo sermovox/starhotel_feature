@@ -33,12 +33,15 @@ if (process.env.MONGO_URI) {
         url : process.env.MONGO_URI,
     });
 }
-let ai = null;// witai agent 
-if (process.env.WITAI) {
+let ai ={};// ai agent 
+if (process.env.WITAI) {// remote ai service auth token passe direcly on service because there in intmatch hepler func x intent matcher
+                        // we call a rest http direcly 
+                        // in future will better do a interface to call all ai intent service , usually as plugin, so pass these params there !!!!!!!!
 
-    ai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
+    ai.witai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
 
 }
+
 
 
 const adapter = new WebAdapter({});
@@ -158,6 +161,8 @@ dynJs.hotel3pini_vox.direc.colazione_dyn.onChange = testFunc;
 let db,// the def  old  db connection used by some onchange ( available to service obj as std db connection )
 jrest_,jrest;
 
+
+
 const mongoose = require('mongoose');// npm i mongoose , better before mongoosify
 var mongoosify = require("mongoosify");// alternative to convert-json-schema-to-mongoose, npm i mongoosify
 
@@ -188,6 +193,14 @@ controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as 
 const https = require("https");const http = require("http");// not controller.httpconst http = require("http");// not controller.http
 jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;
 
+let nlpai;
+
+if (process.env.NLPAI) {// local ai service injected
+    nlpai=require('./nat/nlpai')(jrest).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'}});// in matcher macro url= service://plugins.ai.duck.datetime?qs
+    
+    // NO  :    ai.nlpai={url:'service://data',agents:[{data:manager.process}]};// nb url can be ovewrite in .dir or excel 
+    // because like witai the api is in a http end point or we must set a local interface , usually as plugin , so create a plugin 
+}
 
 // now db connection wont be used any more !
 vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
@@ -276,6 +289,7 @@ controller.ready(() => {
                  // dbeng.mongoose=mongoose;dbeng.Schema=Schema;// TODO put in module as internal var ?
                 service.addPluginExtension('dbs', dbeng);// connection db will be set by dbs endpoint 
                 service.addPluginExtension('gCal', gCal);// 
+                if(nlpai)  service.addPluginExtension('ai', nlpai);// 
     }
 });
 
@@ -319,7 +333,7 @@ MongoNetworkError: failed to connect to server [192.168.1.15:27017] on first con
 */
 
 
-function witAiAg (string) {
+function witAiAg (string) {// extract  a:b c:d   >    {a:b,c:d}   a is agent uri , b is token
     if (!string) {
         string = '';
     }

@@ -227,7 +227,8 @@ let vfwF = {// framework functions module used in convo obj
         , step, previous
         //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
         //              if we need a var that knows if the matcher used is std regex static model or a custom matcher use isStatic_
-        , isStatic_ // will decide to put std static match or use 
+        // needed ? now we see if we have simple entity looking at value field ! , isStatic_ // will decide to put std static match or use 
+        , pattArray // access to mapping entity info from cond model fields name .= step.values.excel[entity].model pattArray={itema-regexa&itemb-regexb&.......}
 
 
     ) {
@@ -376,7 +377,7 @@ let vfwF = {// framework functions module used in convo obj
         // revision 102020   storeval da tenere , rematch sembra inutile 
 
         /* 02102020 semplificazione da fare : new rules  x settaggio di matches[entity].match:
-         storeval e isStatic_ probabilmente da buttare ??? 
+         storeval e isStatic_ probabilmente da buttare ??? no , us solo storeval 
          nuovo concetto base : 
          - storemat e' il valore matchato da settare come match della entity , se nn e' entity .....
           puo essere atomico o obj std format {value, patt,descr,data + bl}
@@ -473,7 +474,12 @@ let vfwF = {// framework functions module used in convo obj
 
         let mf, amatch, amatchId;
         if (mat) mf = 'matches'; else mf = 'nomatches';
+
+        // the info about the Entity condition tested 
         if (entity) amatch = { key: entity };// the model/entity name matched/not matched , used to register on ask the matching entity conditions 
+         // >>>   OR SIMPLY register the entity name 
+
+
         amatchId = { id: storeMId };// normal condition match with no model 
 
         // do in main p loop if(storeMId==0)step.values.askmatches[previous.collect.key];// reset if start conditions loopif(reset){
@@ -487,6 +493,9 @@ let vfwF = {// framework functions module used in convo obj
             nomatches: []
         };//  [mod_ent2,mod_ent3,,]adds only $% or $$  case
 
+
+
+        // UPDATE ASK condition Matching results :
         ask.matches = ask.matches || [];
         ask.nomatches = ask.nomatches || [];
 
@@ -540,7 +549,7 @@ let vfwF = {// framework functions module used in convo obj
 
                                                             // now false means non std matcher
             //if (!(typeof isStatic_ == 'undefined')) 
-            isStatic = isStatic_;// now false means non std matcher
+            // isStatic = isStatic_;// now false means non std matcher
 
   
 
@@ -575,7 +584,7 @@ let vfwF = {// framework functions module used in convo obj
                // console.log(' result should be a string :', isStatic && rT == 1);
 
 
-              function setSt_(entity){
+              function setSt_(entity){// decide where to attach the dyn match status, usually on a asmatches or a matches , 
                 let setSt,cst=step.state.dir.cond[entity];// cond directives
                 if(cst&&cst.vars){setSt=cst.vars;
                     if(vars.askmod[setSt])setSt=vars.matches[setSt];// setSt is a mod , so it must have matches entry 
@@ -592,7 +601,7 @@ let vfwF = {// framework functions module used in convo obj
                     mv.mid=0;// register under values.matches.entity=itemvalue
                     //mv.mid = 0;// dont use this, usable to see if is match is good (mid>0) 
                     // use storeval x  ??
-                } else {// a finit dimension entity here described x matching, so we can set the matching val according to model descr
+                } else {// a finit dimension entity here described x matching (excel/online), so we can set the matching val according to model descr
                     if (rT==0) {// should be rT=0
                         // get   the type of match :
                         // string : normal entity value
@@ -602,7 +611,7 @@ let vfwF = {// framework functions module used in convo obj
                         // GET the result Type 
                         mv.match =mv.vmatch = storemat;mv.mid=storeMId;
                         // no mv.matched='match' ? 
-                    } else // a non static matcher (db call) will provide the match obj
+                    } else // a non static matcher (db call) will provide the entity match obj
                         if (rT == 1) {// we must set a Ent entities from Ent api storemat in a convenient var: ...............
                                     //  a std model selected/matched entity item row {value,descr,,,,,, + bl fields }
                         // the model associated with condition will be the row model ( no bl ) so a basic value/descr or match/vmatch , the model description in excel will say the connection url ,
@@ -612,17 +621,74 @@ let vfwF = {// framework functions module used in convo obj
                         // let EntMod=storemat
                         //key.entity,// was param in dyn_medicine
 
-                        let setSt=setSt_(entity)||mv;
+                        let setSt=setSt_(entity)||mv;// std : attach in mv ( the entity of the condition )
 
                         let EntMod=setSt.entity=storemat;//the row matching with std model + bl
                         // the std format matching entity fields :
                         // alredy done in matcher mv.entity.match=storemat.value;mv.entity.vmatch=storemat.descr;
                         // like was a value to get with a regex , copy down to event model mv ( launching the db rest , in realta e' event binario matcha o no il db query !)
-                        // see format. reference
-                        setSt.match=setSt.vmatch = EntMod.vmatch;// bl fields can be recovered by vars.matches[].someblfiled
-                         // the event binary result , alredy filled ?
-                         // alredy done in matcher mv.matched = 'match';
 
+
+                        //  EntMod=storemat comes from a entity matcher service call, so meets ASWQ entity matcher interface   see reference in dynMatch() service helper
+                        if( EntMod.value){// a simple entity . row contains value , row can be in std db format 
+                            setSt.match=EntMod.value;
+                            if( EntMod.descr)setSt.vmatch=EntMod.descr;else setSt.vmatch=setSt.match;
+                            
+                            // bl fields can be recovered by vars.matches[].someblfiled
+                            // the event binary result , alredy filled ?
+                            
+
+                        }else{// complex ent : in row is not present value field . there are more entity (each with  only its key/name)
+                            EntMod.type='Ent-Vector';//   mark complex ent type='Ent-Multi' , ex row={color,size:}
+                            //   extract main entity matching from fields described in model  pattArray = step.values.excel[entity].model pattArray={itema-regexa&itemb-regexb&.......}
+                        if(pattArray&&pattArray.value){// that will say what is main entity, if there is one 
+                            // say where is the entity in row obj  . run eval like convo looseJsonParse(), temporarely treat like a field :
+                            // make easy: pattArray.value  = 'x.y.z'
+                            // xeval='X.'+ pattArray.value+';' so something like match=looseJsonParse(xeval,context=EntMod)
+
+                            // temp :suppose  just a string as the property of EntMod:
+                            // if pattArray.value is string :
+                            // ex $%amod:value-pippo&descr-caio  will set matchers.match=row.pippo and matchers.vmatch=row.caio
+                            EntMod.match=EntMod.row[pattArray.value];
+                            if(pattArray.descr)EntMod.vmatch=EntMod.row[pattArray.descr];else   EntMod.vmatch=EntMod.match;
+
+                        }else EntMod.match='?';// no main entity .match will be extracted from .row  by following ask custom field/ onchange  from matches.supportingmodel.entity !!
+                        // no : EntMod.matched=null;// match val  not found
+
+                        }
+                        // redirect mng 
+
+                                                    // ============================  app case (do a specific matchTyp ?)
+                            // see dynMatch() : row={redirect:'name',action:'repeat/next/begin....'}
+                                                                                /* condition format :
+                                                            {
+                                                            "pattern": "oper",
+                                                            "type": "regex",
+                                                            "action": "execute_script", xx
+                                                            "execute": {
+                                                                "script": "hello",      xx  
+                                                                "thread": "default"     xx
+                                                            }
+                                                            }
+
+                                                    */
+
+                        if(pattArray&&pattArray.redirect){// Ent matcher : app:// call case : supporting condition $$model: must have a model with item name  redirect and action
+                            // reset the next action !
+                            let condition=storemat.condition;// condition is inserte by Ent matcher in app:// case 
+
+                            //>>>>>><  TODO  better matcher mark type='Post' instead of 'Ent' !!!!!!!!!!!!!!!!! 
+
+                            if(storemat.redirect&&storemat.action&&(storemat.action=='execute_script'||storemat.action=='beginDialog'||storemat.action=='complete')){
+                                condition.action=storemat.action;
+                                condition.execute.script=storemat.redirect;
+
+                            }
+
+                                                    // ============================  app case (do a specific matchTyp ?)
+
+
+                        }
                         } else if (rT == 2) {// int
 
                         // in this case the matcher will transmit the wit.ai intent resolved format (matcher  can  add  some fields to wit.ai format)
@@ -984,13 +1050,15 @@ async function getappWrap(bot,convo,app){// now is a session recover (into value
 
     /* *********************    01102020  management summary on session THE ONLY UPDATED REFERENCE x SESSION  
 
+    01112020  ==============  to be reviewed , using last status mng overview ................   !!!!!!!!!!!!!!!   
+
 
     premessa in a express app the ctl mantains its status in session vars condivise anche conil browser ( pensa a una spa )
     - ma qui il livello browser e' fatto da convo che non ha proprio stato perche' lavora per tutti gli user, quindi anche lui ha uno status delle view che qui si chiama status
      e che viene passato al onStep , quindi anche lo step ctl usa i servizi di status : controller inversion , better :controller-browser simmetry !!!
      - a cio si aggiunge uno status di interconvo che sarebbe lo status del dialog set : lo stack 
      >> il nostro problema e' connettere il dialog stack , ds, con il controller  che viene suddiviso in una parte nel convo ( la parte spa detta appwrap) 
-         che ha un livello superiore ( la pagina o il ds)  nel server esterno express
+         che ha un livello superiore ( la pagina o il ds)  nel server esterno express  o a un livello superiore di appwrap
 
 
      nb the convo has access to vCtl   via vCtl=controller.plugins.vCtl

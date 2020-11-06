@@ -154,10 +154,11 @@ myRequest.end()
 }
 */
 //const URL = require('url');
-let http,https,equest;
+let http,https,request;
  module.exports ={
      init:function(http_,https_,request_){http=http_;https=https_;request=request_},
-     jrest:function(url,method,data,head){// data ={prop1:value1,,,}
+     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  ,
+                                                      //  post only param : qs, urlenc . IF want url encode data we can  provide qs instead of data map obj
          // use :
          // response = await jrest("http://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
          // response = await jrest("http://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:1,base:10,format:'plain',rnd:'new'})
@@ -177,7 +178,7 @@ let http,https,equest;
          }else url='http://'+url;
 
          if(http){if(method=='GET')return new Promise((resolve, reject) => jhttpget(h,url,data,head,resolve,reject));
-                 else if(method=='POST')return new Promise((resolve, reject) => jhttppost(h,url,data,head,resolve,reject));}
+                 else if(method=='POST')return new Promise((resolve, reject) => jhttppost(h,url,data,head,qs, urlenc,resolve,reject));}
      }
      /*
      ,
@@ -286,20 +287,49 @@ opt,
 
 
 
-function jhttppost(h,url,data_,head,resolve,reject){// data is json string 
-  let body ='';
-  if(data_) body=JSON.stringify(data_);//{    title: "Make a request with Node's http module"  })
+function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ is a map obj, qs is query string .
+                                                                       //  encJson=true needs data_,
+                                                                      //   encJson=false  needs qs or  data_
+  let body, head_;
+
+
+    if (!urlenc) {
+      if (!data_) {
+        body={};// no data , data cant be provided from qs if we want to encode data with  json format
+      } else {// case data_ + json enc :
+        body = JSON.stringify(data_);//{    title: "Make a request with Node's http module"  })
+        head_= {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body)
+        };
+      }
+
+    } else {// case encode data as x-www-form-urlencoded
+      if (qs) {
+        body = qs;
+
+      } else {// get qs from form/data_ map obj 
+        if (data_) {
+          body = toParam(data_);
+        } else {
+          body='';// no data_, no qs , so request post with no data 
+        }
+
+      }
+      head_= {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": Buffer.byteLength(body)
+      };
+
+    }
   
   let options = {
-  // xxxxx  hostname: url,//"postman-echo.com",// can i "postman-echo.com/post" ?
+    // xxxxx  hostname: url,//"postman-echo.com",// can i "postman-echo.com/post" ?
     //path: "/post",// port: 443,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(body)
-    }
+    headers: head_
   };
-  if(head)Object.assign(options.headers,head);
+  if (head) Object.assign(options.headers, head);
   h.request(
     url,// or in xxxxx
     options, res => {
@@ -312,8 +342,11 @@ function jhttppost(h,url,data_,head,resolve,reject){// data is json string
       })
     })
     .on("error", reject)//console.error)
-    .end(body)
-  }
+
+    
+    // .write(body).end(); or : 
+    .end(body)// launch on json data
+}
 
 
   //  see https://stackoverflow.com/questions/27822162/encode-object-literal-as-url-query-string-in-javascript 

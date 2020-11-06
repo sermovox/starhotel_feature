@@ -1993,7 +1993,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             //          :service//dbmatch  : route to :service//plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
             //              if form is null filling form with qs
             // :http//host...  call run_rest: and return the json obj of http result
-            // std return ; return {reason:'runned',rows:JSON.parse(response)};  rows is row obj (std obj so take value ) or [row1,,,]  
+            // std RETURN : return {reason:'runned',rows:JSON.parse(response)};  rows is row obj . its format depends from service called and will be passed and managed by matchers
+            //      (if entity , if used in view , better at least std db entity {value,descr.patt,,,}) or [row1,,,]  
             //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( asmatches.param format if we run a query )
             //              if failed :{reason:something,'err string'}
 
@@ -2003,10 +2004,61 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             if (true) {
                 //let form;// wrk var 
                 let mr;//   return
-                if (url.substring(0, 10) == ':service//') {// :service//dbmatch'
+
+
+                if (url.substring(0, 3) == 'app') {// like general service://......  call a plugin the meet servuce interface 
+                    // for now  can be only app://localhost?qs
+
+                    let host, qs;// host is action on a ctl  !
+                    let hostqs;
+                    if ((hostqs = getHost(url)) && (host = hostqs.host)) {
+                        // ex service://service.plugins.apluginctl/date?term=1 >
+                        // host = service.plugins.apluginctl
+                        // uri =service_function=date , qs ='term=1'
+                        let qs = hostqs.qs;
+
+                        //
+                        let myf;
+                        if(host=='localhost'){
+                            host='plugins.app';
+                        let lev = host.split('.');// lev=['service','plugins','apluginctl']
+
+                        if (lev) lev.forEach((element, i) => {
+                            if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
+                            else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
+
+                        });
+                    }
+
+                        if (myf) { // usually url='service.plugins.apluginctl , so myf is the function to call
+
+                            // pass qs in url into form if form is null
+
+                            let form = formObj ;// will be vars ( + session !)
+                            form.qs=querystring.parse(qs);//add qs : action/url + form request x 
+
+                            // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
+
+                            // GENERAL RULE if the result do not have .reason  embedd it !!! 
+                            mr=await  myf(form);
+                           // mr = {reason:'runned/err',rows:await myf(form)};// .catch {reason:err,null} 
+                           // in this special case rows={redirect:'name',action:'repeat/next/begin....'}
+                        }
+
+                    } 
+
+
+                    let response = await this.run_rest(url, formObj, method,head);
+                    if (response) return {reason:'runned',rows:JSON.parse(response)};
+                } else 
+
+
+                if (url.substring(0, 10) == 'service://') {// :service//dbmatch'
                     //form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
 
-                    if (url.substring(10, 17) == 'dbmatch') {
+
+                    // MAPS local service into is registered func 
+                    if (url.substring(10, 17) == 'dbmatch') {// dbmatch interface , the interface is given here not as the usual case put in this.plugins.....
                         // route to internal db service ctl 
 
 
@@ -2026,23 +2078,29 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         ;// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows,reason} reason  'err' or 'runned'
 
-                    } else {// no :service//dbmatch , search a this.service_function to act like a express ctl :service//service_function 
+                    } else {// std service interface (no specific case of service://dbmatch) , search a this.service_function to act like a rooted express ctl service://service_function 
+                        // infact service is a bunch of : functions|amapwithfunctions_or_amapofsomemapwithfuncion !
+                        // usually service={,,,,f1,f2,f3,plugins:{p1,p2,,,}} so we must find fx or px (url='service://plugins....', )
 
                         let host, qs;// host is action on a ctl  !
                         let hostqs;
                         if ((hostqs = getHost(url)) && (host = hostqs.host)) {
+                            // ex service://service.plugins.apluginctl/date?term=1 >
+                            // host = service.plugins.apluginctl
+                            // uri =service_function=date , qs ='term=1'
                             let qs = hostqs.qs;
 
                             // 
-                            let lev = host.split('.');
+                            let lev = host.split('.');// lev=['service','plugins','apluginctl']
                             let myf;
                             if (lev) lev.forEach((element, i) => {
-                                if (i == 0) myf = this[element]; else if (myf) myf = myf[element];
+                                if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
+                                else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
 
                             });
 
 
-                            if (myf) { // usually url='service.plugins.apluginctl
+                            if (myf) { // usually url='service.plugins.apluginctl , so myf is the function to call
 
                                 // pass qs in url into form if form is null
 
@@ -2057,7 +2115,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                         } 
                     }
-                    if(mr)console.log(' service run_jrest(url=',url,') returning from rest service request :  {reason:',mr.reason,',stdformatrows} =',mr);// service runned
+                    if(mr)console.log(' service run_jrest(url=',url,') returning from rest service request :  {reason:',mr.reason,',rows = Entity/[]format } =',mr,
+                    '\n  entity.rows([])  if no complex ( +entities)  the better format for entity item  is db view std format ( value,descr,patt, blfields) ');// service runned
                     else console.log(' service run_jrest(url=',url,') returning NULL from rest service request  ');// not found serevice
                    return mr;
                 } else
@@ -2166,70 +2225,111 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                else return null ;
            },
 
-        intMatch:async function(term,cmd,key,entity,step,cb){// returns entities mostly  resolved ( represented by key/descr/voicename , can be partially inflated expaded in tree for most important sub entities 
+        intMatch: async function (term, cmd, key, entity, step, cb) {// intent matcher helper int. returns entities mostly  resolved ( represented by key/descr/voicename , can be partially inflated expaded in tree for most important sub entities 
             // if returns false the intent was not matched
             // askmatches or matches structure will store the results as the return rows represent a object property nin expected format . see caller and addMatchRes()
 
             // do very like dynMatch :
 
-            if(this.ai){// witai conn info 
-            let vars=step.values;
-            let session=vars.session,
-                excel=vars.excel,
-                direc=vars.direc,
-                dir=step.state.dir;// the loop ctl dyn var
+
+
+
+            // put after : if (this.ai)
+             {// 
+                let vars = step.values;
+                let session = vars.session,
+                    excel = vars.excel,
+                    direc = vars.direc,
+                    dir = step.state.dir;// the loop ctl dyn var
 
 
                 let url;// or get from excel/dir , just to sborone.  url='https://api.wit.ai/message?v=20201025'
-                
+
 
                 // FIND REST PARAM in dir or in excel :
-                if(dir&&dir.cond[entity]&&dir.cond[entity].url)
-                    url=dir.cond[entity].url;// get url from cms directive put in  macro 
-                let entDir=excel[entity];
-                if(entDir&&entDir.url)
-                    url=entDir.url;// get url from excel
-    
-                    console.log(' service:intMatch, a type Int API matcher , queryng ai agent service  url : ',url,', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ',entity,' , key  ',key);
-    
-                let isGET='GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
+                if (dir && dir.cond[entity] && dir.cond[entity].url)
+                    url = dir.cond[entity].url;// get url from cms directive put in  macro 
+                let entDir = excel[entity];
+                if (entDir && entDir.url)
+                    url = entDir.url;// get url from excel
+
+                console.log(' service:intMatch, a type Int API matcher , queryng ai agent service  url : ', url, ', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ', entity, ' , key  ', key);
+
+                let isGET = 'GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
                 // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
 
 
-                if(url){// sborone, 
+                // call SERVICE , 2 case :
+                // - a) direct call to endpoint :when url=https://....    like :   'https://api.wit.ai/message?' 
+                //      we  implementat here the specific interface a ext rest to ep: https://api.wit.ai/message?qs completing the qs with fw info (token) 
+                //              returns to matcher must be the response the matcher require, 
+                //              input data gathered in implementation ( see x example url=https://api.wit.ai/message?... )
 
-                    if(url.indexOf('?')<0)// url end with '?' means goon with a get request !!!
-                    
-                    isGET='POST';
-                    
-    
-                // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer duty  
-                let ag,agi,tk;if((agi=url.indexOf('?v='))>0){ag=url.substring(agi+3);tk=this.ai.agents[ag];}
-                
-                    if(tk&&isGET=='GET'){// must be , sborone
+                // - b) via interface provided in plugins : when url=service://....    like :   "url":"service://plugins.ai.duck.datematch?... 
+                //      we  implementat in plugin a general interface (service://plugins.ai)to all ep of a class , so add all implementation ('duck,witai,nlpjs,,,)there  with provided service (datetime,,,)
 
-                        // curl >  -H 'Authorization: Bearer 2FZVYQTXU5WPBT3ITYFLNFABFQTGDZNH'   'https://api.wit.ai/message?v=20201025&q=hy%20weather%20best%20prevision%20in%20pordenone%20at%207%20pm'
-                       //  url=url.substring(0,agi);
-                         let form;//={v:ag}// x post 
+                //              the general interface will return here a result in specific format (intMatch will require Entity obj) so here we can returns to matcher must be the response the matcher require, 
+                //              the call params to all plugins.ai...?qs services will be all the same , as taken in charge by run_jrest , service:// case,  : 
+                //                  params=form = formObj || querystring.parse(qs);
 
-                        let enc=false;
-                         if(enc)url+='&q='+encodeURI(term);
-                        else{
-                         url=url.substring(0,agi);// with or without a trailing /
-                         form={v:ag,q:term};
-                        }
-                        let head={Authorization: 'Bearer '+tk };
-                let  mr=await await this.run_jrest(url,form,isGET,head);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
-                //  // returns  res={rows,reason} reason  'err' or 'runned'
-                if(!(mr&&mr.reason=='runned'&&mr.rows.intents))return false;
-                else {
+                if (url) {// sborone, url=https://api.wit.ai
 
-                    cb(mr.rows);
-                    return true;
-                }
-                }
+                    // url set the service endpoint that can be :
+                    // - a direct http endpoint, so we must provide the connection and eventually some mapping for the specific endpoint api 
+                    //      that's is deprecated because we must set here a service block code specific to the api agent ()
+                    //       url=https://....    like :   'https://api.wit.ai/message?'
+                    // - let all staff to a ai intent interface that manages that staff for registered agent :
+                    //       url=service://plugins.intentai.res_intent // intent interface is added as plugin !
 
-                }
+                    if (url.substring(0, 8) == 'https://'&&this.ai) {// a) : direct interface , 
+
+                        // get specific agent connection info from this.ai for each possible endpoint:
+                        //      this.ai conn info  was set in bot.js :     ai.witai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
+
+                        // chech if direct agent type is here registered 
+                        // if (this.ai.witai.substring(0, 15) == 'https://api.wit') {// witai
+
+                        if (url.substring(0, 15)  == 'https://api.wit'&&this.ai.witai&&this.ai.witai.agents) {// witai requested and conn info set in bot.js
+
+                            if (url.indexOf('?') < 0)// url end with '?' means goon with a get request !!!
+
+                                isGET = 'POST';
+
+
+
+                            // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer duty  
+                            let ag, agi, tk; if ((agi = url.indexOf('?v=')) > 0) { ag = url.substring(agi + 3); tk = this.ai.witai.agents[ag]; }
+
+                            if (tk && isGET == 'GET') {// must be , sborone
+
+                                // curl >  -H 'Authorization: Bearer 2FZVYQTXU5WPBT3ITYFLNFABFQTGDZNH'   'https://api.wit.ai/message?v=20201025&q=hy%20weather%20best%20prevision%20in%20pordenone%20at%207%20pm'
+                                //  url=url.substring(0,agi);
+                                let form;//={v:ag}// x post 
+
+                                let enc = false;
+                                if (enc) url += '&q=' + encodeURI(term);
+                                else {
+                                    url = url.substring(0, agi);// with or without a trailing /
+                                    form = { v: ag, q: term };
+                                }
+                                let head = { Authorization: 'Bearer ' + tk };
+                                let mr = await await this.run_jrest(url, form, isGET, head);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                                //  // returns  res={rows,reason} reason  'err' or 'runned'
+                                if (!(mr && mr.reason == 'runned' && mr.rows.intents)) return false;
+                                else {
+
+                                    cb(mr.rows);
+                                    return true;
+                                }
+                            }// ends GET
+                        }// ends witai agent
+                    }// ends here direct agent calls
+                    else{// set here the intent service interface provided as plugin 
+
+                        // todo like in dynMatch()
+
+                    }
+                }// end url
                 else return false;
             }
 
@@ -2238,14 +2338,20 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
+
+        },
+
             
-            },
 
         // 072020 : alredy set in onchange ???
         // ((url,)entity,text=searchterm,wheres,isDb_Aiax,cb)
 
-        dynQuery:async function  (term,cmd,key,entity,step,cb){// cb to call cb(val) 
-                    // news 19102020 API 
+        dynQuery:async function  (term,cmd,key,entity,step,cb){// // the master query  matcher helper interface
+
+        // works as dynMatch but rows is array , so calling matcher will fills target status differently :
+        //   -  master query cursor  : askmatches structure will store the results as the return rows in .cursor... represent a  entity query master items
+
+        //      news 19102020 API 
         //  Query type matcher  API: (text,id,key,entity,cb(val=[{_doc:result}||result,,]||{_doc:result}||result)), 
         //   cioe il cb param, val,  puo essere oggetto o array , se array prendo il primo item come oggetto . se l'oggetto ha un field _doc, prendo val=object._doc altrimenti val=object
         //   val puo essere direttamnte nel formato askmatches.ask.param format 
@@ -2259,27 +2365,43 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             // implement .....................
         },
 
-        dynMatch:async function
+        dynMatch:async function // the entity matcher helper interface 
+        // news 01112020 usual call with :
+        // - url=service://plugins.ai.duck.datetime?qs : if set a interface plugins.ai to service class ai (ext agent with intent/entity) that will have implemented interface with endpoints (duck)
+        //      to get specific service (get entity / intent ) plugins.ai.duck.datetime on defined agent qs='v=4444555&token=56789'
+        //      interface see for example duck as entity interface :
+        //          - call param : forms={entity,term/text + qs } 
+        //          - returns intent / entity format as def in formatx.txt
         // news 19102020 API 
         //  Ent type matcher  API: (text,id,key,entity,cb([{_doc:result}||result,,]||{_doc:result}||result)), 
         //   cioe il cb param, val,  puo essere oggetto o array , se array prendo il primo item come oggetto . se l'oggetto ha un field _doc, prendo val=object._doc altrimenti val=object
-        //   val deve essere estensione di un std row={id,value,patt,descr,data, bl.....}
+        //   val deve essere estensione di un std entity row={id,value,patt,descr,data, bl.....} or maps many entities from which in matcher the model will select one tu put in match (+ vmatch) 
         //  returns :true/false ');
 
 
         //helper function , serving convo fw matching loop request . will :
+        //  - get depend on model and put its match on where maps
         //  - get url from excel or macro
         //  - add rest param according to url to send appropriate request x the endpoint 
         //      normally :  url param ( url > url/entity) + where params in a form map form={entity,term,wheres,meta,whMmeta} (meta and whMeta used for internal url)
         //      but if url='custom...'   .......
-        //  - firing a rest request to internal run_rest fw service that fire a std rest http request or route to internal controller if url =':service/myservice/.....' 
+        //  - firing a rest request to internal run_jrest fw service that fire a std rest http request or route to internal controller if url =':service/myservice/.....' 
 
         // so :
-            //   extract (from vars matchers)  the param to fire a 'std' rest to service end point (POST andd GET based , depend from the url formatting get in model.js) 
-            // returns entity item(s) in rows : so row fields if not atomic represent the object item  property key/value/name and are not inflated/populated. can be in following query on chained threads  
-            //  - if used as entity match : askmatches structure will store the results as the return row represent an entity match
-            //  - if used as master query cursor  : askmatches structure will store the results as the return rows represent a  entity query items
+            //   extract (from state.dir.cond.amodel.vars extracted in calling convo.matcher)  the param to fire a 'std' rest to service end point (POST andd GET based , depend from the url formatting get in model.js) 
+            // returns entity item(s) in rows (so row fields _) according to ASWQ entity matcher interface :
+            //  - if atomic (string) represent a 'value match and is used to ser .match .vmatch of supporting condition model 
+            //  - if not atomic rows represent :
+            //      - a entity/object item  property in db row in std format :
+            //              - value descr + bl fields key/name/value (not inflated/populated) . they will be mapped on supporting model :
+            //                          value > match , descr > vname  + bl that match first item in supporting condition  model  
+            //                               ? can be in following query on chained threads  
+            //      - many entity match ai results . so as this is a entity 
+            //  - if used as entity match : askmatches/matches (loot at .dir.cond.vars)  structure will store the results as the return row represent an entity match
             // ONE SHOT  , refine algo need a function to call more times and will provide some old matched wheres that must inserted in entSchema[1-2] of onChange_dynField(entSchema,,,)
+            
+
+
             
                                             // put in a sort of interface TO complete in setSetvice , or a default matcher template
                                             // general int :(tomatch,this.id,entity,step.values.excel,step.values.matches[entity],step.values.matches)step.values.direc values.session excel.wheres
@@ -2302,7 +2424,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 // comand must be registered in basefw and model defined in excel to find wheres filled by fwbase.find_wheres() :
                 //           fills the direc model that depends to where model :  direc.dep_mod.wheres=[where_mod1,where_mod2,,,]   , mod is a model or a static entity 
 
-                if(excel[entity]&&excel[entity].wheres)wheres_=excel[entity].wheres;// the where fields wheres_=['mod_city',,,]
+                if(excel[entity]&&excel[entity].wheres)wheres_=excel[entity].wheres;// the depend on models,  wheres_=['mod_city',,,]
                 // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
 
                 let wheres={},// {mod_city:'rome',,,,}
@@ -2356,7 +2478,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             //let x=''; // find x ****************************************************************+
 
             // two places to get url : in excel(from model of cmd registered in basefw ) or in state.dir(from cms macro )
-            let url=':service//dbmatch';// default  fron url=excel.entity.url   >> entDir.url 
+            let url='service://dbmatch';// default  fron url=excel.entity.url   >> entDir.url 
 
             if(dir&&dir.cond[entity]&&dir.cond[entity].url)
                 url=dir.cond[entity].url;// get url from cms directive put in  macro 
@@ -2385,7 +2507,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
             */
 
-           meta=getMeta(excel,dir,entity,key);// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT/get off / discard !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           meta=getMeta(excel,dir,entity,key);// seems done : TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT/get off / discard !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             // relations :
             let whMmeta={};// as this is an entity matcher the schema is find in escel.model (too hard to put in macro ???)
@@ -2399,9 +2521,31 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             }
 
             let form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
+            if (url.substring(0, 3) == 'app://')form.vars=vars;
 
+            
+
+                // call SERVICE , 2 case :
+                // - a) direct call to endpoint :when url=https://....    like :   'https://api.wit.ai/message?' 
+                //      we  implementat here the specific interface a ext rest to ep: https://api.wit.ai/message?qs completing the qs with fw info (token) 
+                //              returns to matcher must be the response the matcher require, 
+                //              input data gathered in implementation ( see x example url=https://api.wit.ai/message?... )
+
+                // - b) via interface provided in plugins : when url=service://....    like :   "url":"service://plugins.ai.duck.datematch?... 
+                //      we  implementat in plugin a general interface (service://plugins.ai)to all ep of a class , so add all implementation ('duck,witai,nlpjs,,,)there  with provided service (datetime,,,)
+
+                //              the general interface will return here a result in specific format (intMatch will require Entity obj) so here we can returns to matcher must be the response the matcher require, 
+                //              the call params to all plugins.ai...?qs services will be all the same , as taken in charge by run_jrest , service:// case,  : 
+                //                  params=form = formObj || querystring.parse(qs);
+
+            
+            if (url.substring(0, 8) == 'https://') {// a) : direct interface , 
+
+            if (url.substring(0, 12) == 'https://host') {// a) : direct interface x  host end point 
+                // ...
+            }}
                 // add entity param  :    :http....  >  /entity
-            url+='/'+entity;
+            // do after only on url+='/'+entity;
 
             if(url.substring(0,6)=='custom'){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
                 form={entity,term,wheres,meta};// excel is debug param, usually is in the service
@@ -2417,20 +2561,24 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 if(mr.reason=='err')return false;
                 else {
 
-                    cb(mr.rows);
+                    cb(mr.rows);// coud also return a obj , then in convo we fill the model according with the field named as first item name
                     return true;
                 }}
+
+
+
+
                  return false;
 
 
 
 
 
-            }else{// no custom so use run_jrest() api
+            }else{// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
 
 
            let  mr=await await this.run_jrest(url,form,isGET);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
-                //  // returns  res={rows,reason} reason  'err' or 'runned'
+                //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                 if(!mr||mr.reason!='runned'||!mr.rows)return false;
                 else {
 
@@ -2496,13 +2644,13 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
-    function getHost(url){
+    function getHost(url){// return host , qs 
     let cstop,cstop1,r,qs;
-    // 10 letters of 'service//host'   ,  url=':service//host?.....'  or  url=':service//host/.....'
-    cstop=url.indexOf('?'); cstop1=url.substring(10).indexOf('/');// hostname:stop before qs and anyway at first /
+    // 10 letters of 'service://host' should be start with host name  ,  url='service://host?.....'  or  url='service://host/.....'
+    cstop=url.indexOf('?'); cstop1=url.substring(10).indexOf('/');// hostname:stop before qs (cstop) and anyway at first / (cstop1)
 
     // prendo / se >0 e non (?>0 e / > ?
-    if(cstop1>0&&!(cstop>0&&(cstop1+10)>cstop))cstop=cstop1+10;
+    if(cstop1>0&&!(cstop>0&&(cstop1+10)>cstop))cstop=cstop1+10;// nb the position of / is 10+cstop1
     //   20           27      20+10    20 
     if(cstop>1){// cstop can be before a ? or /
     r=url.substring(10,cstop);qs=url.substring(cstop);let qm=qs.indexOf('?');if(qm>=0)qs=qs.substring(qm+1);else qs=null;

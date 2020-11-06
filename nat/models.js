@@ -1097,7 +1097,7 @@ let star_hotel={// REFERENCE . all var dyn added at containers values.excel/matc
          ,mod_wh_Of:'dyn_rest',// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
     // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
     // vname:=notMatPr
-    schemaurl:'location'
+    schemaurl:'location'// db data injected here but it is db rest service staff , is the name of the db schema 
     },
     mod_Serv:{vmatches:{bar:'bar',rest:'ristoranti',port:'portineria',pisc:'piscina',lav:'lavanderia',col:'colazione',ext:'ristoranti della zona'},// model specification , item voice name 
    vlist:['bar','ristoranti','portineria','piscina','lavanderia','colazione','ristoranti della zona'],//temporaneo , è duplicato di vmatches con different format ! 

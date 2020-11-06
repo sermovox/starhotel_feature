@@ -1819,13 +1819,13 @@ appWrap=convo.vars.app;// is it void as we need call ......
             //implemented in one col of master/desire Entity (mydata matrix)
 
     let singleRes=false,res;//results must be condensed to only 1 result
-
  
 
 let myurl=this.schemaurl;//  schemaurl:'main',
-let entityexpanded=true;
+let entityexpanded=true;// entity ={key/name,view fields(descr/pattern), bl fiels }some entity bl properties can be inflated ex bl1=menu3 so we inflate menu3 to insert the menu description and its type
 if(!(myurl&&dbEntFw)){// no url 
     mydata=this.med_data;// the desire EXPANDED ( some properties inflated) entity is recovered locally : has inflated all detailed/querred desires entities to give 
+
     // INTERNAL QUERY
             // debug . to semplify a  match must exist ! > in future manage the event
 
@@ -1839,12 +1839,13 @@ if(!(myurl&&dbEntFw)){// no url
 
 }else{
 
-// SERVICE QUERY 
+// SERVICE QUERY : a incomplete minimal template to run query using a rest internal db service
 
                      
 
-let entSchema=[],wheres;
-entSchema.push({name:myurl,n_m:0}) ;// defime master tablecollection
+let entSchema=[],wheres,
+schemaurl;// the name of some field db schema 
+entSchema.push({name:myurl,n_m:0}) ;// first item will defime master tablecollection
 // join clause ( we know from schema inspection or from definition that some where are in db master join field/col ) 
 // entSchema[1]= {name:schemaname of first relation ,n_m:1/2,prevId:3,prevVal:'rome',id,val,refCol}// n_m: 1:1_n,2:n_m 
 // where clause ( we know from schema inspection or from definition that some where are in db master  field/col , type is atomic , int or string) 
@@ -1852,16 +1853,16 @@ entSchema.push({name:myurl,n_m:0}) ;// defime master tablecollection
 
 wheres=null; // defime master query where  condition (where in a collection field containing values(name) of property entity knon only by its name  )
                                        
-if(!entityexpanded){
+if(!entityexpanded){// a where field is a join field ( a ref field) so run a join 
             // debug . to semplify a  match must exist ! > in future manage the event
    if(matches.mod_loc&&(loc=matches.mod_loc.match)){
     schemaurl=script_excel['mod_loc'].schemaurl;// 'location'// mnt dyn data  schemaurl='location'
-    entSchema.push({name:schemaurl,n_m:1}) ;//  // defime master query join  condition (where in a ref collection field to a db entity/collection )
+    entSchema.push({name:schemaurl,n_m:1}) ;//  // second item  defime master query join  condition (where field is  a ref collection field to a db entity/collection )
     }
     let resu=await services.onChange_dynField(entSchema,null,wheres,null,true);
     console.log(' onchange star hotel : querying services.onChange_dynField() returned  ',resu);
     if(resu.reason=='runned')res=resu.rows;     
-}else{
+}else{// a where field is not a join field ( a ref field) so db query will extract all entities and then we query locally ( why not in db query ?)
     let resu=await services.onChange_dynField(entSchema,null,wheres,null,true);// dbEntFw=services.onChange_dynField
     // console.log(' onchange star hotel : querying services.onChange_dynField() returned  ',resu);
     if(resu.reason=='runned'){
@@ -1959,6 +1960,13 @@ if(!entityexpanded){
     // - a cursor with rows res.ind.length >1 
     //   or 
     // - a single result 
+
+// TTT 
+//      >>>   in old star_hotel_xmppTest we treated differently the nres=1 case , see old commit if needed
+// TT : calc  gr 
+
+
+
 
         if(singleRes||res.ind.length==1){// consider 1 match
             nres=1;// 1 match selected  
