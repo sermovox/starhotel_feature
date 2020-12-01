@@ -42,19 +42,69 @@ if (process.env.WITAI) {// remote ai service auth token passe direcly on service
 
 }
 
+// let ws=ws like core.
+
+// group1 bot : this channel has a url/port xmpp_wss connection connecting a ctl1 working on  cms1  
+const xmpp_cfg1={// the xmpp client channel x group 1
+	/*
+	  service: "ws://localhost:5280/xmpp-websocket",
+	  domain: "localhost",
+	  resource: "example",
+	  username: "username",
+	  password: "password",
+	  */
+
+	  service: "wss://visionmeet.beevoip.it:7443/ws/",
+	  domain: "visionmeet.beevoip.it",
+	  resource: "testresource",
+	  username: "test",
+	  password: "testmarson01"
+
+/*
+service: "wss://404.city:5222/xmpp-websocket/",
+	 // service: "http://404.city:5222",
+	  domain: "404.city",
+	 // resource: "testresource",
+	  username: "mmarson",
+	  password: "zq7MG7xcGE8jPTP",
+*/
+};
+const wsPort=process.env.port || process.env.PORT||'3000';// the webhook channel x group 1
 
 
-const adapter = new WebAdapter({});
+const https = require("https");const http = require("http");// not controller.httpconst http = require("http");// not controller.http
+// http used also by :  jrest_.init(http,https);jrest=jrest_.jrest;, so use both in web_adapter,rest and core ?
+const setProvWeb=false;// set web outside botkit
+let httpserver,webserver;
+if(setProvWeb){
+let  servs=require('./nat/http/servers.js')(http,wsPort);// like core. // Create HTTP server http (http/restify package ) to listen a  http  port , attach webserver to handle http data
+httpserver=servs.httpserver;webserver=servs.webserver;// must add dependency into controller to be sure it was done before call .ready() .....
+}else httpserver=webserver=null;
+// need also su reset the server port listen ! webserver=null;// if dont want provide external webserver 
+// webserver_gx     > insert /api/messages/groupx    ogni user ha un subdomain proxied to a port ( many webserver and controller-cms)  or 
+// webhook_uri (only many controller-cms) 
+
+const adapter = new WebAdapter({});// calling createSocketServer(http,optn, logic=controller.handleTurn.bind(botkit)); will build ws on http server , attach ws to controller 
 
 
-const controller = new Botkit({
+
+const controller = new Botkit({// controller will have 1 ds filled by cms instance . ds provide a dialogcontext to (spaw()) bot to operate on it :
+                                //       dialogcontext= new DialogContext(this, context, state=dialogState.get(context, { dialogStack: [] }));
+                                //      dialogSet = new botbuilder_dialogs_1.DialogSet(dialogState=conversationState.createProperty('dialogStateProperty'));
+                                //      dialogState is saved in controller (conversationState.saveChanges(bot.getConfig('context'))) and set in 
+                                // can we have more ds , one for usergroup with its own cms instance/port ? 
+                             //1 ctl foreach client group
     debug: true,
+    port:wsPort,
     webhook_uri: '/api/messages',
-
-    adapter: adapter,
-
+    webserver,// take webserver alredy config , comment if want to ler controller to create http and webserver 
+    adapter: adapter,// in configureWebhookEndpoint() will tie post webserver endpoint ( webhook_uri) handler  to adapter that will use bot to process req then use res to sent response
+                    //      webserver.post(webhook_uri, (req, res) => {...        this.adapter.processActivity(req, res, logic=this.handleTurn.bind(this))   ; nb  this=controller
+                    // then add as plugin  usePlugin(this.adapter), so when controller is ready in controiller.ready(handler) ????????really????  call adapter.init(controller) to add websocket using controller.http
+                    //      adapter.createSocketServer(controller.http,optn, controller.handleTurn.bind(botkit)); but if controller.http is not set as webserver is provided , i have to call manually  see TYU
     storage
 });
+let logic=controller.handleTurn.bind(controller);// bot entry 
 
 let rootDef=require('./nat/cfgWebPost.js');
 rootDef(controller.webserver);
@@ -63,7 +113,8 @@ if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');
 
     // TODO What if many cms (app) to run ? ( and deallocate when finish ?)
-    controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too 
+    controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too , plugin name ='cms' !
+                                            // .usePlugin(adapter={name:pname,,})plugin name pname: when ... call : adapter.init(controller) to add all dialog : controller.addDialog(d);
         uri: process.env.uri,// must be set/updated  by app when redirects. probably we open a admin cms (with map user_app/data_map + sub page/data_page datamap x each user_app) to set a current page data file + its wellcome prompt 
         token: process.env.token,
 
@@ -75,21 +126,24 @@ console.log('*** instantiating Botkit CMS');
 ///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
+const xmpp_on=true;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
 xmpp_adapter=new XmppAdapter({});
 
 
-configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
-function configureWebhookXmpp(webserver,uritest){
+if(xmpp_on)configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
+function configureWebhookXmpp(webserver,uritest){// like core in configureWebhookEndpoint() will tie post webserver endpoint handler  to adapter that will use bot to process req then use res to sent response 
+                                                //   webserver.post(webhook_uri, (req, res) => {...        this.adapter.processActivity(req, res, logic=this.handleTurn.bind(this))
+                                                //  adapter.processActivity() will call logic=core.handleturn ,  then return response using res 
 if (xmpp_adapter) {
     // as in botkit core
     // MAGIC: Treat the adapter as a botkit plugin
     // which allows them to be carry their own platform-specific behaviors
-    controller.usePlugin(xmpp_adapter);// chi usa il controller potra recuperare il xmpp_adapter : cio avviene quando .....
+    controller.usePlugin(xmpp_adapter); // .usePlugin(adapter={name:pname,,})plugin name pname: when ...... call : adapter.init(controller) to set websocket ......
 
-   let logic=controller.handleTurn.bind(controller);// bot entry 
+   //let logic=controller.handleTurn.bind(controller);// bot entry 
    /*).catch((err) => {// like in core
     // todo: expose this as a global error handler?
     console.error('Experienced an error inside the turn handler', err);
@@ -106,7 +160,7 @@ if (xmpp_adapter) {
 
     // ...} ) 
     //  registro su xmpp2adapter  logic e adapter 
-    xmpp2adapter(webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test !!
+    xmpp2adapter(xmpp_cfg1,webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test !!
 }
 }
 //*/
@@ -190,14 +244,17 @@ if (process.env.DB_URI) {
 let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
 
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
-const https = require("https");const http = require("http");// not controller.httpconst http = require("http");// not controller.http
+
 jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;
+let qea;// the local qea engine
+if(process.env.QeATrain)qea=require('./nat/qea.js') // a function (interface) = require('./natural/intClass').create(testwd)
+(process.env.QeATrain);// the train classes
 
 let nlpai;
 
-if (process.env.NLPAI) {// local ai service injected
-    nlpai=require('./nat/nlpai')(jrest).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'}});// in matcher macro url= service://plugins.ai.duck.datetime?qs
-    
+if (process.env.NLPAI) {// local ai service to inject: some endpoint x each interface nlpjs,duck,qea . following the factory initiated with nlpjs,duck,qea config obj 
+                        // qea engine is injected 
+    nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'},qea:{url:null}});// in matcher macro url= service://plugins.ai.duck.datetime?qs
     // NO  :    ai.nlpai={url:'service://data',agents:[{data:manager.process}]};// nb url can be ovewrite in .dir or excel 
     // because like witai the api is in a http end point or we must set a local interface , usually as plugin , so create a plugin 
 }
@@ -207,7 +264,10 @@ vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is 
 let app=require('./nat/app.js');// must set the cms endpoint port that gives the cms set of app, and the wellcome msg prompt 
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
-controller.ready(() => {
+controller.ready(() => {// Plugin staff: all dependencies usually registered by plugins in init()(called by .... when ....), have been marked complete.
+
+    // TYU
+    if(webserver)adapter.createSocketServer(httpserver, {},logic); //async(context) => {// handle turn here   controller.handleTurn.bind(botkit))        });
 
     // load traditional developer-created local custom feature modules
    // after cms ?       controller.loadModules(__dirname + '/features');
@@ -248,6 +308,31 @@ controller.ready(() => {
         //  - will get the
         // will send lastreview testtrigger 
         controller.on('message,direct_message', async (bot, message) => {// no need x centralino trigger ? with middleware extraction ?
+            /* **** after checked x waiting continueDialog,  process registered 'hears' cmd/dialog like in core.ingest(), but using a remote triggering cms: 
+                  - run handler for the message event message.type . hears handler are run using listenForTriggers(), a special event handler that choose the handler that is triggered
+                      addendum :
+                      - we can add a interrupt  triggering adding a controller.plugins.cms.testTrigger(bot, message); using a instance pointing to different url . command must have 1 step , 
+                            >> better have just 1 turn cmd
+                      - we can have different event mng using different instances registering to different event : controller.on('sys', async (bot, message) => results = await controller.plugins.cms2.testTrigger(bot, message);
+                            or add some manual 
+                                 controller.interrupts('sys', async(bot, message) => {
+                                            if(text==) await bot.reply(message,'sys:dosomething')
+                                                >>>>  but after we replayed to the interrupts we can continue or not the waiting dialog. so what to do if we want end it ?
+                                                    we have to call bot.cancelAllDialogs()  , how ??
+
+                                                how to ends the still active waiting main convo !
+                                            });
+
+
+                      - we can have outcontext adding a where condition on trigger checks example :
+                        results = await controller.plugins.cms.testTrigger(bot, message,[context1,context2]);
+                                    context1 means that only cmd registered for this context can be triggered 
+                                    these cmd will find a father context (wheres) already filled to perform the action requested by the user , to be matched/triggered by the cmd 
+                                            implementation : the triggering regex must also match a condition based on outcontext values
+                                                so like a ask with many condition section satisfied only by some previous wheres/outcontext ( like relay after a match find the next route checking some context?)
+
+            */
+
             let results = false;
             results = await controller.plugins.cms.testTrigger(bot, message);
 
@@ -256,6 +341,13 @@ controller.ready(() => {
                 return false;
             }
         });
+        controller.interrupts('esci','message', async(bot, message) => {
+
+            await bot.reply(message,'ok chiudiamo la conversazione arrivaderci ');
+            await bot.cancelAllDialogs() 
+           
+           });
+
 
         //let color='colazione_dyn',myscript='room',myth='default';
 
@@ -289,7 +381,7 @@ controller.ready(() => {
                  // dbeng.mongoose=mongoose;dbeng.Schema=Schema;// TODO put in module as internal var ?
                 service.addPluginExtension('dbs', dbeng);// connection db will be set by dbs endpoint 
                 service.addPluginExtension('gCal', gCal);// 
-                if(nlpai)  service.addPluginExtension('ai', nlpai);// 
+                if(nlpai)  service.addPluginExtension('ai', nlpai);// ai interface x intent matchers. implements some ai  end point 
     }
 });
 

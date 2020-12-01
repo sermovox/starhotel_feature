@@ -1,0 +1,257 @@
+{
+    "EpocaTesta":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"quando  fatto  ritratto",
+				"quando  realizzato  ritratto",
+				"quando è stato realizzato questa scultura ritrattistica",
+				"in che epoca è stato realizzato il ritratto",
+				"quando è stato realizzato il ritratto",
+				"in che epoca è stato fatta l'opera",
+				"in che epoca è stato realizzata l'opera"
+			],
+
+			"answer": "Probabilmente questi ritratti sono stati eseguiti all'inizio del I secolo A.C., come appare dal confronto di queste opere con ritratti simili eseguiti in ambiente romano.",
+
+			"metadata": 	[],
+			"sala":			"1",
+			"piano":		"1",
+			"opera":"1",
+			"link":"opera/creazione",
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+    "EpocaTesta2":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"quando  fatto  ritratto nella sala 2",
+				"quando  realizzato  ritratto",
+				"quando è stato realizzato questa scultura ritrattistica",
+				"in che epoca è stato realizzato il ritratto",
+				"quando è stato realizzato il ritratto",
+				"in che epoca è stato fatta l'opera",
+				"in che epoca è stato realizzata l'opera"
+			],
+
+			"answer": "Probabilmente questi ritratti sono stati eseguiti all'inizio del I secolo A.C., come appare dal confronto di queste opere con ritratti simili eseguiti in ambiente romano.",
+
+			"metadata": 	[],
+			"sala":			"2",
+			"piano":		"1",
+			"opera":"1",
+			"link":"opera/creazione",
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+
+    "AutoreTesta":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"chi è stato l'autore",
+				"in che epoca è vissuto l'autore",
+				"chi ha realizzato l'opera",
+				"chi ha realizzato il ritratto",
+				"chi ha costruito la scultura ritrattistica"
+			],
+
+			"answer": "Sebbene l'autore, o gli autori, di questa opera ritrattistica sia ignoto, talvolta le maestranze possono essere individuate. Infatti, alcuni  busti si distinguono per una particolare configurazione del sostegno del retro dei busti. Non è il caso di questo particolare ritratto.",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"opera/autore",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+
+   "ContestoStorico":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"in che contesto storico furono costruite queste sculture ritratti",
+				"potenziale umano messo il campo per realizzare questa scultura",
+				"chi decise la costituzione di Aquileia",
+				"quando fu costituita Aquieia",
+				"quali furono i motivi per costruire Aquileia",
+				"da dove provengono le conoscenze pregresse alla costruzione dei ritratti "
+			],
+
+			"answer": "La colonia di Aquileia è stata decisa nel II secolo aC dal Senato Romano, con un potenziale umano di qualche migliaio di famiglie provenienti dell'Italia centro-meridionale.La colonia fu stabilita sulla base di un precedente insediamento celtico. La cultura artistica e religiosa proviene dall'Italia centro-meriodionali ma anche celtica e veneziana.",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"opera/contesto",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+
+      }, 
+	  
+
+ "StileArtistico":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"a quale stile artistico appartengono questi ritratti di Aquileia",
+				"a che criterio fa riferimento questa testa",
+				"da dove provengono le conoscenze pregresse alla costruzione dei ritratti "
+			],
+
+			"answer": "Per il loro stile veristico i ritratti di Aquileia sono stati messi in rapporto coi ritratti della Roma repubblicana con criterio stereometrico.",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"opera/stile",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+	  
+	  
+   "RealizzazoneTesta":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"con che materiale è stata costruito il ritratto",
+				"con che tecnica è stato realizzato il ritratto",
+				"come è stata realizzata l'opera"
+			],
+
+			"answer": "Questa testa venne costruita in calcare locale.",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"opera/tecnica",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+	  
+	  "SignificatoTesta":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"cos'è questo ritratto",
+				"chi rappresenta l'opera",
+				"cosa rappresenta ",
+				"significato ",
+				"motivo della scultura"
+			],
+
+			"answer": "Questo vecchio dal volto emaciato e le grosse orecchie a sventola è uno dei più densi documenti che abbia prodotto questo genere ritrattistico. Molti ritengono che questa testa sia una rappresentazione funeraria ma qui sembra di essere di fronte ad un volto incartapecorito si, ma rubizzo",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"opera/significa",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+
+      }, 
+	  
+	  "CulturaArtisticaDiRiferimento":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"cultura delle sculture",
+				"arte opera",
+				"provenienza cultura",
+				"da dove viene la cultura di riferimento",
+				"importanza dell'opera"
+			],
+
+			"answer": "Tutti gli aspetti fondamentali relativi alla cultura artistica di queste opere non sono ancora stati risolti per mancanza di informazioni.  La cultura iniziale di Aquileia proviene dall'Italia centrale da cui provenivano le prime famiglie",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"contesto/cultura/artistica",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+
+      }, 
+	  
+	    "ContestoReligioso":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"religioni",
+				"origine delle religioni di Aquileia ",
+				"provenienza delle religioni",
+				"divinità egiziane",
+				"divinità asiatiche",
+				"divinità gallia"
+			],
+
+			"answer": "Il carattere multiculturale di Aquileia determinò la fortuna di numerose divinità di origine straniera, che durante l’età imperiale e gli dei del pantheon tradizionale, giunti al seguito dei primi coloni. Iside e Serapide provenivano dall’Egitto greco-romano, Cibele, Attis e Artemide",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+
+      },
+	  "Dei_Maggori":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"maggiori divinità",
+				"divinità",
+				"Mithra",
+				"Beleno",
+				"Celti"
+			],
+
+			"answer": "Un ruolo importante ebbe il persiano Mithra, tradizionalmente legato all’esercito, e Beleno, divinità di origine celtica che divenne nume tutelare della città. Vi è ancora molta incertezza sulla distribuzione dei luoghi di culto. I templi delle divinità di origine orientale dovettero concentrarsi nei quartieri a nord del porto, frequentati da un alto numero di stranieri e numerose iscrizioni votive e i materiali archeologici (bronzetti, lucerne, figurine in terracotta) contribuiscono a far luce sulla provenienza e la condizione sociale dei fedeli, nonché sui caratteri delle divinità aquileiesi.",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"contesto/cultura/artistica",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }, 
+	  "ReligioneCristiana":  {
+			"descr":"problema che riguarda la classe a ","menu":"classi","questions": [
+				"Cristiano",
+				"Cristo",
+				"Epoca di ricezione cristianesimo",
+				"Epoca Cristianesimo",
+				"quando cristianesimo",
+				"Costantino",
+				"edifici Cristiani"
+			],
+
+			"answer": "Aquileia fu anche un precoce centro di ricezione del cristianesimo in Occidente, come testimonia il fervore edilizio che portò nel IV secolo d.C. all’edificazione della basilica e degli altri edifici cristiani dislocati nella città e nel suo territorio. I simboli della nuova fede come il monogramma costantiniano (chrismón) si ripetono sulle epigrafi e sugli oggetti riferibili all’arredo liturgico e alle offerte dei fedeli..",
+
+			"metadata": [],
+
+			"piano":"1",
+			"sala":"1",
+			"opera":"1",
+			"link":"contesto/cultura/artistica",
+
+			"settore":"ingresso",
+			"museo":"archeologico",
+			"interesse":"architettura"
+      }
+}
+			

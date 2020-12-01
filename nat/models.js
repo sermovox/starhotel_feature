@@ -32,6 +32,27 @@ dynJs={ascript:{ TODO : to  REVIEW  changed !!!  on 062020 last templates was co
             }
 }
 */
+// usefull regex (also precompiled ?):
+
+function twoWordNear(w1,w2,d){
+    // ex twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2) will return :
+    // \\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*
+    return '\\b(?:'+w1+')\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,'+d+'}\\s(?:'+w2+')\\w*\\s*';}// 
+function buildMod(list,sep1,sep2){// list=[['red,'red|redd'],,,,,,,] , sep1='>',sep2='!', ex  list.push(['red',twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2)])
+    let items='';
+    list.forEach(e => {
+       //  typeof (key) === 'string' Array.isArray(handlers) typeof (handlers) === 'function'
+        if(typeof (e[1]) === 'string'){
+        items+=sep1+e[0]+sep2+e[1];
+        }else if(typeof (e[1]) === 'function'){
+          /// no good  ????// 
+    }});
+    if(items){items.substring(1);
+    return '{'+sep1+sep2+'}'+items;}
+    }
+
+const pren_alle_3='\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',// prefix - 2 word max - integer  .to enhance with datetime 
+    ristVicino=twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2);// 
 
 hotel3pini_vox={// all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
@@ -1080,7 +1101,7 @@ let star_hotel={// REFERENCE . all var dyn added at containers values.excel/matc
     // a value model : get its valus by a group match in a regex ( now only result[1] is consifdered a valid value match )
     mod_bookhour:{vmatches:{value:''},//int value , when matched the value is the number got:vars.models.matches.modelname.vmatch vars.models.matches.modelname.match
     vlist:['ora prenotata'],//temporaneo , è duplicato di vmatches con different format ! // not value type
-    model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
+    model:'value-'+pren_alle_3,// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
      notMatPr:'l ora in cui prenotare'//  model entity name used in nmList not matched list 
      // vname:=notMatPr
 },
@@ -1114,7 +1135,9 @@ let star_hotel={// REFERENCE . all var dyn added at containers values.excel/matc
 
     // message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
     //model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
-    model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+    // model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+    // ristVicino=twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2)
+    model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>'+twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2),
 
     // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
     //      {bar:{
@@ -1173,9 +1196,10 @@ let star_hotel={// REFERENCE . all var dyn added at containers values.excel/matc
     
     
     
-    dyn_medicine:{// used in  associazione a    :
+    dyn_medicine:{// parte del context in onChange    :
     
         // put here also the static  dyn ask definition  AAA ?? yes
+        url:null,// get query from internal db rest service :  ='service://dbmatch',// new method
         schemaurl:'Master',// schemaname of master collection, url is  'mongodb://localhost:27017/'
         schema: 
             {
@@ -1460,7 +1484,7 @@ config={// REFERENCE . all var dyn added at containers values.excel/matches/askm
         // a value model : get its valus by a group match in a regex ( now only result[1] is consifdered a valid value match )
         mod_bookhour:{vmatches:{value:''},//int value , when matched the value is the number got:vars.models.matches.modelname.vmatch vars.models.matches.modelname.match
         vlist:['ora prenotata'],//temporaneo , è duplicato di vmatches con different format ! // not value type
-        model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
+        model:'value-'+pren_alle_3,// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
          notMatPr:'l ora in cui prenotare'//  model entity name used in nmList not matched list 
          // vname:=notMatPr
     },
@@ -2045,6 +2069,38 @@ row :
 
 /// Preferred registration method : fillOnCh_Register :
 let OnCh_Register={
+    simple_help_desk:{// starting with _ means that a goto cmd will fire a child !!
+    
+        excel:{
+        mod_esci:{vmatches:{esci:'esco',msg:'lascia messaggio'},// model specification , item voice name 
+        vlist:['esco','lascia messaggio'],//temporaneo , è duplicato di vmatches con different format ! 
+         model:'{>&}esco>\\besc|\\busci|\\bciao|\\bsalut&msg>\\bmessag',
+
+             notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+         // vname:=notMatPr
+         },
+   
+
+        
+        },
+        
+        direc:{
+            msgxuff:{
+        
+                loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+            
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }},
+            msguff2:{
+        
+            loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+        
+                goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+            }
+        //, autoReg=true
+        //
+        }   
+        }},// ends  simple_help_desk
 _yourname:{// starting with _ means that a goto cmd will fire a child !!
     
 excel:{
@@ -2244,7 +2300,7 @@ let star_desk={// REFERENCE . all var dyn added at containers values.excel/match
     // a value model : get its valus by a group match in a regex ( now only result[1] is consifdered a valid value match )
     mod_bookhour:{vmatches:{value:''},//int value , when matched the value is the number got:vars.models.matches.modelname.vmatch vars.models.matches.modelname.match
     vlist:['ora prenotata'],//temporaneo , è duplicato di vmatches con different format ! // not value type
-    model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
+    model:'value-'+pren_alle_3,// nb  /  or  //   x- will go in vars.models.matches.modelname.match=x
      notMatPr:'l ora in cui prenotare'//  model entity name used in nmList not matched list 
      // vname:=notMatPr
 },
@@ -2274,6 +2330,8 @@ let star_desk={// REFERENCE . all var dyn added at containers values.excel/match
 
     // message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
     //model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+    // model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+   
     model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
 
     // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
@@ -2508,4 +2566,4 @@ let star_desk={// REFERENCE . all var dyn added at containers values.excel/match
 
 
 //module.exports =                            {hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,star_desk,config};
-module.exports =Object.assign(OnCh_Register,{hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config});
+module.exports =Object.assign(OnCh_Register,{hotel3pini_vox,hotel3pini,hotels,televita,museoAQ,star_hotel,config});// new : register in OnCh_Register

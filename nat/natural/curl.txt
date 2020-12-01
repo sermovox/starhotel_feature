@@ -1,0 +1,9 @@
+    curl  -H 'Authorization: Bearer 2FZVYQTXU5WPBT3ITYFLNFABFQTGDZNH'  'https://api.wit.ai/message?v=20201025&q=hy%20weather%20best%20prevision%20in%20pordenone%20at%207%20pm'
+{"text":"hy weather best prevision in pordenone at 7 pm","intents":[{"id":"1471383782962006","name":"weather","confidence":1}],"entities":{"wit$datetime:datetime":
+[{"id":"be331391-97c5-4a62-9e49-5d7b07a21a43","name":"wit$datetime","role":"datetime","start":39,"end":46,"body":"at 7 pm","confidence":0.9615,"entities":[],"type":"value","grain":"hour",
+"value":"2020-11-12T19:00:00.000-08:00","values":[{"type":"value","grain":"hour","value":"2020-11-12T19:00:00.000-08:00"},{"type":"value","grain":"hour","value":"2020-11-13T19:00:00.000-08:00"},
+{"type":"value","grain":"hour","value":"2020-11-14T19:00:00.000-08:00"}]}],"wit$location:location":[{"id":"e69e871e-9f66-4827-9c33-c6d79e5f7fa1","name":"wit$location","role":"location",
+"start":29,"end":38,"body":"pordenone","confidence":0.9089,"entities":[],"resolved":{"values":[{"name":"Pordenone","domain":"locality","coords":{"lat":45.956890106201,"long":12.660510063171},
+"timezone":"Europe\/Rome","external":{"geonames":"3170147","wikidata":"Q6606","wikipedia":"Pordenone"},"attributes":{}},{"name":"Pordenone","domain":"region","coords":
+{"lat":46.101821899414,"long":12.690019607544},"timezone":"Europe\/Rome","external":{"geonames":"3170146"},"attributes":{}},{"name":"Pordenone","domain":"region",
+"coords":{"lat":45.961711883545,"long":12.655320167542},"timezone":"Europe\/Rome","external":{"geonames":"6540112"},"attributes":{}}]},"type":"resolved"}]},"traits":{}}

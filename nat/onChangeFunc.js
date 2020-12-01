@@ -1395,6 +1395,8 @@ async function  //    (res,bot,convo){// after deserialized
 (new_value, convo, bot,script,ask)  {// this function will be loaded at cms init with the jsonobj:
 // convo.vars=convo.step.values
 
+// context this : see fwbase ?
+
     // CHECK IT
     // PROBABLY think this func a method of the obj we insert the func : 
     //          >> vars.dynfieldobj so try to set this=vars.dynfieldobj
@@ -1843,16 +1845,21 @@ if(!(myurl&&dbEntFw)){// no url
 
                      
 
-let entSchema=[],wheres,
-schemaurl;// the name of some field db schema 
+
+let wheres=null; // defime master query where  condition (where in a collection field containing values(name) of property entity knon only by its name  )
+
+
+
+const oldway=false;
+if(oldway)    {
+let entSchema=[],
+schemaurl;// the name of some where field db schema 
 entSchema.push({name:myurl,n_m:0}) ;// first item will defime master tablecollection
 // join clause ( we know from schema inspection or from definition that some where are in db master join field/col ) 
 // entSchema[1]= {name:schemaname of first relation ,n_m:1/2,prevId:3,prevVal:'rome',id,val,refCol}// n_m: 1:1_n,2:n_m 
 // where clause ( we know from schema inspection or from definition that some where are in db master  field/col , type is atomic , int or string) 
 // wheres[entSchema[1]= {name:schemaname of first relation ,n_m:1/2,prevId:3,prevVal:'rome',id,val,refCol}// n_m: 1:1_n,2:n_m 
-
-wheres=null; // defime master query where  condition (where in a collection field containing values(name) of property entity knon only by its name  )
-                                       
+                         
 if(!entityexpanded){// a where field is a join field ( a ref field) so run a join 
             // debug . to semplify a  match must exist ! > in future manage the event
    if(matches.mod_loc&&(loc=matches.mod_loc.match)){
@@ -1873,6 +1880,44 @@ if(!entityexpanded){// a where field is a join field ( a ref field) so run a joi
 
     }
 }
+}else{
+url=this.url;//'service://dbmatch';
+if(matches.mod_loc&&(loc=matches.mod_loc.match)){
+    wheres={location:matches.mod_loc.match} ;// auto collected by dynMatch() ???
+    }
+
+
+    // TODO test it :::::::::::::::::
+    // like convo matcher calls dynMatch : 
+
+    let matched_;
+    matched_=await this.dynMatch(mydata,this.id,previous.collect.key,entity,step,  ///////////// errors !!!!!
+        (val)=>{
+        if(val&&val.rows){
+
+            // if(Array.isArray(val.rows))val.rows=val.rows[0];
+
+            if(val.rows)res=val;
+
+        }
+
+
+    });// a cb to set vars in template js code .general int , returns a match obj , see dynMatch in onchange.js
+
+
+    if(matched_&&res){ //  res meets ASWQ entity matcher interface 
+        console.log(' onchange  : querying services.onChange_dynField() returned  ',res);
+        if(res.reason=='runned')res=resu.rows; else res=null;
+
+    }
+
+
+
+
+}
+
+
+
 
 
 

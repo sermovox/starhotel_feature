@@ -76,6 +76,7 @@ let init=function(){// register bank (dynJs) function onChange x script/dynfield
 let fwHelp=require('./fwHelpers')(fwHelpers,fwCb,db,ai,rest,dynJs);// extend fwHelpers (using fwHelpers and fwCb) with other  base fw functions 
 // fwHelp={db,rest+refImplementation properties}
 //service=require('./service').setService(db,http,fwHelp,fwCb,dynJs);// db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
+
 service=require('./service').init(fwHelp,fwCb,dynJs);//extend fwHelp (using fwHelp and fwOnC) with other  user fw functions 
                                                     // db,http too ? nb also here we have to insert function in dynJs from text ( model Matchers ) : do like after in HEI ?
 // service={db,rest+refImplementation properties + service provided properties}
@@ -133,7 +134,7 @@ initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars
     initCmd('simple_help_desk', { meds: [11, 22, 33], cur: 'rossi', service: 'hotel' }, []);// copied from 'star_hotel''
 
 
-// autoregistration of OnCh_Register
+// autoregistration of OnCh_Register ( autoReg in model.js) all will have matchers and asmatcher fw support also if miss of some directives 
 
 for (x in dynJs) {
     let asks=[];
@@ -204,7 +205,7 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
 
     let myth='default',
     directive,// directive= ( dynJs=comands={cmddir,cmd2dir,,,,} ) .acmd
-    nodirective=false;// if true we'll give minimum support with no directive and no user onchanges monchange
+    nodirective=false;// if true we'll give minimum support with no directive in model.js and no user onchanges monchange
                         // if this convo do not have fw support must not use father fw structures (matches,asmatches,,,,)so null it , otherwise set if not alredy done by father
     //if(!dynJs[myscript_])return;// error
 
@@ -299,7 +300,10 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
    console.log('\n starting FW initCmd , so registering convo.before for cmd   ',myscript_,' thread default ');
             //let  myscript_='televita';// launch a closure with a internal var the script well be registering :
             controller.plugins.cms.before(myscript_,myth, async(convo, bot) => {// default thread will be enougth
-                // convo can be eredited from father , but if this convo do not have fw support must not use father fw structures (matches,asmatches,,,,)so null it 
+                // convo can be eredited from father , but if this convo do not have fw support :
+                //          ->  must not use father fw structures (matches,asmatches,,,,)so null it 
+                //                  cosa significa ? che se il child non e' def in models non può usare in condition $$...  ( model support is not provided )
+                //                  perchè se cosi facessi  in convo andrei a cercare le def in model che non ci sono o non sono accessibili ????
                 if(nodirective){
                     convo.setVar('matches', {});// case $$ and $% : model and key matches ex :values.matches.color='red', see conversation.addMatcRes()
                     convo.setVar('askmatches', {});// other : key matches ex :values.askmatches.akey={match=[{key:0},,,]}, see conversation.addMatcRes()
@@ -401,6 +405,11 @@ oo
                     //          - do not COMPLETE the dialog : because we let the base cmd triggering only to controller dialog  only 
                     //          - but goto the order cmd that will trigger other action using condition match
                     //      only when the user leave the order app we count the cms triggering the next app controller dialog 
+
+
+
+
+            // ****  SESSION and appWrap  RECOVER 
                 
             values.app=await fwOnC.getappWrap(bot,convo,trigApp);// ****  SESSION and app RECOVER : // will put in convo.vars  user session status and register a serving app , check  appWrap in vars.app ....
                                                         // so attach in session.appWrap a relay where register in  a app that can manage events fired (appWrap.post() by  ( onchange/onclick/askconditions) fired by the view level 
@@ -492,16 +501,18 @@ oo
                 */
 
 
-                let exten=convo.vars.excel||{};
+                let exten=convo.vars.excel||{};// vars.excel will contain the directives set in model.js for the cmd + the definition of all the father chain
+                                                // this means that in a child we can suppose it can be caled by some father that use some directives that we can use in the child also without
+                                                //  coping those in current cmd excel  
             // convo.setVar('excel',directive.excel);// // ovewrite previous convo excel  data , corrected to be as was before
-            convo.vars.excel=Object.assign(exten,directive.excel);// extend present excel with current convo excel, avoid duplicate name !!!
+            convo.vars.excel=Object.assign(exten,directive.excel);// extend present (we are beginning a ;new cmd def thread) cmd excel directives (directive.excel from model.js)with current convo excel(father vars.excel), avoid duplicate name !!!
 
                         // let color_=color;
             // info about current dialog definition , 
             // convo.setVar('direc',directive.direc);//  // ovewrite previous convo excel  data , dir about current cmd asks as conversational tab . NOW also the static fields
             let exten2=convo.vars.direc||{};
             // convo.setVar('excel',directive.excel);// // ovewrite previous convo excel  data , corrected to be as was before
-            convo.vars.direc=Object.assign(exten2,directive.direc);// extend present excel with current convo excel, avoid duplicate name !!!
+            convo.vars.direc=Object.assign(exten2,directive.direc);// extend present cmd direc directives  (directive.direc from model.js) with current convo direc (father vars.direc), avoid duplicate name !!!
                 
             find_wheres(convo.vars);// insert wheres on dependend dyn as mod_wh_Of of its depending wheres 
 

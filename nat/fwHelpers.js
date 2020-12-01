@@ -83,7 +83,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
         */
 
-        onChange_dynField: // this function returns a Promise and do  use await  . so async function  OR function ? 
+        onChange_dynField: // seems not to be used now ( better use dbservice plugin  ) 
+                            // this function returns a Promise and do  use await  . so async function  OR function ? 
         async function 
 
 
@@ -1987,13 +1988,13 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     
         }, //end rest__
         
-        run_jrest: async function (url, formObj, method,head) {// return a val or null ?
+        run_jrest: async function (url, formObj, method,head) {// see chart 112020
 
-            // :service// : check if can route to internal controller put in this ( service extension)
-            //          :service//dbmatch  : route to :service//plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
-            //              if form is null filling form with qs
-            // :http//host...  call run_rest: and return the json obj of http result
-            // std RETURN : return {reason:'runned',rows:JSON.parse(response)};  rows is row obj . its format depends from service called and will be passed and managed by matchers
+            // - service:// : check if can route to internal controller put in this ( service extension)
+            //          service://dbmatch  : route to service://plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
+            //              if form is null filling form with url qs
+            //- http://host...  call run_rest: and return the json obj of http_response
+            //  std RETURN : return {reason:'runned'/'err',rows:JSON.parse(http_response)};  rows is row obj . its format depends from service called and will be passed and managed by matchers
             //      (if entity , if used in view , better at least std db entity {value,descr.patt,,,}) or [row1,,,]  
             //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( asmatches.param format if we run a query )
             //              if failed :{reason:something,'err string'}
@@ -2052,16 +2053,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                     if (response) return {reason:'runned',rows:JSON.parse(response)};
                 } else 
 
-
                 if (url.substring(0, 10) == 'service://') {// :service//dbmatch'
                     //form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
 
-
                     // MAPS local service into is registered func 
-                    if (url.substring(10, 17) == 'dbmatch') {// dbmatch interface , the interface is given here not as the usual case put in this.plugins.....
+                    if (url.substring(10, 17) == 'dbmatch') {// dbmatch interface meets Entity type matcher interface , the interface should be the usual case put in this.plugins.....
                         // route to internal db service ctl 
-
-
 
                         let wt = false;// new db service , ok 
                         if (wt) mr = await this.restAdapter2Mongodb(formObj);// old , call specific caller to internal data service adapter that knowing additional scheme cal call a db
@@ -2071,10 +2068,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         
                         .catch(error =>{ // seems not to thrown if got in previous catch . in this case result mr is null and the thread goon as we didnt have error
                             console.error('  .catch because the promise was rejected mr null , returning from rest service request :  returns:',mr,',error: ',error);});
-                        
-                        
-                        
-                        
+                        let mm;if(mr.reason=='runned')mm='match';
+
+                        // >>>>>>   EMBED rows result in a obj with minimum meta as requested by Entity Matcher 
+                        mr.rows={matched:mm,type:'?',rows:mr.rows};// must be mr={reason,rows={matched,rows={}}} because mr.rows must be in entity matcher type 
+                                             
                         ;// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows,reason} reason  'err' or 'runned'
 
@@ -2090,13 +2088,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                             // uri =service_function=date , qs ='term=1'
                             let qs = hostqs.qs;
 
-                            // 
                             let lev = host.split('.');// lev=['service','plugins','apluginctl']
                             let myf;
                             if (lev) lev.forEach((element, i) => {
                                 if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
                                 else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
-
                             });
 
 
@@ -2104,10 +2100,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                                 // pass qs in url into form if form is null
 
-                                let form = formObj || querystring.parse(qs);
+                               //  let form = formObj || querystring.parse(qs);
+                                // better add :
+                                formObj=formObj ||{};let form;
+                               if(qs) form=Object.assign(formObj,querystring.parse(qs));else form=formObj;
 
                                 // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
- 
                                 // GENERAL RULE if the result do not have .reason  embedd it !!! 
                                 mr=await  myf(form);
                                // mr = {reason:'runned',rows:await myf(form)};// .catch {reason:err,null}
@@ -2229,6 +2227,20 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             // if returns false the intent was not matched
             // askmatches or matches structure will store the results as the return rows represent a object property nin expected format . see caller and addMatchRes()
 
+            // dialog flow consideration and difference between intent and q&a
+            // - in dialog we build the navigation to desire entity/action/intent matching many subintent that refine the possible desire action to the one intended by the user
+            // - so we can match many entity to refine possible/available actions via indicators o medium intent and navigate to desire intent, or less mini intent to getthe main/desire 
+            // - qea can be seen as a tentative to go to one desire action that can be just a info , so we can came back or just goon with the desire as next major transaction/action to goon 
+            // > so treat the q&a like a major intent but usually take care that often 
+            //      - we must refine/ confirm the q&a match to get a solid major intent/refine 
+            //      - we respond to a question with a child then will come bach to next firing ask where we clarify with user what to do after the child, like a next ask will examine the .complete to see what thread can better manage the result of the query
+            //          to basic navigation ( mini intent building/refining)
+            //              infact in dyn_medicine after build the inflacted major entity(/intent) and set the next dialog/page context we examine the complete ( often in a relay)to see what where was matched to relay to the thread that has the rigth dialog templates to manage the intent/action
+
+            // -> in case we build the qea with natural we naturally get the intent entities in parte prima del match qea e poi le altre (nascoste implicitamente dentro le question)as property of matched answere so we ca set the matchers on that entity if we want !!!
+            //      quindi un qea assomiglia anche a una entity con where , in pratica e' vvia di mezzo tra intent e entity query con where !!!!!
+            //      >>>> percio usiamo anche qui un form per tenere eventuali where da considerare nel match ( estratta dal tep via directives ? !!
+
             // do very like dynMatch :
 
 
@@ -2259,7 +2271,27 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
 
 
-                // call SERVICE , 2 case :
+
+                // MNG SUMMARY : INTERFACE REQUIREMENTS 
+                // a interface implementation will be called via run_jrest(url,forms,,) , mainly can be 2 choices :
+                // - url=http://....    
+                //      so  run_jrest() will use http rest service  using : url, conn param, data/form specification ,  with these req.s :
+                //      - url to connect, POST conn params
+                //      - post form interface requirements : form= { v: agent, q: term };
+                //      - POST result req.: rows={a_wit.ai_intent_format}, 
+                //              it will be returned here from run_jrest() as  {reason:'runned'/'err',rows};
+                //              so here we returns to intent matcher calling cb(rows)
+                // - registered service function :
+                //      so  run_jrest() will call a registered service  using url=service://nameofservice, with these req.s :
+                //      -  param=form (same req as  above)
+                //      -  return rows as above 
+
+            
+                // NOW THIS Int MATCHER HELPER will call a interface implementation that meet following requirements :
+                // input form={}
+                
+                
+                // so we have some interface to call ,  for example these 2 case :
                 // - a) direct call to endpoint :when url=https://....    like :   'https://api.wit.ai/message?' 
                 //      we  implementat here the specific interface a ext rest to ep: https://api.wit.ai/message?qs completing the qs with fw info (token) 
                 //              returns to matcher must be the response the matcher require, 
@@ -2272,7 +2304,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 //              the call params to all plugins.ai...?qs services will be all the same , as taken in charge by run_jrest , service:// case,  : 
                 //                  params=form = formObj || querystring.parse(qs);
 
-                if (url) {// sborone, url=https://api.wit.ai
+                if (url) {// sborone, url=https://api.wit.ai / q&a://this
 
                     // url set the service endpoint that can be :
                     // - a direct http endpoint, so we must provide the connection and eventually some mapping for the specific endpoint api 
@@ -2281,7 +2313,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                     // - let all staff to a ai intent interface that manages that staff for registered agent :
                     //       url=service://plugins.intentai.res_intent // intent interface is added as plugin !
 
-                    if (url.substring(0, 8) == 'https://'&&this.ai) {// a) : direct interface , 
+                    if (url.substring(0, 8) == 'https://') {// a) : direct interface ,
+                    if (this.ai) {// a) : direct interface , 
 
                         // get specific agent connection info from this.ai for each possible endpoint:
                         //      this.ai conn info  was set in bot.js :     ai.witai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
@@ -2290,6 +2323,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         // if (this.ai.witai.substring(0, 15) == 'https://api.wit') {// witai
 
                         if (url.substring(0, 15)  == 'https://api.wit'&&this.ai.witai&&this.ai.witai.agents) {// witai requested and conn info set in bot.js
+
+
+                        // build :
+                        //  - POST connection params from : url host, token got from registered agent: this.ai.witai.agents[ag]; 
+                        //  - POST form from : agent=ag=urlqs , term/text
 
                             if (url.indexOf('?') < 0)// url end with '?' means goon with a get request !!!
 
@@ -2323,10 +2361,52 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                 }
                             }// ends GET
                         }// ends witai agent
-                    }// ends here direct agent calls
-                    else{// set here the intent service interface provided as plugin 
+                    }else return false;// ends here direct agent calls
 
-                        // todo like in dynMatch()
+                }else{// set here the intent service interface provided as plugin 
+
+                        // todo like in dynMatch() : ask run_jrest to run a std interface service ( defined call params and return withwr with mr.rows of format required by matcher type
+                        //      that is intent (  manage both intent & q&a case with same interface !!!))
+
+
+
+                    /* INTERFACE mnagement summary :
+                     form:
+                      intent   : form is {term:utterancetext}
+                      q&a      : form={term,where} like query a complex entity with many property to where if possible/convenient
+
+                     mr.rows :
+                      intent  : witai format : {intent:name,entities:[{}],.....} intent will usually be an action ( so a askrelay will route on intent name)
+                                                                          ,fullfilled by a child that has params in entity row bl fields ( inflated bl entities +template context to manage the 
+                                                                             query result type (ex navigate restaurants will be treat differently and in different relayed trees from desk services )entity )  
+                      qea     : same as entity dynMatch format :  {group_todisplay/navigate,rows:{value,descr,inflatedentityproperties,groupparam} in pratica come sopra solo che il group.mainresurcetype prende il posto di intent.name 
+                                so :                     {name group_todisplay/navigate,rows:[{value,inflatedentityproperties},,,]} 
+                      in simplest case will be just a value : the atomic info to give then return and prompt the user to decide what route to take after got the info received 
+
+                          the problem is : how addMatchRes store the 2 type: must be able to do both ......
+                          so we can merge the two in this way :
+                         matches.modname.
+                                    intent   :                                                        q&a    like a entity match:
+                                    name to relay to appropriated child                               name: the class name/child cmd to route to navigate ( desk/rest/breakfast) 
+                                                in child the intent will have a descr field                         using group param 
+                                                    do some staff with entities (context)             param:  the param context of child cmd/th
+                                                                                                      entity : the main entity value/key + descr 
+                                                                                                                in simple qea descr is the answere !!!
+                                    entities:                                                               .wherefields : its related bl where properties , also inflated 
+
+                        >>>>>  so  addMatchRes  will store qea the same as it was a intent  ( similar anyway to entity, just that in entity matcher the where are flattened in the row and not in entities:[{},,,])
+
+                    */
+                    let wheres= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+                    let form={entity,term,wheres};// excel is debug param, usually is in the service
+                        let  mr=await await this.run_jrest(url,form,true);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                        //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
+                        if(!mr||mr.reason!='runned'||!mr.rows)return false;
+                        else {
+        
+                            cb(mr.rows);
+                            return true;
+                        }
 
                     }
                 }// end url
@@ -2366,6 +2446,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
         },
 
         dynMatch:async function // the entity matcher helper interface 
+        // THIS IS THE TEMPLATE FOR ALL matcher helper : dynInt + dynQuery 
+
         // news 01112020 usual call with :
         // - url=service://plugins.ai.duck.datetime?qs : if set a interface plugins.ai to service class ai (ext agent with intent/entity) that will have implemented interface with endpoints (duck)
         //      to get specific service (get entity / intent ) plugins.ai.duck.datetime on defined agent qs='v=4444555&token=56789'
@@ -2390,7 +2472,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
         // so :
             //   extract (from state.dir.cond.amodel.vars extracted in calling convo.matcher)  the param to fire a 'std' rest to service end point (POST andd GET based , depend from the url formatting get in model.js) 
             // returns entity item(s) in rows (so row fields _) according to ASWQ entity matcher interface :
-            //  - if atomic (string) represent a 'value match and is used to ser .match .vmatch of supporting condition model 
+            //  - if atomic (string) represent a 'value match and is used to set .match .vmatch of supporting condition model 
             //  - if not atomic rows represent :
             //      - a entity/object item  property in db row in std format :
             //              - value descr + bl fields key/name/value (not inflated/populated) . they will be mapped on supporting model :
@@ -2419,24 +2501,32 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             let session=vars.session,
                 excel=vars.excel,
                 direc=vars.direc,
-                wheres_,
+               // wheres_,
                 dir=step.state.dir;// the loop ctl dyn var
                 // comand must be registered in basefw and model defined in excel to find wheres filled by fwbase.find_wheres() :
                 //           fills the direc model that depends to where model :  direc.dep_mod.wheres=[where_mod1,where_mod2,,,]   , mod is a model or a static entity 
 
+
+
+
+
+
+                /*///////////////
+                let wheres_;
                 if(excel[entity]&&excel[entity].wheres)wheres_=excel[entity].wheres;// the depend on models,  wheres_=['mod_city',,,]
                 // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
 
                 let wheres={},// {mod_city:'rome',,,,}
                 wc=0;// 
-
-
                 if(wheres_)for(wh in wheres_){// fills where dependency resolved by ... in 
                     wc=1;
-                    if(vars.matches[wheres_[wh]]&&vars.matches[wheres_[wh]].match)wheres[wheres_[wh]]=vars.matches[wheres_[wh]].match;// a matched where condition
+                    if(vars.matches[wheres_[wh]]&&vars.matches[wheres_[wh]].match)
+                        wheres[wheres_[wh]]=vars.matches[wheres_[wh]].match;// a matched where condition
                 }
                 if(wc==0)wheres=null;
+                *////////////
 
+                let wheres= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
 
 
             // isDb_Aiax use local rest db interface ORM , to put in a module 
@@ -2644,6 +2734,27 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
+    function findWhere(exc_ent,vars){// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+        let wheres_,wc=0;
+    if(exc_ent&&exc_ent.wheres)wheres_=exc_ent.wheres;// the depend on models,  wheres_=['mod_city',,,]
+    // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
+
+    let wheres;// {mod_city:'rome',,,,}
+
+
+
+    if(wheres_)
+    { wheres={};
+        for(wh in wheres_){// fills where dependency resolved by ... in 
+        wc=1;
+        if(vars.matches[wheres_[wh]]&&vars.matches[wheres_[wh]].match)
+            wheres[wheres_[wh]]=vars.matches[wheres_[wh]].match;// a matched where condition
+    }}
+    if(wc==0)return null;else return wheres;
+}
+
+
+
     function getHost(url){// return host , qs 
     let cstop,cstop1,r,qs;
     // 10 letters of 'service://host' should be start with host name  ,  url='service://host?.....'  or  url='service://host/.....'
@@ -2666,7 +2777,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
         let meta;
     if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
    // if(dir&&dir.asks[key]&&dir.asks[key].cond[entity]&&(dbmeta=dir.asks[key].cond[entity].dbmeta));
-    if(dir&&dir.cond[entity]&&(dbmeta=dir.cond[entity].dbmeta));
+    if(dir&&dir.cond[entity]&&(meta=dir.cond[entity].dbmeta)||(meta=dir.cond[entity].meta));
     else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;  
     return meta;
 
