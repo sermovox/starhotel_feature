@@ -74,10 +74,10 @@ const wsPort=process.env.port || process.env.PORT||'3000';// the webhook channel
 
 const https = require("https");const http = require("http");// not controller.httpconst http = require("http");// not controller.http
 // http used also by :  jrest_.init(http,https);jrest=jrest_.jrest;, so use both in web_adapter,rest and core ?
-const setProvWeb=false;// set web outside botkit
+const setProvWeb=false;// set web outside botkit , some timing mismatch if true 
 let httpserver,webserver;
 if(setProvWeb){
-let  servs=require('./nat/http/servers.js')(http,wsPort);// like core. // Create HTTP server http (http/restify package ) to listen a  http  port , attach webserver to handle http data
+let  servs=require('./nat/http/servers.js')(http,wsPort);// like core. // Create HTTP server http (http/restify package ) to listen a  http  port (set by .env), attach webserver to handle http data
 httpserver=servs.httpserver;webserver=servs.webserver;// must add dependency into controller to be sure it was done before call .ready() .....
 }else httpserver=webserver=null;
 // need also su reset the server port listen ! webserver=null;// if dont want provide external webserver 
@@ -104,7 +104,7 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
                     //      adapter.createSocketServer(controller.http,optn, controller.handleTurn.bind(botkit)); but if controller.http is not set as webserver is provided , i have to call manually  see TYU
     storage
 });
-let logic=controller.handleTurn.bind(controller);// bot entry 
+let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 
 let rootDef=require('./nat/cfgWebPost.js');
 rootDef(controller.webserver);
@@ -150,8 +150,6 @@ if (xmpp_adapter) {
     throw err;
     });*/
 
-
-
    // let logic=this.handleTurn.bind(this);
    // al posto di registrare con webserver.post(url,function {
     //  ... 
@@ -160,7 +158,7 @@ if (xmpp_adapter) {
 
     // ...} ) 
     //  registro su xmpp2adapter  logic e adapter 
-    xmpp2adapter(xmpp_cfg1,webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test !!
+    xmpp2adapter(xmpp_cfg1,webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test ONLY !! so What protocol uses xmpp ????????
 }
 }
 //*/
@@ -267,7 +265,9 @@ let app=require('./nat/app.js');// must set the cms endpoint port that gives the
 controller.ready(() => {// Plugin staff: all dependencies usually registered by plugins in init()(called by .... when ....), have been marked complete.
 
     // TYU
-    if(webserver)adapter.createSocketServer(httpserver, {},logic); //async(context) => {// handle turn here   controller.handleTurn.bind(botkit))        });
+    if(webserver)adapter.createSocketServer(httpserver, {},logic); // create a wss on port managed by http listener httpserver (works in || with attached http webserver (expone post on http uri on listener port ))
+                                                                    // probably to think : wws is like a double way http  on a special uri on listened port 
+                                                                    //async(context) => {// handle turn here   controller.handleTurn.bind(botkit))        });
 
     // load traditional developer-created local custom feature modules
    // after cms ?       controller.loadModules(__dirname + '/features');
@@ -307,6 +307,9 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
         //  - will not redirect with a new page + qs to receive a new page with a title prompt but :
         //  - will get the
         // will send lastreview testtrigger 
+
+
+        // ***** >>>>  come fa il ctl a associare un bot corretto in funzione del event message ???? ( associato al uri associato al nginx subdomain ) ?????????????????????
         controller.on('message,direct_message', async (bot, message) => {// no need x centralino trigger ? with middleware extraction ?
             /* **** after checked x waiting continueDialog,  process registered 'hears' cmd/dialog like in core.ingest(), but using a remote triggering cms: 
                   - run handler for the message event message.type . hears handler are run using listenForTriggers(), a special event handler that choose the handler that is triggered
@@ -341,9 +344,9 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
                 return false;
             }
         });
-        controller.interrupts('esci','message', async(bot, message) => {
+        controller.interrupts('esci|\b%%exit-hangup','message', async(bot, message) => {
 
-            await bot.reply(message,'ok chiudiamo la conversazione arrivaderci ');
+            await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');
             await bot.cancelAllDialogs() 
            
            });

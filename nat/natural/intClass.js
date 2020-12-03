@@ -155,7 +155,7 @@ const guess = guesses.reduce((x, y) => // x is the temporary reduced , y is cur 
             }else{   
                 return y;}
     }});
-    let discr;
+    let discr;//=[qeaitem.aprop1,,,,]// usually aprop1 is a meta property
    // for(let e in wheres){// calc what where can discriminate first second choices apart prob value :
     for(let e in trainingData[guess.label]){// calc what where can discriminate first second choices apart prob value :
         if(e != 'questions' && e != 'metadata'&& e != 'answer'&&

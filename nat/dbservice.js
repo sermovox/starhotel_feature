@@ -1791,7 +1791,10 @@ let res={// called by  exsec  , will call resolve_
 restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interface TO complete in setSetvice , or a default matcher template
     // >>> meta should be in local service directory to  map entity to find local data description to query  . as here we do not have such a dir we ,for debug, pass that
     // meta : used to resolve db mapping resources :schemaurl
-    let {entity,term,wheres,meta,whMmeta}=form;// form={entity,term,wheres,meta}
+    let {entity,term,wheres,meta,whMmeta,isQuery}=form;// old : form={entity,term,wheres,meta}
+
+    // FUTURE USE   : isQuery means it is a query , many rows expected, some one must build cursor and group context > to start prefer do in run_jrest ! !!
+
     // THAT internal REST Data Service  is EQUIVALENT to a external EXPRESS AUTOCOMPLETE CONTROLLER x AIAX BROWSER REST EXPRESS SERVER 
     // ITS a DATA SERVICE END POINT :WILL prepare the query for the local db engine to 
     // to find resources need to map entity into a managed db resource so need  meta , that for semplicity is passed by bot model in model  
@@ -1831,9 +1834,9 @@ restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interfa
         // but as conn is a promise and this is a async func we can also simply await it (sol TT)
         conn.then( (conn_)=>{
             if(conn_){
-            let res=goon(conn_);
-            //conn_.close();
-             resolve( res)}
+                let res=goon(conn_);
+                //conn_.close();
+                resolve( res)}
             else resolve({reason:'err_dbconn'});// if r error .then is executed anyway but conn_=null !!!!!!!!!!
             })
             .catch(error =>{ 
@@ -1868,7 +1871,7 @@ restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interfa
 
     function goon(conn){
 
-    if(conn&&meta&&conn&&schema&&db&&collect)// if meta conn
+    if(conn&&meta&&schema&&db&&collect)// if meta conn
     {// useless schemaurl=meta.schemaurl;//'Master';// TODO entDir.schemaurl; here  excel.dyn_medicine.schemaurl='Master',
 
     // one entity query 

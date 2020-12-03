@@ -552,8 +552,8 @@ let vfwF = {// framework functions module used in convo obj
             //                                  a obj in std format if from db/entityfts  ={value(the vname in static model),descr,patt,data+blfields } 
             let isVal = isStatic && storeVal && storemat ;// a static model whose values are the regex group match ( user gives a integer, a name of something), not the item name declared in excel
 
-            let mv=step.values.matches[entity]={};// reset , ASWF 
-
+            let mv=step.values.matches[entity]=step.values.matches[entity]||{};// ye / no ??? desidere can be = entity and matches ??? probably yes , ASWF 
+            mv.match=mv.matched=mv.vmatch=null;// reset also if mv=desidere
            // mv = step.values.matches[entity] = step.values.matches[entity] || {};
             if (mat) {// matches
 
@@ -704,10 +704,23 @@ let vfwF = {// framework functions module used in convo obj
                          // alredy done in convo !! if(mv.matched=='match')mv.match =mv.vmatch=entity;else mv.match=null;
 
                           //  mv.match = null;
-                        } else if (rT == 3) {// query cursor
+                        } else if (rT == 3) {// query cursor : very like to intent case
                           // ASWG  support let EntMod=key.masterQ,// was param in dyn_medicine
                           // ......
                            
+
+                        // in this case the matcher will transmit param/query resolved format (matcher  can  add  some fields to helper val result)
+
+
+
+                        let setSt=mv;// no more setSt_(entity)||mv;
+
+                        let EntMod=setSt.param=storemat;// storemat:  wit.ai intent resolved format (matcher  can  add  some fields to wit.ai format)
+
+                                                // like was a value to get with a regex , copy down to event model setSt ( launching the db rest , in realta e' event binario matcha o no il db query !)
+                       // see format. reference
+                       setSt.match=setSt.vmatch = setSt.param.match;
+
                         } else  mv.vmatch = null;// do no set matchers
                 }// ends a finit dimension entity
 
@@ -768,13 +781,26 @@ let vfwF = {// framework functions module used in convo obj
  
                         }
 
-                    }else {instance=param.intents[storeMId];
-                        param.group.sel = {
-                                item: instance,matched:mv.matched//,index:blRes, added matched to let it know ita a default because selector run but not matched 
-                            };
-                            mName=param.match=instance.name;
-                         if(instance.vname){mVname=param.vmatch=instance.vname;
+                    }else {
+                        instance=null;
+
+                        //instance=param.intents[storeMId];// WARNING  ::::::::::::::TODO     better use the value/name and storemat to get the corrispondence !!!!!!! so also in Query case !!!!
+
+                        param.intents.forEach(element => {if(element.name==storemat)
+                            
+                            {
+                            instance=element;
                             }
+                        });
+                        
+                        if(instance){
+                        param.group.sel = {
+                            item: instance,matched:mv.matched//,index:blRes, added matched to let it know ita a default because selector run but not matched 
+                        };
+                        mName=param.match=instance.name;
+                     if(instance.vname){mVname=param.vmatch=instance.vname;
+                        }
+                    }
                         }
 
                     /* no : 
@@ -789,19 +815,23 @@ let vfwF = {// framework functions module used in convo obj
                     //step.values.matches[entity].vmatch=step.values.askmatches[desiredE].param.group.sel[12];
 
                     // 112020
-                    // mv is the model generated to do the selection .
-                    //  its name is nameof Desire2select +  '_sel' to avoid overlapping 
+                    // mv is the model generated containing  the selection (matches.mv.....) and is set by $$desidered:>pippo , so   mv=pippo
+                    //  if is missing convo uses a model matches.samenameasthedesidered 2 choices :
+                    //      1 create anyway a new model  but +  '_sel' to avoid overlapping  TRPK
+                    //      2 just add fields to desire to set the selection  
+
                     //  its match value will copy the name of selected desidere item ! ( not the item name of run time selector model )
                     if(mVname)mv.vmatch = mVname;// pass in param ??
                     mv.match= mName;//param.group.sel.item.name ;// reset , in convo just set intents[0].name . set also if selector is not run
-                    mv.instance=instance;// convenience reference. set also if selector is not run
+                    mv.instance=instance;// convenience reference. set also if selector is not run ,
+                    mv.matched='matched';  // todo set 'best' if we got manyresult and still to select  means that anyone can take this as a selected value instance 
 
                     ///* ?????????
                     // attach param/intent to entity=selector of model param/intent( AND to this normal ask ? )
-                    if(isMasterQ)
-                    mv.param = param;//  , param is just take as mv=desiredE.param in convo, where desired can be ask or also a model . so if is a ask here add a model of same name 
+                    if(isMasterQ)// if mv different then desidered
+                    mv.param = mv.param||param;//  , param is just take as mv=desiredE.param in convo, where desired can be ask or also a model . so if is a ask here add a model of same name 
                     else
-                    mv.intent= param;
+                    mv.intent= mv.intent||param;
                     //ask.param = param;// attack master model ( .param or .intent ) to ask containing condition $$entity:>
                     
 

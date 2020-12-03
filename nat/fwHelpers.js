@@ -1824,16 +1824,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             if(code==0)resolve_({rows:bytes,reason:'runned'});
             else if(code==1)resolve_({rows:bytes,reason:'err'});// rows can be array?
         }
-    
-    
-    
     }// end res
     
  
     //prom = new Promise(crun_);// end promise
-    
-    
-    
+
                     console.log('  start_dynField,  query exec launched on dyn field  ', dynfield1);
     
                 } // ends db
@@ -2045,9 +2040,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                            // mr = {reason:'runned/err',rows:await myf(form)};// .catch {reason:err,null} 
                            // in this special case rows={redirect:'name',action:'repeat/next/begin....'}
                         }
-
                     } 
-
 
                     let response = await this.run_rest(url, formObj, method,head);
                     if (response) return {reason:'runned',rows:JSON.parse(response)};
@@ -2064,16 +2057,62 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         if (wt) mr = await this.restAdapter2Mongodb(formObj);// old , call specific caller to internal data service adapter that knowing additional scheme cal call a db
 
                         // a service pluging so we put here . if was a custom put in service.js 
-                        else mr = await this.plugins.dbs.restAdapter2Mongodb_(formObj)
+                        else mr = await this.plugins.dbs.restAdapter2Mongodb_(formObj)// best
                         
                         .catch(error =>{ // seems not to thrown if got in previous catch . in this case result mr is null and the thread goon as we didnt have error
                             console.error('  .catch because the promise was rejected mr null , returning from rest service request :  returns:',mr,',error: ',error);});
-                        let mm;if(mr.reason=='runned')mm='match';
+
+                        // mr={reason,rows:[{},,,]}
+                        let mm;if(mr.reason=='runned'&&mr.rows&&mr.rows.length>0){
+
+                            // rows must be a array 
+                            
+                            mm='match';
+                            if(formObj.sel_ctx){// is a query 
+                                    /*
+                                    if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
+
+                                    // like qea intent add context to support  process selection in a selector thread:
+                                        cursor:{resModel: {value1=rows[0].value:{ 
+                                                                                            patt:rows[0].patt // a regex ? or just like vname
+                                                                                            vname:vname0=rows[0].value
+                                                                                            },,,
+                                                                                },
+                                                                    medSyntL:[vname0,vname1,,,]// to list all items
+                                                                    },
+                                        group:{sel:{item:this.intents[0]}
+                                    */
+
+                                   let resModel={},medSyntL=[];
+                                mr.cursor={
+                                       // rows:res.rows,  ??
+                                    resModel,medSyntL} ;// data useless, rows is enougth. 
+                                                                    
+                                   /*
+                                   resModel={val1:{
+                                       patt:regexstr,
+                                       vname:'pippo' // set as array also in medSyntL x list in template
+                                       }
+                                   }*/
+
+                                res.rows.forEach(function(v,i){
+                                    let vname;
+                                    if(v.vname)vname=v.vname;
+                                    else vname=v.value;// usually should be a vname key
+                                    
+                                    medSyntL.push(vname);
+                                    
+                                    resModel[v.value]={patt:v.patt,vname:vname}});// calc matching [rows], then returns rows [] with just some cols (1:name)
+
+                                mr.group={sel:{item:mr.rows[0]}};
+                            
+                            }
+                        }
 
                         // >>>>>>   EMBED rows result in a obj with minimum meta as requested by Entity Matcher 
-                        mr.rows={matched:mm,type:'?',rows:mr.rows};// must be mr={reason,rows={matched,rows={}}} because mr.rows must be in entity matcher type 
+                        mr.rows={matched:mm,type:'?',rows:mr.rows};// must be mr={reason,rows={matched,,,,rows={}}} because mr.rows must be in entity matcher type 
                                              
-                        ;// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                        // call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows,reason} reason  'err' or 'runned'
 
                     } else {// std service interface (no specific case of service://dbmatch) , search a this.service_function to act like a rooted express ctl service://service_function 
@@ -2108,7 +2147,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                 // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
                                 // GENERAL RULE if the result do not have .reason  embedd it !!! 
                                 mr=await  myf(form);
-                               // mr = {reason:'runned',rows:await myf(form)};// .catch {reason:err,null}
+                               // mr = {reason:'runned',rows:await myf(form)};// .catch {reason:err,null} // embed reason if needed 
                             }
 
                         } 
@@ -2242,9 +2281,6 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             //      >>>> percio usiamo anche qui un form per tenere eventuali where da considerare nel match ( estratta dal tep via directives ? !!
 
             // do very like dynMatch :
-
-
-
 
             // put after : if (this.ai)
              {// 
@@ -2443,6 +2479,14 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                     //      response  is usually a row or [row1,,,] but in this case can be directly  asmatches.param format
                                     //            
             // implement .....................
+
+
+
+
+
+            return dynMatch(term,cmd,key,entity,step,cb,true);// isQuery=true , added to run query too, nb query now run only with url=service://dbmatch
+
+
         },
 
         dynMatch:async function // the entity matcher helper interface 
@@ -2487,7 +2531,10 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             
                                             // put in a sort of interface TO complete in setSetvice , or a default matcher template
                                             // general int :(tomatch,this.id,entity,step.values.excel,step.values.matches[entity],step.values.matches)step.values.direc values.session excel.wheres
-                                            (term,cmd,key,entity,step,cb){// call : matchIn(tomatch,this.id,entity,step,(val)=>{res=val;});
+                                            (term,cmd,key,entity,step,cb
+                                                
+                                                ,isQuery// added to run query too, nb query now run only with url=service://dbmatch
+                                                ){// call : matchIn(tomatch,this.id,entity,step,(val)=>{res=val;});
 
 
             //  RETURNS true/false ( the match) and if true cb will be called with the result cb(result=rows):
@@ -2610,8 +2657,10 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
             }
 
-            let form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
-            if (url.substring(0, 3) == 'app://')form.vars=vars;
+            let form={entity,term,wheres,meta,whMmeta
+            ,isQuery// future use now useless
+            };// excel is debug param, usually is in the service
+            if (url.substring(0, 3) == 'app://'&&!isQuery)form.vars=vars;
 
             
 
@@ -2629,15 +2678,15 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 //                  params=form = formObj || querystring.parse(qs);
 
             
-            if (url.substring(0, 8) == 'https://') {// a) : direct interface , 
+            if (url.substring(0, 8) == 'https://'&&!isQuery) {// a) : direct interface , 
 
-            if (url.substring(0, 12) == 'https://host') {// a) : direct interface x  host end point 
+            if (url.substring(0, 12) == 'https://host'&&!isQuery) {// a) : direct interface x  host end point 
                 // ...
             }}
                 // add entity param  :    :http....  >  /entity
             // do after only on url+='/'+entity;
 
-            if(url.substring(0,6)=='custom'){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
+            if(url.substring(0,6)=='custom'&&!isQuery){// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
                 form={entity,term,wheres,meta};// excel is debug param, usually is in the service
                 let mr,custserv;
                 // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
@@ -2664,7 +2713,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
-            }else{// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
+            }else {// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
 
 
            let  mr=await await this.run_jrest(url,form,isGET);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db

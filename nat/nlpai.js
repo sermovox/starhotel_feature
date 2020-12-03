@@ -157,7 +157,7 @@ module.exports=// copy of db part of  refImplementation
    console.log("you entered: [" + text + "]");
 ///*    
          // let wheres=null;
-            var answ = qea.answer1(text, wheres);
+            var answ = qea.answer1(text, wheres);// consider run a fts with where as alternative or run a on line fast lighter classification then a deeper classification to refine after
             if (answ == null) {
                 console.log('no answer found ');
               //  bot.say('Sorry, I\'m not sure what you mean');
@@ -171,7 +171,7 @@ module.exports=// copy of db part of  refImplementation
 
 
               // no run_jrest() call so 
-              let intent=new Intent(answ,wheres);// witai intent format + // role can pe put as wheref if is in wheres ?
+              let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
 
 
 
@@ -489,6 +489,29 @@ function Intent(res, wheres) {// std intent wit.ai obj  see formatx.txt, is wher
   // res = {data:trainingData,intent:interpretation.guess,intentclass:trainingData[interpretation.guess],answer:trainingData[interpretation.guess].answer,interpretation,score:interpretation.score,
   //intent2:interpretation.second,score2:interpretation.score2,discr:interpretation.discr}// in case we want to discriminate / refine on wheres not matched yet 
 /*
+    /* constructor returns this={
+                                intents:[{ name: res.intent, confidence: res.score,entities },,,],
+                                entities,
+                                discr:res.discr,
+                                cursor:{resModel: {disc0:{ 
+                                                    patt: vv1,
+                                                    vname: v1
+                                                    },,,
+                                                  }
+                                      },
+                                group:{sel:{item:this.intents[0]},
+                                compl_ctx:{         // the model that is context to a thread to match the complete list of next turn qeaitem to chain 
+                                            cursor:{rows:[{value:qeaitemname,patt},,]},
+                                            resModel: {disc0:{ 
+                                                                    patt: vv1,
+                                                                    vname: v1
+                                                              },,,
+                                                     }
+                                            },
+                            
+                             }*/
+
+/* old : 
 new Intents() returns (see format.txt):
 		   {intents:[{name,confidence,
 						entities,
@@ -551,44 +574,194 @@ witai_std = {intents:[{name,confidence,
    discr
    =res.discr,*/
 
-  function fillE(res, ent) {
-    let entities = {};
+
+
+
+  function fillE(res, ent) {// fills entities of a qea item (intent wit.ai format like )
+
+     // debug sistemare  : tiodo
+
+    let entities = {},
+    compl_ctx;// exactly a query/param model used in a thread to selected the name of next qea item to goon with the qea chain ( complete / multiturn qea ) 
+    let cursor={resModel:{},medSyntL:[]},group={sel:{item:null}},//group={sel:{item:this.intents[0]}
+    rows=[];
+    compl_ctx={param:{cursor,group,rows}};//{cursor:{rows:[{value:qeaitemname,patt}]}};
+
     for (let e in ent) {// scan properties
-      if (e != 'questions' && e != 'metadata') {
+
+       // debub : tiodo
+      if( e == 'link'// 'linkchild'
+        ) {// build the complete selector
+        // should be very like a param/query matcher that fills a model : matches.param={}  see fromatx,txt
+
+/*
+remember  // res = {data:trainingData,intent:interpretation.guess,intentclass:trainingData[interpretation.guess],answer:trainingData[interpretation.guess].answer,interpretation,score:interpretation.score,
+
+
+ipotesi di qea item :
+ quindi in un property metto :
+
+	chapter/argomento: server connectivity 
+	subChaptlevel:0-2
+	linkchild='nameofqea1/nameofqea2'// if this qea is not lev 2 
+	linkfather='nameofqea1/nameofqea2'// // if this qea is not lev 0
+	promptlinktempl:'ora puo approfondire argomenti  $linkchild o piu in generale puoi fare riferimento all'agomento $linkfather '// std contex x template di  completamento ,
+	menu:threadgoto,if no default mngment
+
+  vname:''// x link 
+  patt: keyword in vname x link match 
+
+	categoria:hw/sw
+	catg2:app/so/net
+  help: ? operatore, manuale, test
+  
+  quindi il desiredE avra row con value=qeaname  patt=qeaname.patt vname=qeaname.vname descr=qeaname.answer ?
+
+  cosi resModel["qeaname"]= {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
+            patt: row.patt,
+            vname: row.vname
+            };
+
+spiego : 
+	linkchild='nameofqea1/nameofqea2'
+	linkfather='nameofqea1/nameofqea2'
+	promptlink:'ora puo approfondire argomenti  $linkchild o piu in generale puoi fare riferimento all'agomento $linkfather '// std contex x template di  completamento ,
+	menu:threadgoto, route nameofthread that manage the request  ( a ask gathering the ok to goon calling a office to resolve the problem. if void the next ask father will ask if we can goon in managing the qea answere ( default menu) 
+		the menu is a thread to manage the problem , when finished we ca retun to father to do the pending action got before the qea match  if any  , tipicamente chiedera se oltre al qea vuole fare altro ( default thread without qea part ) 
+	vname:''// x link 
+	chapter/argomento
+	subChaptlevel:0-3
+	categoria:hw/sw
+	catg2:app/so/net
+	help: ? operatore, manuale, test
+
+
+*/
+
+        if(ent[e]){// is a string 
+
+          let childn=ent[e].split('/');
+          for(let i=0;i<childn.length;i++){
+            let row;
+            if(res.data[childn[i]]){
+              row={value:childn[i],patt:res.data[childn[i]].patt,descr:res.data[childn[i]].answer,
+              vname:res.data[childn[i]].vname};// value is a vname ?? or just set value the key and use a bl vname !!
+            rows.push(row);
+            cursor.medSyntL.push(row.vname);
+          cursor.resModel[row.value]= {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
+          patt: row.patt,
+          vname: row.vname
+          };}
+
+
+        }
+          // debub : tiodo
+          group.prompt=res.intentclass.link;//promptlinktempl;
+
+        }
+
+      }else if (e != 'questions' && e != 'metadata') {// copy all  exluding some
        // if (e != 'answer')
          {
-          let isDiscr;
-          if (res.discr && res.discr.indexOf(e) > -1) isDiscr = true;// the property e is item of res.discr
+          let isDiscr;// a 'control' propery true if this entity ( a qea item) has different values betheen the 2 extracted qea items
+          if (res.discr && res.discr.indexOf(e) > -1) isDiscr = true;// res.discr=[qeaitem.aprop1,,,,] a list of properties with different values in 2 qea item (intents)
+                                                                      //  usually aprop1 is a meta property, the property e is item of res.discr, so can discriminate results to select one
            else isDiscr = false;
           entities[e] = { name: e, value: ent[e], role: 'n/d', type: 'value', isDiscr };
+
+          /* PRIMER ON MODELCONTEXTxCHILD_Navigation-Selection .txt
+            now we return the intent model to caller 
+           remember :
+              - generally a model xx is one of  the context of a Dialog (thread/child ),
+              - if the model xx is a complex/query model , means that the model is a array of models , result of the query , and the Dialog usually need to work/navigate/inspect on them and 
+                  eventually select one of them  using a very simple fw support directive if a dyn model are provided inside the xx model (inflacted in entities or as a separate obj .cursor.resModel ):
+                  complex model rest query (that returns xx)  using its metadata can build dym model obj embeddeb on vars.matches.xx.intent/param.cursor.resModel
+                   so that dyn model can be used by Dialog using the fw directive $$xx:>selectedmodel to select one item of xx (see format_.txt):
+                    vars.matches.selectedmodel={ match: this.instance.name,
+                                                instance:vars.matches.xx.intent/param.cursor.sel(.item)=vars.matches.xx.intent.intents[selectedindex]
+                                                a) nothing the model to select is qeaitem..pattern so do a qea match on this pattern
+                                                b) query.cursor.resModel={det1:{value:nameofqea1,patt:vname1=instance.aniflatterprop.completelist[1]},,,}
+                                                }
+
+           in case of multiturn x completamento del qea query il item selezionato (qea class/intent )e' un item qea in forma di model selectedmodel
+                  tale model pero deve alimentare come context un dialogo DF (completeiterateqea) che deve selezionare un next qea (il complete/next) (ora il DF e il ask return sul father ma va fatto come thread nel child )
+                  ora o il selectedmodel ha inside un  complex model (query) su cui fare la selezione il .resModel e quindi puo usare la directive $$yy:>somemod oppure devo fare query per ottenere le next qea su cui fare il selection
+                  tuttavia in effetti il selection si potrebbe appoggiare su 
+                  a)  un iterating qea on class/item.pattern piuttosto che come prima su .questions 
+                      quindi il DF non occorre che usi un model dinamico per fare il selection ma usera un matcher qea tipo
+                      $$mod_iterateqea:value-x
+                      macro    matcher=qea....pattern  where_setlist=from_a_bl prop build by qea rest 
+                          quindi estrae alcunr bl properties buildate dal rest qea 
+                  b) banalmente il rest qea builda un query model aggiunto a selectedmodel , poi faro copia matches.query=selectedmodel.query  che poi matcho in DF con 
+                                                $$query:>iterqea
+                                                al match avro in name del qea da querare con matcher :
+                                                macro    matcher=qea....item  term=tierqea.match
+
+                  c) fa query con un po di param estratti dalle proprieta bl di selectedmodel.instance.entitiy/entities/rows 
+
+                  introdotto da un prompt che usa una prop (inflatted db row or a entity obj prop ,depending on how we format an entity ) prop in  selectedmodel.instance....
+
+               (non occorre un turno di query x avere il obj che viene invece preventivamente inflattato/embeddato nel item ! ) 
+            il context per il successivo dialogo : un dialogo che fa il selector di un model dinamico  $$xx:>  usa il model vars.matches.xx.
+          */  
+
         }
       }
     } 
     // entities.descr=ent.answer;// rename answer in descr why? descr is a short descr answer is a long descr 
 
-    return entities;
+    return {entities,compl_ctx};
   }
 
+let resu=0;// itents got
+if(res.intent)resu=1;else{
+// todo return void 
 
+}
   // main intent entities
-  let entities = fillE(res, res.data[res.intent]);
-  // second intent entities
-  let entities2 = fillE(res, res.data[res.intent2]);
+  let {entities,compl_ctx} = fillE(res, res.data[res.intent]);
+
   this.entities = entities;// intents[0] entities ( common ?) 
+  this.compl_ctx=compl_ctx;
   // attach
   this.intents = [{ name: res.intent, confidence: res.score,
     // discr: res.discr,
-    entities }];// best result
+    entities,compl_ctx }];// best result, first intent
 
-    this.discr=res.discr,
-  // copy in selecting , take intents[0]
+
+
+    this.discr=res.discr;
+
+      // second/alternative intent + its entities
+  let secInt = fillE(res, res.data[res.intent2]);
+  let entities2=secInt.entities,compl_ctx2=secInt.compl_ctx; 
+
+  // copy in selecting , take main intents[0] as default selection
   this.group={sel:{item:this.intents[0]}//this.cursor={sel:{item:this.intents[0]}
   // some navigation context ,,,,
   };// or simply this.cursor={sel:this.intents[0]};
+
+
   if (res.intent2 && res.discr) {//
+
+      // second/alternative intent + its entities
+      let secInt = fillE(res, res.data[res.intent2]);
+      let entities2=secInt.entities,compl_ctx2=secInt.compl_ctx; 
+    
+    // if(secInt)
+
+
     this.intents.push({ name: res.intent2, confidence: res.score2,
     //    discr: res.discr,
-       entities:entities2 });// second intent can have its own entities 
+       entities:entities2,compl_ctx:compl_ctx2 });// second intent can have its own entities 
+
+
+      // copy in selecting , take main intents[0] as default selection
+      this.group={sel:{item:this.intents[0]}//this.cursor={sel:{item:this.intents[0]}
+      // some navigation context ,,,,
+      };// or simply this.cursor={sel:this.intents[0]};
+
+    this.cursor={resModel: {},medSyntL:null};// this run time model do not describe the intents items that needn't to be matched , but the values of entities that can discriminate the intents !!!!!!!!
 
     // LIKE a QUERY prepare the context in .param/ .params  to be used by selector child , so do same staff here
     //  remember , in a query matcher we :
@@ -601,29 +774,57 @@ witai_std = {intents:[{name,confidence,
     //    - run the child this will promt user to select the cursor by matching the model X using $$desiremodel/ask:>
     // attach also a dyn model description x selection like in a query matcher so can use with  $$intent(ask)matches:>
     // to start just refine intents[0].discr[0]
+    //   >>> build dyn model to use in selector macro $$xx:>selectedmodel. selectedmodel is the selected model that a inner dialog select using the dyn model inside matches.xx.intent/param.cursor.resModel
+
+
+    // now build the context x discriminating first 2 intents
     let dis=this.discr;// discr=['city','type']
-    if(dis&&dis[0]) {// prepare the run time model for selection on selector thread among the many intents. begin with just 1 dis criminating entity ( the first)
-      let v1=entities[dis[0]].value,v2=entities2[dis[0]].value;
+    // discriminate only x first discr property
+
+
+    if(dis) // surely it is !
+    
+    for(let i=0;i<dis.length;i++)
+    {// if find some discr properties , prepare the run time model for selection on selector thread among the many intents. begin with just 1 dis criminating entity ( the first)
+
+
+      if(dis[i]=='sala'||'piano'||dis[i]=='settore'){// and both properties of intent 0 e 1 
+      let v1=entities[dis[i]].value,v2=entities2[dis[i]].value;
+      let itNam1=this.intents[0].name,itNam2=this.intents[1].name;
 
       // /  -> |
       var vv1 = v1.replace(/\//g, '|');var vv2 = v2.replace(/\//g, '|');// ex 'banane/mele' -> 'banane|mele'
+      v1 = v1.replace(/\//g, ' o ');v2 = v2.replace(/\//g, ' o ');// ex 'banane/mele' -> 'banane|mele'
 
-      this.cursor={resModel: {}};// this run time model do not describe the intents items that needn't to be matched , but the values of entities that can discriminate the intents !!!!!!!!
-                              // so they have fantasy name , say disc1,disc2 .....
+      this.cursor.medSyntL=this.cursor.medSyntL||[]; this.cursor.medSyntL.push(v1);this.cursor.medSyntL.push(v2);
+          /*
           letd='disc0';
           this.cursor.resModel[letd]= {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
             patt: vv1,
             vname: v1
+            };*/
+
+          this.cursor.resModel[itNam1]= {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
+            patt: vv1,//'banane|mele'
+            vname: v1//'banane o mele' 
             };
-            letd='disc1';// we tie to intents[1]
-            this.cursor.resModel[letd]={
+            //letd='disc1';// we tie to intents[1]
+            this.cursor.resModel[itNam2]={
             patt: vv2,
             vname: v2
           }
-        
+          this.cursor.discr_sel=dis[i];
+          resul=2;
+          break;
+        }
       
     }
-    
+    if(resul==2){
+      // goon to discriminating thread
+    }else{// that will be selecter alredy so set  instance , so this model can be used like a resolved model ( has match and instance )
+
+
+    }
 
   }
   //this=that;
