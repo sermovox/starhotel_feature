@@ -54,7 +54,8 @@ const xmpp_cfg1={// the xmpp client channel x group 1
 	  password: "password",
 	  */
 
-	  service: "wss://visionmeet.beevoip.it:7443/ws/",
+      service: //"wss://visionmeet.beevoip.it:7443/ws/",
+      process.env.ch_xmpp_url,
 	  domain: "visionmeet.beevoip.it",
 	  resource: "testresource",
 	  username: "test",
@@ -115,9 +116,9 @@ console.log('*** instantiating Botkit CMS');
     // TODO What if many cms (app) to run ? ( and deallocate when finish ?)
     controller.usePlugin(new BotkitCMSHelper({// todo:  add module (directives) download too , plugin name ='cms' !
                                             // .usePlugin(adapter={name:pname,,})plugin name pname: when ... call : adapter.init(controller) to add all dialog : controller.addDialog(d);
-        uri: process.env.uri,// must be set/updated  by app when redirects. probably we open a admin cms (with map user_app/data_map + sub page/data_page datamap x each user_app) to set a current page data file + its wellcome prompt 
-        token: process.env.token,
-
+        uri: process.env.cms_1_uri,// was process.env.uri,// must be set/updated  by app when redirects. probably we open a admin cms (with map user_app/data_map + sub page/data_page datamap x each user_app) to set a current page data file + its wellcome prompt 
+        token: process.env.cms_1_token,
+        dsIndex:cms_1_dsIndex
         // can we have separate ds x appid dedicated at some userspace ? ? , and load a appid ds from a def ds user registartion ? 
 
     }));
@@ -125,6 +126,7 @@ console.log('*** instantiating Botkit CMS');
 
 ///*
 // xmpp : put in a module !
+// test : associate this port to index 1 ds
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
 const xmpp_on=true;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
@@ -133,7 +135,7 @@ let xmpp_adapter
 xmpp_adapter=new XmppAdapter({});
 
 
-if(xmpp_on)configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver  x test 
+if(xmpp_on)configureWebhookXmpp(controller.webserver,controller._config.webhook_uri+'_test');// webserver only  x test 
 function configureWebhookXmpp(webserver,uritest){// like core in configureWebhookEndpoint() will tie post webserver endpoint handler  to adapter that will use bot to process req then use res to sent response 
                                                 //   webserver.post(webhook_uri, (req, res) => {...        this.adapter.processActivity(req, res, logic=this.handleTurn.bind(this))
                                                 //  adapter.processActivity() will call logic=core.handleturn ,  then return response using res 
@@ -158,7 +160,17 @@ if (xmpp_adapter) {
 
     // ...} ) 
     //  registro su xmpp2adapter  logic e adapter 
-    xmpp2adapter(xmpp_cfg1,webserver, xmpp_adapter,logic,uritest);//(webserver,adapter,logic) // why adapter ? x test ONLY !! so What protocol uses xmpp ????????
+
+    // per utilizzare l'adapter su un specifico dialogset seguire la tracia di procedura :
+    // xmpp_adapter.setport(777);xmpp_adapter.setmiddlewarech(777);// this adapter will be got from a known port from nging  and we associate with .type=777
+    // so when handleturn starts we add code to see the tpe 777 so it will refears to ds in index 1 
+    // controller.registerDSet(1)
+    // controller.on('message,direct_message', async (bot, message) => {.... some port   
+    // controller.usePlugin(new BotkitCMSHelper(    must refears to index 1 ds // that will fill ds index 1  on cntroller 
+    let dsIndex=1;// association del canale http (il browser/client si connette usando un  post su uritest su un http set on a tcp port) a un ds nel ds[] del controller
+    // si puo anche   association del canale ws su un tcp port  (il client ws si connette a un server ws ( on top of coppia di http protocol che su 2 uri lavora on top of tcp conn ) a un ds
+    // tale association avviene facendo inserire un type=type.index nel msg che a runtime passato al logic verra da questo associato al ds di index index
+    xmpp2adapter(xmpp_cfg1,webserver, xmpp_adapter,logic,uritest,dsIndex);//(webserver,adapter,logic) // why adapter ? x test ONLY !! so What protocol uses xmpp ????????
 }
 }
 //*/

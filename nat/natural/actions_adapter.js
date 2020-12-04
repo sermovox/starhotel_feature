@@ -3,8 +3,7 @@
  * @module 
  */
 /**
- * a similar interface was  Copyright (c) Microsoft Corporation. All rights reserved.
- * * customization : Copyright (c)Sermovox / luigi marson. All rights reserved.
+ * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License.
  */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -50,7 +49,7 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
          * Name used to register this adapter with Botkit.
          * @ignore
          */
-        this.name = 'Xmpp Adapter';
+        this.name = 'Actions Adapter';
         this.Options = Options || null;
     }
     /**
@@ -103,7 +102,7 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
             const responses = [];
             for (var a = 0; a < activities.length; a++) {
                 const activity = activities[a];
-                console.log('actions_adapter sending a activity back to user , activity: ',activity);//.channelData);
+                console.log('actions_adater sending a activity back to user , activity: ',activity);//.channelData);
                 let message = this.activityToMessage(activity);
                 const channel = context.activity.channelId;
                 if (channel === 'actions') {// 'webhook') {
@@ -112,14 +111,7 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
                     if (!outbound) {
                         outbound = [];
                     }
-
-                    console.log(' actions_adapter, bot has a partial say : ',message,'\n text is ',message.text);
-                    // leave <> from text :
-                    if(message.text)message.text=message.text.replace(/<.*?>/g,'');//Regex.Replace(mesage.text,"<.*?>",string.Empty);
-                    console.log(' actions_adapter bot has a partial revised say : ',message,'\n text is ',message.text);
-
-
-
+                    console.log(' bot has a partial say : ',message);
                     outbound.push(message);
                     context.turnState.set('httpBody', outbound);
                 }
@@ -176,13 +168,10 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
 
         return __awaiter(this, void 0, void 0, function* () {
             console.log(' user say msg : ',req);
-            const message = req.body;// json parser webserver.use(bodyParser.json() ?
-            const dsIndex=req.dsIndex;// the ds index on core.dialogSets[]
-                if(dsIndex)message.dsIndex=dsIndex;// will force handleturn to work on dialogSets[dsIndex]
-
+            const message = {text:req.body,type:req.type,user:req.user};// json parser webserver.use(bodyParser.json() ?
             const activity = {
                 timestamp: new Date(),
-                channelId: 'actions',//same process actions and xmpp
+                channelId: 'actions',
                 conversation: {
                     id: message.user
                 },
@@ -201,36 +190,26 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
             if (activity.type !== botbuilder_1.ActivityTypes.Message) {
                 activity.channelData.botkitEventType = message.type;
             }
-            // create a conversation reference context to read back the bot answers/newprompt
+            // create a conversation reference
             const context = new botbuilder_1.TurnContext(this, activity);
             context.turnState.set('httpStatus', 200);
             yield this.runMiddleware(context, logic);
             // send http response back after middlewarefinished 
-            //if(res.status)res.status(context.turnState.get('httpStatus'));
+            //res.status(context.turnState.get('httpStatus'));
 
-            let botansw=context.turnState.get('httpBody');// get context new bot  prompt 
+            let botansw=context.turnState.get('httpBody');
             console.log(' bot is answering back : ',botansw);
             if (botansw) {// a text array , if there is a httpbody filled by  sendActivities,    send it as bot answer
-                if(botansw.length>1){ console.error(' bot is answering back  multiple answers,tobe managed');
-                                        // .....   consolidate array ....
-                }
+
 
                 // now we extract from array the obj to pass to  conv.ask() > now the simple last text 
-                let resp=botansw[botansw.length-1];
-                console.log(' bot pass text x user : ',resp.text);
-                // dont work :
-                // let user=resp.recipient.id;// resp.conversation.id  or  resp.recipient.id  or  context.activity.from.id;
-                // pass/relay the user info into the answere 
-                let user=message.user;//
-
-
-
-
-                res.send(resp,context.turnState.get('httpStatus'),user);//res.send(textARR[textARR.length-1]);// will be conv.ask()
+                let texto=botansw[botansw.length-1].text;
+                console.log(' bot pass text x user : ',texto);
+                res.send(texto);//res.send(textARR[textARR.length-1]);// will be conv.ask()
                 // better: return textARR : use promise instead to cb a function in param
             }
             else {
-                res.send(' ',context.turnState.get('httpStatus'),user);//end(); ''  or ' ' ?
+                res.send('');//end();
             }
         });
     }
@@ -257,4 +236,4 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
         return clients[user];
     }
 }
-exports.XmppAdapter = ActionsAdapter;
+exports.ActionsAdapter = ActionsAdapter;

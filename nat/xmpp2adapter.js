@@ -187,8 +187,8 @@ if(uio >= 0&& uio<65){
 
 
 
-function setActions(webserver,logic_,uri){// ritorna il ctl delle actions  setMsgTempl;
-
+function setActions(webserver,logic_,uri,dsIndex){// ritorna il ctl delle actions  setMsgTempl;
+										
 
 
 
@@ -266,14 +266,14 @@ userResponse=
 	  let[user,testo_]=split__(client,testo);// see sep='|';
   	only1Response=0;// TODO : how wrks it ??????????????
   	// ctl.ingest(bot_, message, bot_.ws);
-  	let req={body:{text:testo_,user,type}},// OK
+  	let req={body:{text:testo_,user,type,dsIndex}},// OK
   	//res={send:actionscb};// will be convo.ask();
 	//res={send:actionscb};// will be convo.ask();
 	res={send:actionscb_};// will be convo.ask();
 	function actionscb_(message,status,user){actionscb(message,status,user)}// just relay , useless
   	// better return following promise that where returns/fullfill the msg to send to googleactions
 	  // let promisewithtext=myadapter.processActivity(req,res,logic);// return a promise so promisewithtext.then(function(text){conv.ask(text)})
-	  let promisex=myadapter.processActivity(req,res,logic);// processActivity in xmpp_adapter has same req then web_adapter , but res={send:function(text,status ){}
+	let promisex=myadapter.processActivity(req,res,logic);// processActivity in xmpp_adapter has same req then web_adapter , but res={send:function(text,status ){}
 	  // returns a promise but we dont care
 	  // in processactivity we call midleware on logic , wait the result then call the local cb=res.send=  to respond with actionscb_(botTextResponse
 }
@@ -408,7 +408,7 @@ function clone(i){
 }
 */
 
-function init (xmpp_cfg_,webserver,ad,logic,uri) {// was passed also controller=aiv3
+function init (xmpp_cfg_,webserver,ad,logic,uri,dsIndex) {// was passed also controller=aiv3
 
 	/* >>>>>>>>>>>>>   management summary 102019
 	aiv3 will call setAtion(logic) (logic is the aiv3 incoming listener) . it will
