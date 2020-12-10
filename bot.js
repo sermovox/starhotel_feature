@@ -344,13 +344,18 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
                 return false;
             }
         });
-        controller.interrupts('esci|\b%%exit-hangup','message', async(bot, message) => {
-
-            await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');
-            await bot.cancelAllDialogs() 
+        controller.interrupts('esci|\b%%exit-hangup','message', async(bot, message) => {// must be sent by sys every time it interrupt the dialog
+            // when the bot ends the dialog send %%exit-.... the sys answer but the convo alredy died so this interrupt will cancel nothing   
+           /// verificare che non serve rispondere  await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');
+            await bot.cancelAllDialogs() ;
            
            });
-
+           controller.interrupts('\b%%exit-ok','message', async(bot, message) => {
+            // when the bot ends the dialog send %%exit-.... the sys answer %%exit-ok but the convo alredy died so this interrupt will cancel nothing   
+           /// verificare che non serve rispondere  await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');
+           /// verificare che non serve  await bot.cancelAllDialogs() 
+           await bot.cancelAllDialogs() ;
+           });
 
         //let color='colazione_dyn',myscript='room',myth='default';
 

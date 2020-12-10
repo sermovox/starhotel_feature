@@ -128,30 +128,37 @@ initCmd('hotel3pini_vox',{meds:[11,22,33],cur:'rossi'},['colazione_dyn','dyn_res
 
 initCmd('star_hotel',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'televita_voice'
 initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);// copied from 'star hotel
-initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars.excell and vars.direc
 
-    initCmd('star_desk', { meds: [11, 22, 33], cur: 'rossi', service: 'hotel' }, ['dyn_medicine', 'ask_afterpilldet']);// copied from 'star_hotel''
-    initCmd('simple_help_desk', { meds: [11, 22, 33], cur: 'rossi', service: 'hotel' }, []);// copied from 'star_hotel''
-
-
+let autoR=true;// true dont works
 // autoregistration of OnCh_Register ( autoReg in model.js) all will have matchers and asmatcher fw support also if miss of some directives 
-
+if(autoR)
 for (x in dynJs) {
     let asks=[];
-    if(x.autoReg){// automatic registration of all onchange 
+    if(dynJs[x].autoReg){// automatic registration of cmd 
 
-        if(x=='manualreg'){// do here manual registration 
+        //if(x=='manualreg'){// do here manual registration  // initCmd(x,{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);
 
-            // initCmd(x,{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','ask_afterpilldet']);
-        }else{
-        for (y in dynJ[x].direc) {
-            if(x.autoReg)// automatic registration of all onchange declared on .direc
+            dynJs[x].direc=dynJs[x].direc||{};
+        for (y in dynJs[x].direc) {
+            //if(x.autoReg)// automatic registration of all onchange declared on .direc
             asks.push(y);
           } 
           initCmd(x,null,asks);
-        }
+
     }
-  } 
+  } else{// manual registration
+            // now autoreg 
+        initCmd('_yourname',null,null);// a child , no ask to support just load cmd vars.excell and vars.direc
+
+        // now autoreg    
+        initCmd('star_desk', { meds: [11, 22, 33], cur: 'rossi', service: 'hotel' }, ['dyn_medicine', 'ask_afterpilldet']);// copied from 'star_hotel''
+
+        // now autoreg  
+        initCmd('simple_help_desk', { meds: [11, 22, 33], cur: 'rossi', service: 'hotel' }, []);// copied from 'star_hotel''
+
+
+
+  }
 
 
 return service;
@@ -164,12 +171,85 @@ return service;
  // should be like a frame connect a ws to a bot using login in main browser windows .......
 function initCmd(myscript_,usrAppSt,monchange,mod_dir){
     
-    // ***  will set dat to provide fw support (in onchange ) on monchange list of ask that are defined in fwOnC.onChange ( onChange.js)
+    /*  management summary 122020  started to rewiew ( to complete )
+
+        - initCmd will register begin and onChange convo  cb  to provide command/cmd fw support 
+
+
+
+   
+
+                
+            - before function for default command thread   
+                will add/update  vars with additional state variables. 
+                        convo vars staus is recovered  by  dialogstate service when  incoming turns context  calls core.handleturn(tc)     
+                
+                            let {askMod,modsOnAsk}=fwOnC.modsOnAsk(script);
+                         - modsOnAsk //  is a function used in .out miss func x current script
+
+                         - askMod // find the ask of a mod
+
+
+                        -   app : SESSION and appWrap  RECOVER 
+
+                                to review/complete :
+                                ......................................
+                                
+                                values.app=await fwOnC.getappWrap(bot,convo,trigApp);// ****  SESSION and app RECOVER : // will put in convo.vars  user session status and register a serving app , check  appWrap in vars.app ....
+                                                                            // so attach in session.appWrap a relay where register in  a app that can manage events fired (appWrap.post() by  ( onchange/onclick/askconditions) fired by the view level 
+
+                                app.service=service; // needed ? 
+
+
+                         - excel and direc (keep extension done in ):
+                            >   after a begindialog , INJECT current active cmd excel and direc  directives  (directive.excel and directive.direc from model.js)
+                                on vars state to make them  available in vars state ( but (helper)fw functions will not be maintained by state accessors so avoid it and make them available to .....  in convo )
+
+                                    exten=convo.vars.excel||{};// vars.excel contain the directives  of all the father in chain
+                                    convo.vars.excel=Object.assign(exten,directive.excel);// directive.excel : directives set in model.js for the cmd on beginning 
+
+                                    same x .condition .....
+
+                        - call custom begin x default thread if defined in directive.thread['default'], extending it like done x onChange 
+
+
+
+            - REGISTER , in conversation instance , a FW ASK OnChage CTL for each monchange items
+
+                            monchange is a ask array/list of entry in  directive.direc where directive = dynJs[cmd] is the cmd directive in models.js file 
+
+
+                            it will call custom onChange in a closured onChThis obj (a clone of directive.direc[mkey] extended  with service injection )  onChThis={,,,,onChange}
+                              custom onChange is usually set using :
+                                    - declared/cmsDownloaded text put in  directive.direc[mkey].onChange_text  or 
+
+                                    - defined function put in directive.direc[mkey].onChange onChThis.onChange  
+
+                                        usually overwritten by 
+                                        fwOnC.onChange[cmd][mkey]
+                                            fwOnC is required from onChange.js and fwOnC.onChange point to  './onChangeFunc.js'
+                                        
+
+
+                            in onStep , registered convo onChange will be called , so  all injected service will be available to process  state vars  
+                    
+
+
+    nb some of following extensions are checked to be done one time as before() can be called many (2) times  
+        so in registering begin() check injected[myscript_]==null
+                > is there a best method ? 
+
+
+
+    */
+
+
 
     /*
     ((myscript_/cmd: the cmd
      usrAppSt: param to load on application server to serve this convo 
-     monchange : list of onChange ask function name on which i want vframework support monchange=[,,mkey_i,,]  , mkey is a ask name 
+     monchange : list of  ask function name (in command myscript_/mod_dir onChange) on which i want vframework support monchange=[,,mkey_i,,]  , mkey is a ask name
+                  support are described in directives x ask function , and set in variable directive = dynJs[cmd] 
 
                  the functions mykey_i  will be registered in  directive.direc[mkey_i] 
                             , directive=(dynJs=require('./models.js'))[model=cmd], 
@@ -204,24 +284,27 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
 
 
     let myth='default',
-    directive,// directive= ( dynJs=comands={cmddir,cmd2dir,,,,} ) .acmd
-    nodirective=false;// if true we'll give minimum support with no directive in model.js and no user onchanges monchange
+    directive=null,// // directive={a,b,c,excel,direc.thread}=dynJs[acmd] ( model.js()=dynJs=comands={cmddir:directive1,cmd2dir:directive2,,,,} )
+    nodirective=false;// if true , there is any onchange set in model. So we'll give minimum support with no directive in model.js and no user onchanges monchange
+                    //              minimum support means : just do if(nodirective){.......
                         // if this convo do not have fw support must not use father fw structures (matches,asmatches,,,,)so null it , otherwise set if not alredy done by father
     //if(!dynJs[myscript_])return;// error
 
+        //   ??? ERRORS casino tra mod_dir|| myscript_  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! seems just that the cmd in model is colled mod_dir instead of mysript_ ???
 
     let cmd=mod_dir|| myscript_;// was called model that was a bad name,   MODEL IS REALLY the Command script ! so we changed in cmd 
 
-    if(cmd){if(dynJs[cmd])directive=dynJs[cmd];// directive= ( model.js()=dynJs=comands={cmddir,cmd2dir,,,,} ) [acmd=model]  , model is a bad name for cmdname
+    if (cmd) {
+        if (dynJs[cmd]) directive = dynJs[cmd];// directive={a,b,c,excel,} ( model.js()=dynJs=comands={cmddir:directive1,cmd2dir:directive2,,,,} ) , model is a bad name for cmdname
         else {
-        // no directive x this cmd so minimum support
-        if(!monchange||monchange.length==0){
-            nodirective=true;
-        }
-    else{ 
-            console.log('\n starting FW initCmd ,cant find any models or directives for cmd   ',myscript_);
-            return;
-        }
+            // directive=null  x this cmd so minimum support
+            if (!monchange || monchange.length == 0) {// 
+                nodirective = true;
+            }
+            else {
+                console.error('\n starting FW initCmd , support for some cmd .asks was requested but cant find any models or directives for cmd   ', myscript_);
+                return;
+            }
         }
     }
         //else {            if(dynJs[myscript_])directive=dynJs[myscript_];else{
@@ -308,7 +391,7 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
                     convo.setVar('matches', {});// case $$ and $% : model and key matches ex :values.matches.color='red', see conversation.addMatcRes()
                     convo.setVar('askmatches', {});// other : key matches ex :values.askmatches.akey={match=[{key:0},,,]}, see conversation.addMatcRes()
                     convo.setVar('excel', {});// corrected to be as was before
-                    console.log('FW initCmd ended with MINIMUM support ( ask matches) cmd ', myscript_, ' so no ask support ');
+                    console.log('FW initCmd ended with MINIMUM support ( ask matches) because cmd ', myscript_, ' has no entry in models.js directives description obj ');
                 
                     return;
                 }
@@ -317,8 +400,6 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
                 convo.vars==convo.step.values==convo.step.state.values
                         ***************************************
                 */  
-
-
 
                 /*
             // RECOVER STATUS - INIT - COPY to convo.state
@@ -500,6 +581,7 @@ oo
             if(!injected[myscript_]){
                 */
 
+                // after a begindialog , INJECT current active cmd excel and direc  directives on vars state to make them  available in vars state ( but functions will not be maintained by state accessors )
 
                 let exten=convo.vars.excel||{};// vars.excel will contain the directives set in model.js for the cmd + the definition of all the father chain
                                                 // this means that in a child we can suppose it can be caled by some father that use some directives that we can use in the child also without
@@ -519,10 +601,13 @@ oo
             injected[myscript_]=true;// ********     so never extend again in this Multidialog Status Chain ******
             }
             
-            // every time ???????
-            let {askMod,modsOnAsk}=fwOnC.modsOnAsk(script);
-            convo.setVar('modsonask',modsOnAsk);//  modsOnAsk used in .out miss func x current script
-            convo.setVar('askmod',askMod);// find the ask of a mod
+            // every time ???????   TODO put above also these !!!!!!!!!!!!!!!
+            let {askMod,modsOnAsk}=fwOnC.modsOnAsk(script);// to be safe unique askname , and modelname are requested 
+
+ 
+            convo.setVar('modsonask',modsOnAsk);//  modsOnAsk=[] is used in .out miss func x current script  
+
+            convo.setVar('askmod',askMod);// find the ask name containing a condition that match the  model ()
 
             /*
             // portare fuori che lo faccia il framework questo e init da far fare al framework !!!!
@@ -551,31 +636,76 @@ oo
             // >>>>>> Chains user registered before for default thread cb :
             // SERVICE INJECTION  in directive.thread['default'] User BEFORE CONTROLLER  ( directive=dynJs[cmd])
 
-            if(directive.thread&&directive.thread['default']){
-                let onChThis=Object.assign({},{cmdModels:dynJs[cmd]},directive.thread['default'],{service},{fwCb});// clone directive.thread['default'] + add extension contexts 
-                if(directive.thread['default'].before_text)onChThis.before=buildF('default',directive.thread['default'].before_text);// text from cms,  build from text with eval
-                if(fwOnC&&fwOnC.before&&fwOnC.before[cmd]&&fwOnC.before[cmd]['default'])onChThis.before=fwOnC.before[cmd]['default'];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
-            }
+            if(directive.thread&&directive.thread['default']){//  custom before with fw supportia available only for default thread
+                                                            //      it must be declared in directive.thread['default']:{
+                                                            //                                                              before_text:'a func as text' // opional , in alternative in fwOnC.before[cmd]['default']
+                                                            //                                                          }
 
+
+                let beforeThis=Object.assign({},{cmdModels:dynJs[cmd]},directive.thread['default'],{service},{fwCb});// clone directive.thread['default'] + add extension contexts 
+                if(directive.thread['default'].before_text)beforeThis.before=buildF('default',directive.thread['default'].before_text);// text from cms,  build from text with eval
+                if(fwOnC&&fwOnC.before&&fwOnC.before[cmd]&&fwOnC.before[cmd]['default'])
+                        beforeThis.before=fwOnC.before[cmd]['default'];// overwrite (cloned) directive.thread['default'].before using fwOnC.before
+
+
+
+
+
+
+
+                    // chain custom begin with fw support :
+                    // SERVICE INJECTION  in directive.thread['default'] User BEFORE CONTROLLER  ( directive=dynJs[cmd])
+                    if(beforeThis.before){
+                        
+                        console.log('FW call custom begin for cmd ',myscript,' def tread  ');
+                        return beforeThis.before(myscript_,myth,convo, bot,x,y,z);// a interface should be defined 
             
+                        }
+
+
+
+
+
+
+
+     
+
+
+
+
+
+
+
+
+
+
+
+                            
+                    
+
+             }
+             return;
             });// end before()
 
 
-             // >>>>>> ADDS user registered before for other thread cb :
-            // SERVICE INJECTION  in directive.thread['default'] User BEFORE CONTROLLER  ( directive=dynJs[cmd])
-            //   .............................
+
 
             // >>>>>  SET Directive convo event(tyed to begin after th or step/ask example dynmatchers in ask condition loop  ) service/handler
             // add a directive fw cb bank, so put here 
 
             // >>>>>  SET botkit convo FW ONCHANGE ASK service/handler/controller
-           if(monchange)monchange.forEach(function(mkey){// for each ONCHANGE
+           if(monchange)monchange.forEach(function(mkey){// for each monchange add a ask onChange with fw support : calc fw staff so call 
+                                                        // onChThis.onChange.call(that,bot,convo,res,myscript_,mkey); , 
+                                                        // that is :
+                                                        // - call the method onChange , that is (2 cases )in major case: 
+                                                        // onChThis.onChange is 
 
-            // set botkit convo onchange service/handler , can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
+            // set botkit convo onchange service/handler ,
+            // can also get from a eval/Function from a functext then inserted on fwOnC[mkey] where service can be used !
             // dynJs[myscript_].direc[mkey].onChange_text OR a text from cms trigger in json
             //console.log( 'registering on cmd ',myscript_,' ask ',mkey, ' dynJ : ',dynJs[myscript_]);
             console.log(' FW initCmd :  convo begin : setting onchange for  cmd   ',myscript_,' onchange for ask ',mkey);
-            if(!directive.direc[mkey])return;
+            if(!directive.direc[mkey]||!(directive.direc[mkey].onChange_text||(fwOnC&&fwOnC.onChange[cmd])))return;
 
             // WARNING  bad naming : model IS really a cmd !!!!!!
 
@@ -596,14 +726,14 @@ oo
             // adds serviceson ctx via fwOnC=onChange.js extension ? 
 
             // if(fwOnC&&fwOnC.onChange[model]&&fwOnC.onChange[model][mkey])directive.direc[mkey].onChange=fwOnC.onChange[model][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
-            if(fwOnC&&fwOnC.onChange[cmd]&&fwOnC.onChange[cmd][mkey])onChThis.onChange=fwOnC.onChange[cmd][mkey];// overwrite directive.direc[mkey].onChange using fwOnC.onChange
-                                                                                                                // now onChange is fuond in './onChangeFunc.js'
+            if(fwOnC&&fwOnC.onChange[cmd]&&fwOnC.onChange[cmd][mkey])onChThis.onChange=fwOnC.onChange[cmd][mkey];// overwrite directive.direc[mkey].onChange (clone) using fwOnC.onChange
+                                                                                                                // now onChange is fond in './onChangeFunc.js'
             // register also the schema on connection :
             if(onChThis.onChange&&onChThis.schema&&onChThis.schemaurl){
 
                 // do not use db , debug only  :
                 // if(db)db.model(onChThis.schemaurl,new Schema(onChThis.schema)); // register also the schema on std connection   : OLD just to debug never use it 
-            }
+                }
 
 
 
@@ -684,7 +814,7 @@ oo
 
                     }*/
 
-
+            if(onChThis.onChange){
                     let myClosure4=function(bot,convo,res){// sol bd : in onChThis.onChange i can get onChThis ....
                     
                         // this is the context that called cms onChange=myClosure4
@@ -697,9 +827,11 @@ oo
         
                     }
 
-            // REGISTER FW ASK CTL 
+                // REGISTER FW ASK OnChage CTL : will call user onChange in onChThis (a clone of directive.direc[mkey]  with service injection )
+                //      (usually declared/cmsDownloaded as directive.direc[mkey].onChange_text  or 
+                //          defined function in directive.direc[mkey].onChange onChThis.onChange  )
 
-             controller.plugins.cms.onChange(myscript_, mkey,
+                controller.plugins.cms.onChange(myscript_, mkey,
                 /* was :
                 async function(bot,convo,res){
                 // let color_=color,myscript_=myscript_;// CORRECT put myscript_ in a closure !
@@ -718,6 +850,8 @@ oo
                     myClosure4
 
                  );// can i bind with its obj ?
+                }
+
 
             });// end // for each ONCHANGE
 

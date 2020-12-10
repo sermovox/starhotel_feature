@@ -439,62 +439,73 @@ x {{vars.matches.mod_Serv.vmatch}}
     // TODO : ++ prompt for models on   this step + adds  the interesting goto : param2=some interesting goto collect key
     // so do another loop with if(param2)askname=param2;
     let vars=stepp.values;
-    if(askname){// fills clVars.notmatlist with the near asks models didnot matched jet from matching list askmatches and modellist modsonask[
+                if (askname) {// fills clVars.notmatlist with the asks models modsonask[askname] didnot matched jet from matching list askmatches 
 
-        //method A old , long :
-    am=vars.askmatches[askname];// testing ask  present ask matches status :am={matches:[],match:not$%match,nomatches:[]} , to calc the model still to  match
+                    //method A old , long :
+                    am = vars.askmatches[askname];// testing ask  present ask matches status :am={matches:[],match:not$%match,nomatches:[]} , to calc the model still to  match
 
-        ma=vars.modsonask[askname];// models that are testing for get matches in testing ask  ( $$ or $% ), a string array. ma[i]=entity/model name
-
-    
-    for(ii=0;ii<ma.length;ii++){// for each model tested in the ask (ma[ii]) find if was already matched
-
-        let nmpDir;
-
-        // in pratica : si scartano i model che sono where di dyn_ask che matchano dyn_ask=excel[modelname].mod_wh_Of 
-        //           tra questi si considerano quelli che non matchano ( in matches)
+                    ma = vars.modsonask[askname];// models that are testing for get matches in testing ask  ( $$ or $% ), a string array. ma[i]=entity/model name
 
 
+                    for (ii = 0; ii < ma.length; ii++) {// for each model tested in the ask (ma[ii]) find if was already matched
 
-        // old comments 
-        // check id the model is alredy matched 
-        // still do not match
+                        let nmpDir,
+                        disc=true;// si scartano i model che sono where di dyn_ask (dyn_ask=excel[modelname].mod_wh_Of) che matchano dyn_ask.match!=null 
 
-           let ism=false;// ism=true :insert on notmatchlist. this model (ma[ii]])is not matched and isrequired only as a where join to query the master dyn mod_wh_Of
-            if(vars.excel[ma[ii]]&&vars.excel[ma[ii]].mod_wh_Of&&vars.askmatches[vars.excel[ma[ii]].mod_wh_Of] // main=vars.excel[ma[ii]].mod_wh_Of : tell to put the model in nmp notmatchedprompt list only if the main entity is matched
-                &&vars.askmatches[vars.excel[ma[ii]].mod_wh_Of].match)    {                 // if mod_wh_Of not exist try to put in nmlPrompt 
-        // caso particolare 
-        //      per ogni ask model see in excel.model se il model e' usato come where in un dyn_ask (dyn_ask =excel[model].mod_wh_Of ove si fa una query) che già matcha
-        //      in tale caso si esclude di richiederlo nel notmatched prompt
-                    ism=true;
-                    ;}else{
+                        // in pratica : if(disc) si scartano i model che sono where di dyn_ask (dyn_ask=excel[modelname].mod_wh_Of) che matchano dyn_ask.match!=null 
+                        //            si considerano poi quelli che non matchano ( in matches)
 
-                // standard : insert in notmatched list the model that do not are already matched 
+                        // ma[ii] a model in askname
+                        let ism = false;// ism=false :insert on notmatchlist.
+                        if (!(vars.matches[ma[ii]]&& vars.matches[ma[ii]].match) ){// dont match
+                        if (vars.excel[ma[ii]] && vars.excel[ma[ii]].mod_wh_Of &&vars.askmatches[vars.excel[ma[ii]].mod_wh_Of] //  si scartano i model che sono where di dyn_ask (dyn_ask=excel[modelname].mod_wh_Of) che matchano dyn_ask.match!=null 
+                            && vars.askmatches[vars.excel[ma[ii]].mod_wh_Of].match) 
+                            // >>>  non really usefull to check .dir.cond[ma[ii]]  too ????
+                            {               
+                            // caso particolare 
+                            //      per ogni ask model see in excel.model se il model e' usato come where in un dyn_ask (dyn_ask =excel[model].mod_wh_Of ove si fa una query) che già matcha
+                            //      in tale caso si esclude di richiederlo nel notmatched prompt
+                            }else{
+                            ism = true;
+                            
+                        
+                            if(ism){
+                            // standard : insert in notmatched list the model that do not are already matched 
 
-                // ONLY if a directive say it is a entity in a matching intent ( same name as ask )
-                
-                if(vars.session&&vars.session.dir&&vars.session.dir.asks[askname]&&vars.session.dir.asks[askname].cond){
-                    if(vars.session.dir.asks[askname].cond[ma[ii]]&&vars.session.dir.asks[askname].cond[ma[ii]].notMatchPrompt){
-                        nmpDir=vars.session.dir.asks[askname].cond[ma[ii]].notMatchPrompt;//state.dir=session.dir
-                        ism=true;
+                            // ONLY if a ask directive say it is a entity in a matching intent ( usually the intent is inside a ask so its name is the same name as ask
+                            // in other word it says its mandatory or at least its name have to pe prompt to user to collect it  )
+                            // probably now dir.asks,askname.cond.amodel  dont existe any more >  asks is not a considered now
+                            if (vars.session && vars.session.dir && vars.session.dir.cond && 
+                                vars.session.dir.cond[ma[ii]] && vars.session.dir.cond[ma[ii]].notMatPr) {
+
+                                    if ( vars.session.dir.cond[ma[ii]].skipNMP) ism=false;//skip is not mandatory so dont prompt
+                                    else    if (vars.session.dir.cond[ma[ii]].notMatPr) 
+
+                                    nmpDir = vars.session.dir.cond[ma[ii]].notMatPr;//state.dir=session.dir
+
+                                }
+                            else if (vars.excel[ma[ii]] ){//state.dir=session.dir
+                                if ( vars.excel[ma[ii]].notMatPr)   nmpDir=vars.excel[ma[ii]].notMatPr;else if ( vars.excel[ma[ii]].vname)   nmpDir=vars.excel[ma[ii]].vname;
+                                    }
+                                }
+                        
+                            // method A complicated and long :
+                            //if(am){ for(it=0;it<am.matches.length;it++){
+                            //    if(am.matches[it].key==ma[ii]){ ism=true;break;}
+                            //}else isn=true;
+
+                            // method B easy and fast:
+                            //if (ism && vars.matches[ma[ii]] && vars.matches[ma[ii]].match) ism = false;// dont insert on notmatchlist
+
+                        
+
+
+
+                        if (ism) if (nmpDir) clVars.notmatlist.push(nmpDir); else clVars.notmatlist.push(ma[ii]);
                     }
-                }
-
-                // method A complicated and long :
-                //if(am){ for(it=0;it<am.matches.length;it++){
-                //    if(am.matches[it].key==ma[ii]){ ism=true;break;}
-                //}else isn=true;
-
-                // method B easy and fast:
-                if(ism&&vars.matches[ma[ii]]&&vars.matches[ma[ii]].match)ism=false;// dont insert on notmatchlist
-
-                }
-
-
-            
-        if(ism)if(nmpDir)clVars.notmatlist.push(nmpDir);else clVars.notmatlist.push(ma[ii]);
-    }
-    }
+                    }
+                }}
+                
 
    // excel_.notmatlObj=
    clVars.notMatchL=[];//=[{name:thenotmname},,,] array containing the missing model .why not simple string array ?
@@ -789,8 +800,13 @@ else return mustacheF.nmList(el,null,count,true)// will add e anche  dopo il pri
   }// ends out 
 
 function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modsonask at  before cb of the cmd default thread 
-    //  From a conversation script create a map : ask > list of model tested in ask
+    //  From a conversation script returns : 
+    //  -askMod : a map , ask > list of model tested in ask. askMod['pippo'] is the first ask askname that has this model, pippo, tested in one of its conditions ('$x' + '$' ||  '%'  ||  '§' + pippo:....) 
+    //  - modsOnAsk_ :  modsOnAsk_['askname']=['mod/ent1',,,,,]
     // returns modsOnAsk_:{askname:[mode1,model2]},askMod_:{mod1:itsAsk,,,,}
+
+    // nb if a ask is used in more steps , only the first one is considered . all indo is related to this one , so untrusted 
+
     // so i can say if a name is a ask or a mod ! (if unique name )
     // we  want to know what model will be tested on script asks on all threads
     // in onchange  main dyn_ask will test major models gathered by y many asks that are visited in the dialog
@@ -807,7 +823,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
     },askMod_={};
     console.log(' modsOnAsk *** script is : ', script)
 
-    for (var thread in script) {// thread is a name 
+    for (var thread in script) {// thread is a thread name 
         if (script.hasOwnProperty(thread)) {
 
             // thread is a []
@@ -820,7 +836,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
                 // 
                 {
                     let paths = line.collect.options;
-                    name = line.collect.key;// line key name
+                    name = line.collect.key;// line/step key name
 
                     if(modsOnAsk_[name]){
                         console.error('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var (askname)  ', name, '.\n WARNING :  DUPLICATED ASK  NAME ');
@@ -842,7 +858,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
                                     let trd=condition.pattern.charAt(2);
                                     if (trd == '$' || trd == '%'  || trd == '§')str=3;
                                     entity = condition.pattern.substring(str, itr);
-                                    mods.push(entity);
+                                    if(mods.indexOf(entity) <0)mods.push(entity);
                                     askMod_[entity]=name;
                                 }
 
@@ -866,7 +882,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
             }// end a step
         }// thread
     }
-    return {modsOnAsk:modsOnAsk,askMod:askMod_};
+    return  {modsOnAsk:modsOnAsk_,askMod:askMod_};// {modsOnAsk:modsOnAsk,askMod:askMod_};
     
 }// ends modsOnAsk
 module.exports ={ mustacheF,modsOnAsk};
