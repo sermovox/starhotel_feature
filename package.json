@@ -20,6 +20,7 @@
     "mongoose": "^5.10.9",
     "mongoosify": "^1.0.0",
     "natural": "^2.1.5",
-    "node-nlp": "^4.14.4"
+    "node-nlp": "^4.14.4",
+    "simplybook-js-api": "^1.0.14"
   }
 }

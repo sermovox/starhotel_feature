@@ -1,0 +1,1014 @@
+
+to complete intent,vname,group,,,,,,,,entities 
+nb askmatches and matches can be the matcher/agent result
+askmatches={aask:{
+
+                                                            match:'aval',
+                                                            matches:[{key:'aval'},{key/ind:oneindex?},,],// models matches  , one routing (std, $$,$$$, no $%) index 
+                                                            nomatches:[{key:'aval'},,,],// only models
+                                                            ... some onchange added fields , ex : matched complete desire param ...
+                                                        }}
+
+
+__________________________________
+
+
+app status app bl status ( cioe status relativo a uno activity user/conversation ) that maintained conversational status managed using state var in convo organized in a stack structure
+                                                                                     so we must add a app var in dialogState 
+
+            is managed by dialogState got from status management fw ... see how to create it in .........
+
+    so  dialogState  allows to get convo state and app  from any tc coming to bot 
+
+
+            state = bot._controller.dialogSet.dialogState= dialogState.get(convo.dc.context, { dialogStack: [dialodInst1{id:dialogname,status:{} },,,] );
+
+
+    > status are recovered at each turn start in     beginDialog(dc, options)  and  continueDialog(dc) via resumeDialog() 
+
+    > in runStep we set the step status :
+                const step = {
+
+                //msgSent,// here usually call index with user answere to previous msg 
+
+                index: index,
+                thread: thread_name,
+                state: state,
+                options: state.options,
+                reason: reason,
+                result: result,
+                values: state.values,
+                next: (stepResult) => __awaiter(this, void 0, void 0, function* () {
+                    if (nextCalled) {
+                        throw new Error(`ScriptedStepContext.next(): method already called for dialog and step '${this.id}[${index}]'.`);
+                    }
+                    return yield this.resumeDialog(dc, botbuilder_dialogs_1.DialogReason.nextCalled, stepResult);
+                })
+            };
+
+
+    > status are updated in vcontroller :
+
+        let userDstate = await dialogState.get(convo.dc.context, { dialogStack: [],error:true });// must be found
+
+        if(userDstate.error);// error
+        if(userDstate.session);//error 
+
+        // changing 052020 .  
+
+        values.session=userDstate.session=userDstate.session||{};
+
+
+status are mainly put in :
+status  .step : convo ask/step management 
+        .values : convo vars used in template and onchange  
+                    .direc      =dynJs[dialogid].excel : a extraction of model.js convo directives setting :  for ask management 
+                    .excel      =dynJs[dialogid].direc                                                    :  for TI dialog general convo/thread management  
+                    .session    bl status   see appwrap
+
+        .dir ={static:{copy of direc ?},run/dynloopvar:{repeat:3,,,}}
+                keyDir=state.dir.asks[previous.collect.key];
+                                keyDir.cond[entity]= JSON.parse(condition.macro);( alternative to ask directives in step.values.direc)
+
+
+formats :
+
+	.dir={
+
+		asks:{
+
+			askname1:{cf:{// conditional fields set in ask
+					cfkey:value// if cfkey, asociated with a step ,  starts with $$$$ (ex: $$$$cfkeyname)  >>> in onStep() , we run eval to value 
+						// todo just set a vars if cfkey is {{vars.x,y}}='aval'  or {{vars.x,y}}='aval'  ??
+					,,,}
+		cond:{
+
+			entity:{'json parse of macro area in a cms condition tyed to a entity} 
+			}
+		}
+
+
+
+
+
+        others .goon mssSent ...
+
+
+
+    > status are updated at start of any convo using begin def thread in fwbase in wich we inject static info from models.js
+
+    - appwrap=getappWrap(bot,convo);// will recover user session status and application service , check  appWrap in vars.app .... ,  vars={channel,user,....}... 
+        create the appwrap  obj containing the app function got from app func defined in onchange and app (bl) status info :
+
+
+            ?? to be reviewed :
+            appWrap={aiax:function(actionurl,req),session,begin_def:function serverservice()}
+                also :
+                = {   service,fwCb,
+                    post:function(actionurl,req){// session and convovars cant change when i stay in the same convo
+                                        application.post(actionurl,convovars,session,req);},
+                    ,,,}
+
+             appWrap.begin_def(myscript_,usrAppSt);
+            usrAppSt={meds:[11,22,33],cur=user:'rossi'}
+            ....
+
+
+    > directive status are updated at each condition macro ( formatted json)  and custom field ( also json formatted ) as alternative to model.js
+
+_________________________________________________________
+
+difference between directives in excel/direc  and .dir status 
+
+when fw support code ( ex std/notstd matchers) need directive instruction will search dynamic run time directives in condition ( $$  , macro area che filla .dir.cond.entity... , custom field che filla .dir.ask....) ,
+	poi guarda le definizioni statiche in 
+	directive.
+		- excel usually static entity model  directives (after look for run time .dir.cond.entity.... )
+		- direc usually process directives 
+
+
+
+________________________________________________________
+
+directive=dynJs[model/cmd/convo/dialog] =require(model.js)
+
+
+    directive.direc ={ // ask directives put on askmatches.ask . 
+			// if the ask is tyed to a (query) model usually the model is stored on askmatches.ask  instead of matches.askormodelname
+			// that can be confusing because old code put some tyed model directives on ask directives that should not be :
+			//			ex 
+			// also , as in a ask there are a special condition run as onchange , that code will refears to ask directives to get some custom data and directives 
+
+	adependingAsk:{
+	  wheres_=['mod_city',,,] filled by fwbase.find_wheres().   is the list of models on which it depends  ( list of the where to do when querred )  
+	}
+
+
+
+        dyn_medicine:{	
+
+		url :'http://therestserverpost'      nb no params like http://therestserverpost/cities/rome	 but use form post data on POST request
+		or
+		url: :'http://therestserverget?' in this case we add qs to GET url 
+ 
+        	schemaurl:'Master',// schemaname of master collection, url is  'mongodb://localhost:27017/'
+        	schema: 'schema'   to map collection into object
+
+        	loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+                	nomain:true,// a context var  in some msg 
+                	max_repeat:1// then default 
+                	goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+            	}
+
+		wheres=['mod_city',,,]   added by fw when the dependency address to a ask, otherwise it will be added to the model 
+
+
+
+        	med_data:
+                       [
+                [0,'terace','terrazza',' è splendido caffè con terrazza panoramica ','data','terrazza','pesce','eggs backon gratis','vai al piano','prendendo l ascensore A presso la hall  ','08:00','10:00','caffe terrazza','col',,,,,' è splendido caffè con terrazza panoramica e specializzato il breakfast all inglese',' è splendido caffè con terrazza panoramica, sempre aperto è specializzato per abbondanti breakfast all inglese',true,,,,,''],// 'col',,,,,,,,true,,,,,''],
+                [1,'hall','hall','è la sala principale del hotel','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','dalla  hall prendendo il corridoio a sinistra','07:00','10:00','hall al piano terra','col',,,,,'è la sala principale del hotel , apre alle 7 ','è la sala principale del hotel , apre alle 7 e ha servizio di branch all americana',true,,,,,''],
+                [2,'giardino','giardino','è immerso nel verde del giardino , aperto solo la sera ','data','piano 2','carne','veggs backon gratis','vaial piano','prendendo l ascensore B presso la hall','09:00','10:00','colazione in giardino presso il garden breakfast ','col',,,,,'è immerso nel verde del parco acquatico , con sale private , apre alle 20','è immerso nel verde del parco acquatico naturale, con tavoli riservati per una colazione appartata apre alle 20',true,,,,,''],
+                [3,'terace','redisdes','red RTCSessionDescription','data','terrazza','pesce','eggs backon gratis','vaial piano','prendi ascensore A presso la hall  ','08:00','10:00','ristorante terrazza','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [4,'hall','redisdes','red RTCSessionDescription','oggi branch gratis alle 11 ','piano terra','colazione all\'inglese','eggs backon gratis','vaial piano','recati presso la hall e prendi la sinistra','07:00','10:00','ristorante al piano terra','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [5,'giardino','redisdes','red RTCSessionDescription','data','piano 2','carne','veggs backon gratis','vaial piano','prendi ascensore B presso la hall','09:00','10:00','ristorante  in giardino','rest',,,,,'è splendido caffè con terrazza paoramica, sempre aperto specializzato il breakfast all inglese',,true,,,,,''],
+                [6,'da toni','toni','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''],
+                [7,'da genio','genio','locanda abruzzese','oggi mozzarella in carrozza ','a vergate, 10 km','cucina umbra','','vaial piano','prima rotonda e prendi la sinistra','07:00','10:00','ristorante convenzionato tipicità locali','ext',,,,,'è splendido locale raffinato con terrazza panoramica, sempre aperto',,true,,,,,''],                ]
+
+        	,
+        	Gdata:
+
+        	[
+        	[0,'col','serviamo colazioni con prodotti freschissimi ',' Per intolleranze segnalarlo in reception. La colazione viene servita anche in camera come servizio extra che puoi chiedere ora. ',1,'colazione ','  quando è aperto e come arrivarci',' ristorante o portineria '],
+        	],
+
+
+
+        	onChange_text:null,//testFunc.toString,// without async !!
+
+        	onChange:null//function(new_value, convo, bot,script,ask){return dyn_medi_f.call(this,new_value, convo, bot,script,ask) ;    }
+    
+
+                      }
+
+
+
+		NB onChange context set in fwbase : Object.assign({},{cmdModels:directive},directive.direc[mkey],{service},{fwCb});
+
+
+              directive.excel  ={ // model directives . the model matching status will be put on matches.model .
+				// in old code when a model is tyed to a  ask some dir is set on direc.ask  but should not ! 
+
+                            vname:'hotel cinque stelle',
+    
+                            news:'oggi grande festa della amicizia alle 20 tutti in piscina!' ,
+    
+    
+
+                                        .....
+                               askkey:{// are they ??
+
+                                        }
+
+
+                               amodel:{// static model entity
+                                        name:// ? 
+                                        vmatches: { dove: 'dove', come: 'come', quando: 'quando' ,per:'motivo'},// model specification , item voice name 
+            				vlist: ['dove ', 'come', 'quando','motivo,significato'],//temporaneo , è duplicato di vmatches con different format !
+                                        notMatPr:''
+					vname:'a voice name'
+
+
+                               		model: 'bar-bar&rest-medicamen&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-\bsala 1|\bsala uno',
+					model:'value-\\bpreno\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s+(\\d{0,2})\\s*',
+					NBNB   in condition can be prefixed by {-&}
+      				      	// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+         				//      {bar:{
+            				//          patt='ristorant*|pranzo|cena|trattoria',
+            				//            ai_url='',
+            				//            vname=''
+            				//      },,}
+
+
+
+
+                               		matcher="dynMatch"
+
+					url:
+					schemaurl:'location'  ( also in model ?) 
+
+	
+                              		wheres: filled on fwbase.find_wheres(directive) if this dyn model depends on other models value ( the wheres condition clause in query)
+						se dichiaro un entity come where di un model che non esiste in excel esso viene creato ( puo essere def il line in cms )
+						e' alternativo a mod_wh_Of !!
+
+					mod_wh_Of:'paese'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) ,
+						 so dont put in notmatched prompt list if we already had the dyn_key matched 
+
+
+
+	
+
+                                        out:function ....
+                                 }
+				,,,,,
+			}
+
+
+
+
+
+
+
+
+
+
+
+keyDir=state.dir.asks[previous.collect.key]=......
+
+
+_________________________________________________________
+
+fwCb={fWService1:null,askS:{dynMatch......},thS:{},models:{}}
+
+fwHelp=refImplementation={
+    onChange_dynField(entSchema,text_,wheres,idspace,isDb_Aiax) interface to db manager engine to query entities with join relatations (in entSchemas ) and id/keys 
+                                                                the db manager ,recovering schema+url (in model.js) , can request a query to a db server
+    rest__: async function (entity, uri, params, method, outmap, limit) {// not used now,
+    run_jrest: async function (uri,formObj, method) returns the object if run_rest returns a json
+    run_rest: async function (uri,formObj, method) general rest interface
+    dynMatch:async function((url,)entity,text=searchterm,wheres,isDb_Aiax,cb) // put in a sort of interface TO complete in setSetvice of fwCb , or a default matcher template to custom in fwCb.asks/model
+                                                    looking at url in model.excel  can call the interface (data service) pgm  to process the query 
+                                                    can be a 
+                                                        - properties/wheres rest mapping to a rest external dataservice that will have the schema info ( url and where entity mapping can be recovered in vars.excel...)
+                                                        - custom rest caller (can be a service fwCb.model[entity].matcher function) to a non rest style external dataservice that will have the schema info 
+                                                                                ( url and params of caller can be recovered in vars.excel...)
+
+                                                        - internal data service restAdapter2Mongodb() that knowing data structure info ( schema info of wheres param recovered in  vars.excel. ) 
+                                                                    can call the db engine manager onChange_dynField()  ( schemaurl to call the db server can be also recovered in vars.js )
+
+
+     
+    }
+
+service extend fwHelp,db,rest,...
+
+
+____________________________________
+
+
+MATCH STATUS VAR SUMMARY  05112020 
+
+- vars.matches.amodel=	{// can be a static match (build by std matcher) or a dyn match (complex model, build by not std matchers)
+		.........
+		match : the item key/name/value // if dyn/complex copied from above .group.sel.match
+		matched:'match' or '' or true/false, added by matcher , if dyn/omplex copied from above
+		vmatch : the item descr if any 
+		
+
+		// if dyn/complex : extend a dyn entity with view fields an bl fields  , also inflated/populated ( if used by a child ) :{value,patt,descr, bl filed} + the info that static model find in excel[entity]
+		query/entity/intent:{}// see after, usually is a model with context for a entity query navigation child with bl entity attributes 
+		complete:'routeinfo, // copied from above
+		instance, // copied from above
+	
+
+		}
+
+- var.askmatches.aask={// used also (old way )to store both query result and resoved intent with entity  object values/property ( city='rome')  
+				see addMatchRes that will set the values on matchers and askmatchers
+					service. dynQuery dynmatch
+				convo matchers
+
+
+
+
+
+
+        match:'aval',// the condition matched val when it routes/triger, , so if the condition matching entity 'color' matches and route we set match:{key:color} 
+				make it easy : in this case set   match:'color' 
+
+			nb if we choose to store the 'routing entity' state into the ask well add .entitiy:{the entity row , db std + bl } and we can set .match the (main) field value ( can be a multi entity !  
+
+        matches:[{key:'aval'},{key/ind:oneindex?},,],// condition models matches  , one routing (std, $$,$$$, no $%) index 
+			make it easy ? :
+			matches:[ent1,ent3,,,,] 
+
+        nomatches:[{key:'aval'},,,],// only x ask containing models ,only models not matching 
+        ... some onchange added fields , ex : matched complete desire param ...
+        matched:'match', or null or ''
+                also set session.dyn_match={};session.dyn_match[ask]={match:blResNam};
+
+
+
+        complete:'miss' or 'inter'(interrups)    ...// info like matched but x different scope
+
+
+	.....   if dyn : extend a dyn entity :{value,patt,descr, bl filed} + the info that static model find in excel[entity]
+		
+
+		}
+
+
+	NB i askmatches vengono settati in onStep , ma solo la parte match , gli altri attributi , che sono bl a livello ask vengono gestiti dalla business logic 
+		QUINDI allo start di onStep viene resettato i campi :
+
+		match,matched,vmatch,matches,nomatches
+
+
+
+
+- complex dyn model status , are usually set by not std matchers . usually added with context param  to run  child/chained dialogs (see Mathers_Primer.txt) :
+
+
+  child/chained thread  param :
+	- each child x usually will take as param ( old : askmatches.x or)  matches.x  we want as 
+ 	- chained thread  ( like apills_det) can use any reference of cmd ( is not a child so reference are the same ) 
+	usually matches.complexmodel  has :
+
+	complexmodel=entity/query-param/intent//  (read:param or in future query)contains the model taken as context model, the major model on wich the child will work
+
+		lastly we decide to use param not query : check not using query !!!!!
+
+		={
+			match,	: copy of group.sel.match		oppure al posto dei match,vmatch,info flattati sul root del obj ,mgari se ho ancora altri bl attributes/relations :
+			instance:copy of group.sel.item // for convenience a easy reference
+			TODO : copy of group.sel.index
+        		vmatch,				select{value/match,vname/descr, bl1item, bl2item,,,,}
+        		info,
+
+			intents,		//   if intent  *
+				nb items are intents[x], intents name is intents[x].name , attributes are not inflatted like in query and put in entities : intents[x].entities={}
+
+				OR
+
+			rows:	row or [arow], // if entity and, new,   if query-param *
+				nb items are row[x], item name and properties are flattened in rows[x]: item name is rows[x].value, attributes are other Bl cols ( also inflatted)
+					we can also group items x 2 selection step adding a field , ex rows[x].set=1,2,3 .... ex select a date then a time in query with datetime entities 
+
+						in complex dynamic model the patt field is not used in row ,  because we better describe pattern matching x selextion as obj in resModel
+									descr/vname  can be probably put in row field descr/vname as in static case
+
+						EXAMPLE OF ATOMIC VALUES ( infinite values , single dim or many dim (vector). see nlpai  DGTG 
+							in this case the value is a infinite dimension val , bl field are description on data type or component if they are vector ( ex interval )  
+						  FROM DUCK : {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   
+								>> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+						  FROM DUCK : {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},
+				                                 >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+						  FROM DUCK :  {start:3,end:8,dim:"number",value:{type:"value",value:2}},  
+		                                                >> so row:{value:13,dim:'number',type:'value'}
+
+
+
+
+			group/context={ context var of child template and general param x child condition/onchange,,,
+					sel: // the model selected if model (see JYOI) was 
+						// - a query (no def ) or
+						// - intent (set intent[0] as def 
+						{matched,
+						item // intents[index] or rows[index]
+						TODO   + index 
+						}
+
+
+
+
+
+
+
+				}
+
+
+			cursor={// cursor is really master cursor management (list,selection)  as rows/intents are alredy in model !!!
+					// can be built by run_jrest if not provided by query engine
+		 				rows=[] , // OLD  if query-param *
+
+				resModel:{ 	// is the dynamic model definition to select a rows cursor query . to manage selection in child with $$xxx:> support 
+						// see : 012021 ripresa $$desidered:>pippo in master_df_builder ....
+
+          				item1 : {// name of intent to select or the value rows[x].value to match 
+            					patt: v0=intents[0].name,							or rows[x].patt 			where rows[x].value==item1
+            					vname: v0=intents[0].name the intent name selected, but as there are sync 	or rows[x].value or rows[x].descr , 	where ....
+						index:x // the index of intents or rows where is the corresponding item . usefull expecially when i filter the rows to select , 
+							// if missing is expected that the order of resModel properties corresponds to rows order 
+						... custom var : see x ex simplybookingAiaxCtl.js 
+           					},,,,
+					}
+
+
+
+
+
+				medSyntL:[], // to manage master list view/navigation 
+				medSync:[]
+				....  custom var
+				}
+
+				// other vars or model (run time compiled ) can be inserted plain or in group if they are available at the matching time of this complex entity
+				// so can be passed into the child passing just this model usually named as the child to call to navigate this compelx entity 
+
+				// example , see qea in nlpai :
+			compl_ctx:{param/query:{cursor,group,rows}},
+
+			complete:'anextrouteref' // the match with routing redirect : to be copied in model 
+		}
+
+
+ now the 3 cases : matches.intent ,  matches.entity,  matches.param  or  matches.query :	
+
+
+  >  1 .intent  // review 012021, see intent() in nlpai.js
+
+        intent:{// start as wit.ai format but add some match/vmatch as usual to vars.matches/askmatchers  
+		// >>>>>>>   SEE doc.curl_witai.txt x UPDATED DEFINITION 
+
+		intents:[{name:
+			 descr,??
+			 conf
+			 entities:{} // WQA
+			 },,,,
+			]
+
+		matched:{'miss'/'match'/'err'/null}// give info about the rest query dyn extraction . 
+				nb to define better :
+				>>> match means query run , when selected we set group.sel as instance and match as the instance.value ?  
+		match:name,vmatch:name/descr,
+
+        	cursor={// no rows !!! , we have intents !
+			sel.item // select intent item or intents[0] as def 
+			resModel:{	// WARNING : this run time model  describe the intents items  to be selected in convo.onStep directive $$..>:
+						for historical reason the model is described in  pArray format :
+						  pArray={item1:{patt:'pippo!poppo*',(name/value:item1,),,},item2   not  pattArray='item1-pippo!poppo*&item2-parerino&..',:{patt:'parerino',,},,}
+						  here item1=intents[i].name and patt set by query engine using some policy 
+							can be the vname of the intent to select or the value of a best discriminating attribute in qea query !!!
+							>>>>>  see FREDJ
+                              		// so they have fantasy name , say disc1,disc2 .....   , see nlpai.js
+          			disc0: {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
+            				patt: v0=intents[0].name,
+            				vname: v0=intents[0].name the intent name selected, but as there are sync 
+           				},
+				disc1:{}
+				}
+			}
+		discr=:['city'(,'type')]// the name of entities tha discriminates the intents . to make it easy just 1 item, the entity that discriminates the 2 intents !!
+
+		group/context={ context var of child template and general param x child condition/onchange,,,
+				sel:{item,match}//  select intent item ( or intents[0] as def ?)
+			}
+
+		entities:{// just the WQA del primo intent 
+			ent:{// like ....
+				name:'ent',/// needed?
+				type
+				matched:
+				match:   itemname or {ent:itemname}
+				row:{}// optional
+			}
+		text:  // added by matcher from above info 
+
+
+			// other vars or model (run time compiled ) can be inserted plain or in group if they are available at the matching time of this complex entity
+			// so can be passed into the child passing just this model usually named as the child to call to navigate this compelx entity 
+
+			// example , see qea in nlpai :
+		compl_ctx:{param/query:{cursor,group,rows}},
+
+		complete:'anextrouteref' // the match with routing redirect : to be copied in model 
+		
+
+	see comment in master_df....  :
+
+				matches models are var but has some fw support !, 
+					ex can have matching supporting dir/model  static/dyn
+
+					so models are stuctured data 
+				static : they get the model to match from excel or from inline (can also be copied on runtime matches.modelname.model= the excel model declaration )
+						if they are dynamic the model is built runtime usually on directory param/query.rows  or entity.row(s)  or intent.intents 
+									where in rows/entities can be put also entities properties 
+								and the matching described in cursor
+						if the model is tied to a navigating child the param of the child can be on .group directory 
+						and additional model to work on the child can be put also in .group  or stright in the model
+							example is the model to select the completation in a selected qea item . that model is resolved when we match the qea so it is passed to child as a attribute in the 
+							model associated as property/attribute compl_ctx={param:{cursor,group,rows}} 
+							in navigation child that model will be copied in some local model so can be used by the fw when we want to navigate or select a item 
+								( the completation of the qea paragraf ) 
+
+					the matching algo can insert params x the child , so it can be a context of a child : .group={} and use .rows (inflatted bl properties)  or .intent.entities (non inflatted properties )  
+						as context in  template to navigate the entities rows of the child associated main model
+
+		}
+
+
+	12112020 : 
+		- at qea engine level the intent returned by the qea interface is (see Intent() in nlpai.js) :
+
+
+			new Intent() = {intents:[	{name,confidence,
+							entities,
+							descr, //??
+						
+				          		},,,
+						]
+			    		entities:{// the entities of intents[0], just x convnience
+							ent1:{name,value,role,type:'value',
+				             		+ isDiscr,,,
+				            	}
+				      		,,,,,},
+					discr:[thebestentity2discriminateintents[0/1]],
+				
+						// now the context x selector thread/child (group is the context x template,
+						// cursor should be the master list rows , but tht is relly named intents/param-query (would be rows , in intent type  is really alredy set as intents)+
+						// selector runtime model:
+					group{	sel:{intents[0/1]},
+						cursor:{// rows, // nb in intent model ( differently then query/param model ? ) rows is  intents
+							// so here only the matching instruction to selet the rows in selector child :
+							resModel:{	disc0:{patt: vv1,// / ex v1='banane/mele' -> vv1='banane|mele'
+            									vname: v1
+            									},
+									disc1:{patt: v2,
+            									vname: v2
+            								}
+							}
+			    		}
+				}
+
+
+
+  	then addMatchRes matcher will fill the matching info x the complex model ( matched : is resolved so the service give the model ? , is selected if there are many items ..
+
+		so at last get the models to set in matches  ( askmatches) : above, for example :
+
+	Intent= {
+
+		cursor:Object {resModel:{disc0: Object, disc1: Object}}
+
+		discr:Array(1) ["link"]
+				length:1
+
+				0:"link"
+		entities:Object {
+			descr:undefined
+			interesse:Object {name: "interesse", value: "architettura", role: "n/d", …}
+			link:Object {name: "link", value: "opera/autore", role: "n/d", …}
+			museo:Object {name: "museo", value: "archeologico", role: "n/d", …}
+			opera:Object {name: "opera", value: "1", role: "n/d", …}
+			piano:Object {name: "piano", value: "1", role: "n/d", …}
+			sala:Object {name: "sala", value: "1", role: "n/d", …}
+			settore:Object {name: "settore", value: "ingresso", role: "n/d", …}
+
+		group:Object {sel: {item: Object}}
+
+		intents:Array(2) [Object, Object]
+			length:2
+			0:Object {name: "AutoreTesta", confidence: 0.999493043121957, entities: Object}
+				confidence:0.999493043121957
+				entities:Object {piano: Object, sala: Object, opera: Object, …}
+				name:"AutoreTesta"
+
+			1:Object {name: "StileArtistico", confidence: 0.4345728970044326, entities2: Object}
+
+		match:"AutoreTesta",// the name of matching/ selected  item : intents[x].name/rows.value 
+
+		// instance here or as matches attributes ? 
+		instance:entities[this.match],// x convenience , is the same as this.group.sel if a selector runs, otherwse just the intents[0]
+		matched:"match"
+		type:"Int"
+		vmatch:"AutoreTesta"
+		}
+
+	// TODO : 2 clearify the different role for matches and match for  matches.match   and matches.intent.match .......
+
+
+
+	2 > entity:{// extracted from intent case , could be good idea mantain the static model match/vmatch and add node-nlp , dackling/witai std !!!!
+					// >>> se updated in nlpai.js : Entity() constructor 
+				// very like the entity inside a intent ! 
+
+
+			// name, matching cond :
+				matched:'match' or null 
+				// witai : 
+				type: 	// witai dim + ...  es : type=number,datetime-val/interval,location,customentitynameAssigned( the name referas to a entity described on staticmodel or a db schema)
+				name:'ent',/// needed?
+			// item key/descr 
+
+				match:  // === value/key
+				vmatch:	// === short descr 
+
+			// detailed properties , also inflated ( some level) :
+				rows:{ value,descr,,,, bl ,,,} // the db std model + some inflated view/bl obj. in case of vectorEnt/MultivalEnt we can have many properties 
+					but if there is one with name value is the major (simil to a intent) 
+
+			}
+
+	}
+
+	example :
+		mod_date_des:Object {vmatch: undefined, matched: null, match: undefined, …}
+		entity:Entity {matched: "match", type: "Ent", name: "mod_date_des", …}
+
+			match:"2020-12-29T08:32:00.000-08:00"
+			matched:"match"
+			name:"mod_date_des"
+			rows:Object {value: "2020-12-29T08:32:00.000-08:00", date: "2020-12-29", time: "08:32"}
+			type:"Ent"
+			vmatch:undefined
+
+		match:"2020-12-29T08:32:00.000-08:00"
+		matched:"match"
+		vmatch:undefined
+		__proto__:Object {constructor: , __defineGetter__: , __defineSetter__: , …}
+
+
+    x master query to be selected on a child   
+		nb the child will add to .param the child template context ( was called group ) and also other child params/options to custom the behaviour ....
+		.context .......
+
+    context:{} // MK :  the child navigation template context ( child/subthread can be selector/master view or the selected detail view)  alternative when no many rows so no under cursor : MK
+
+    3 > param:{// param( perhaps better to be called query) because could be the param of a child , but really is the complex entity/intent in case of a query 
+        match,				oppure al posto dei match,vmatch,info flattati sul root del obj ,mgari se ho ancora altri bl attributes/relations :
+        vmatch,				select{value/match,vname/descr, bl1item, bl2item,,,,}
+        info,
+
+
+	group :{// child context // alternative : just call context or put in  MK
+		context var of child template and general param x child condition/onchange,,,
+		sel.item(/sel) : the selected item copied from rows 
+		}
+
+			}
+	cursor={// cursor is really master cursor management (list,selection)  as rows/intents are alredy in model !!!
+ 
+                resModel: // to manage selection in child with $$xxx:> support . // used as run time model to select from rows basing on descr or patt or value fields 
+				>>>>>  FREDJ
+				TODO : review in convo the transfomation of the model from  pArray and  pattArray:
+
+						  pArray={item1:{patt:'pippo!poppo*',(name/value:item1,),,},item2   not  pattArray='item1-pippo!poppo*&item2-parerino&..',:{patt:'parerino',,},,}
+					per farla breve , quando costruisco il pArray ( selecting model) per un db rows cursor (query on desire entity) uso il rows[i].value come name per identificare il row
+						cosi quando trasformo il pArray in pattArray questo e il rows array hanno l'indice in sync
+					per questo quando in onchange.addMatRes vado a recuperare il corrispondente row del desire conto sul sync thra gli array rows e pattArray e cosi uso il matching index
+					>>>> verificare che il tutto sia ok anche quabdo uso intent al posto di param/query
+						il succo del discorso e' che non devo usare l'index ma contare sempre e solo sulla corrispondenza del value/name 
+						quando vado a controntare array e trasformare formati di array !!!!!!!!!!!!!!!!!!
+
+
+			  val0:{// should be the intents[0].name or cursor.rows[0].value  , but can be renamed . the main association is by index that tie rows[i]/intents[i] with 
+                                patt:regexstr,
+                                vname:'pippo' // set as array also in medSyntL x list in template
+                                }
+                          ,val1:{},,,
+                	},
+		medSyntL:[vname1,,,]   medSyntL : used x list in template if in the child we want to list the item of master query / many intents // to manage master list view/navigation 
+			}
+		}
+
+        templatef:{ishall}
+
+
+
+NB evidente che :
+	- .param.cursor.rows = .entity.rows
+	- intent.entities sono le bl property delle ASQ ( in entity.rows) . so bl properties are flattened on entity.rows
+	- intent.name = entity.rows.value
+
+	- i 3 formati vanno normalizzati !!! 
+
+	- .params storicamente ottenuto con onChange is tied to a askmatches but can be tied to (a model) matches
+
+
+dynmodel SELECTION
+	when using a fw support $$dynmodel:>selector
+		- a  matches.intent ,   matches.param/query 
+		- is selected nd the result is set on a result model :
+			matches.selector={match,matched,vmatch,instance} where all attributes point to the  dyn model selected item name,vname,item (row[x] or intents[x])
+			and x convenience also matches.selector.intent/param=matches.dynmodel.intent/param
+___________
+firing child riassunto tecnica _qea_res_child
+
+122020 
+
+quando il child fires (_achild) 
+- puo usare tutti i vars del father come parametro (model , static/complex) di ingresso 
+- in particolare il model del father che ha nome = al childname (_achild)
+	on father :
+		matches._achildname=
+					a resolved static model :{matched:match,match:anitemname,...}
+					a resolved static model :{matched:match,match:anitemname,...}
+
+- poi una volta calcolato i risultati si copia il model piu importante in vars.matches.result
+- esso viene copiato nel ask di ritorno del faher :
+	childvars.matches.result > fathervars.matches.askname , see convo
+
+
+
+following copied comments to review 
+
+child param/result  name
+
+a child when returning in father askname will  set the vars.askname=childvars so the father can access to the child results there. but sometime we need to fill a result in a father model
+come parametro da passare al child  , tipicamente tipicamente si sceglie a askmatches.paramname.x o matches.paramname.x , where x can be often a complex model (intent,query/param ) 
+	so it can be used as result adding x.result or selecting the x model in model.x.group.sel.item
+
+	the problem is that the model name paramname  should be known. so we can use this def rule : the param of _achild will be the matches._achild , so we can set that model in one condition :
+
+ 	ex: $$_child:{£&}§1problem\w*\s(.*)§probl£*   matched action : beginDialog _child
+		> matches._child  is a father model used as child param . it is filled with text :   matches._child.match='probl'
+			so a result can be attached by child as the child result injected on a father model
+
+	ex: $$_child:{£&}§1^problem\w*\s(.*)§value£aregexthatreturnagroup		
+
+	ex : $%_qea_res_child:valueoranyname-x&_putmodelOnthefathercallparam-y
+		macro : {"matcher":"intMatch","url":"service://plugins.ai.qea.natural","vars":"_qea_res_child","term_":"$mod_qea"}
+		-->  here using a intent matcher we fill the  model _qea_res_child with the same name of the child fired :
+				matches._qea_res_child.intent..... 
+
+ora circa il return model del child 
+	- il returning ask will set vars.returningask=child_vars
+	- nel father mi ritrovo ricopiate ( fwbase.js ? ) tutte i nuovi model aggiunti dal child in matches ( e askmatches ) ************************************* WARNING on name space  mngment *******
+	- in piu' vorrei automaticamente settare un model sul receiving ask di nome noto 
+		> con  un $$$$ il copy sul matches.receivingask.xxx ma occupo un condition ed è tedioso
+		> usare lo stesso child param (vars.mathches._childname) aggiungendo un result , sembra che non si possa fare perche' essendo gia nel father il child lavora su un clone
+
+			guardare 
+
+				see $$qea_res_child:>_qea_res_child  condition 
+
+ 			 (see convo.'beginDialog': ...) al fire del child , nel clonare il father vars aggiungere un ref a model : 
+		 	vars.matches[path.execute.script] with name = childname=path.execute.script as child return model
+		> quindi OKOK that is implemented :
+		
+			>>> PROVARE in coping the result to vars.askname adding   :  console.log(' convo.onStep  found a return from child , so copied child matches.return model to matches.',previous.collect.key);}
+
+			>>>> quindi il model matches.return del child viene trasferito come model con askname nel returning ask  matches.askname=return  <<<<<<<<<<<<<<<<<
+			tipicamente in un condition del child : $$qea_res_child:>return
+
+
+
+ricordare CHE TORNANDO DA UN CHILD il result non è user text ma il vars del child , cosi non si devono testare i condition che lavorano su text quando il next ask torna dal child !!!1
+
+
+________________________
+
+nb complex model (intent,param,entity) are filled by addMatchRes after convo matcher fills some field of the matcher helper cb val.
+			matcher helper usually ask run_jrest to call some service (according to url) :
+						after got response  , run_jrest copy to Val after set some attribute 
+
+		example for entity matcher :
+
+						/* > ENTITY MATCH MATCHER case (matchTyp=0): service[matcher](=dynMatch()) must meet ASWQ entity matcher interface : see dynMatch() :
+                                                        //  service[matcher](=dynMatch())  interface : return true or false (process correctly) then cb with val={matched,,,,,,rows:[{value:,,},,,]} or val={matched,,,,,,rows:{value:,,}}
+  
+
+							matcher
+
+                                                             service[matcher](url,    ,cb ) according to url will call some service:
+
+                                                                        if  url=service://dbmatch.  :   calls run_jrest(url,,,,) 
+
+                                                                                                                calls  plugins.dbs.restAdapter2Mongodb_(formObj)
+
+                                                                                                                < return {reason,rows:[{std+blfields},,,]}
+
+                                                                                                        < return val=mr={reason,rows={matched,,,,rows={}}} 
+
+
+                                                                        if  url=http://....         :   calls run_rest(url, formObj, method,head);
+
+                                                                                                        < response=val=mr={reason,rows={matched,(other meta),,,rows={}}}
+
+
+
+
+                                                               < will cb(val)    after added 
+
+							< 	 before call addMatchRes will add some fields: ...............
+
+                                                            nb    jrest EMBED internal rest engine rows  with minimum meta (= matched)as requested by Entity Matcher 
+
+                                                      */
+
+
+
+		example for query matcher : xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx to reiew !!!!!!!!!!!!
+
+						/* > ENTITY MATCH MATCHER case (matchTyp=0): service[matcher](=dynMatch()) must meet ASWQ entity matcher interface : see dynMatch() :
+                                                        //  service[matcher](=dynMatch())  interface : return true or false (process correctly) then cb with val={matched,,,,,,rows:[{value:,,},,,]} or val={matched,,,,,,rows:{value:,,}}
+  
+
+							matcher
+
+                                                             service[matcher](url,    ,cb ) according to url will call some service:
+
+                                                                        if  url=service://dbmatch.  :   calls run_jrest(url,,,,) 
+
+                                                                                                                calls  plugins.dbs.restAdapter2Mongodb_(formObj)
+
+                                                                                                                < return {reason,rows:[{std+blfields},,,]}
+
+                                                                                                        < return val=mr={reason,rows={matched,,,,rows={}}} 
+
+
+                                                                        if  url=http://....         :   calls run_rest(url, formObj, method,head);
+
+                                                                                                        < response=val=mr={reason,rows={matched,(other meta),,,rows={}}}
+
+
+
+
+                                                               < will cb(val)    after added 
+
+							< 	 before call addMatchRes will add some fields: ...............
+
+                                                            nb    jrest EMBED internal rest engine rows  with minimum meta (= matched)as requested by Entity Matcher 
+
+                                                      */
+
+
+_________________________________________________
+
+$$adesire:>result   detailed explanation :
+
+...................
+
+
+___________________________________________________
+
+old comments : 
+
+
+
+
+    /* param is inserted by the query/intent  service , see dyn_star_f() : 
+     			question :  cursor can be different from the usual std format of db entities that is in rest response :{reason,rows=db cursor} : YES see after 
+
+         db cursor=	[
+				[id,'panda','a small fiat auto','\bpand','1200cc',,,,],//  panda is the instance item name > id,value,descr.patt,data,bl fields in this order 
+					[id,'tipo','a medium fiat auto','\btip','1500cc',,,,]  
+				,,,]
+
+        ????
+     			*/
+
+
+     */
+    param:{
+        match,				oppure al posto dei match,vmatch,info flattati sul root del obj ,mgari se ho ancora altri bl attributes/relations :
+        vmatch,				select{value/match,vname/descr, bl1item, bl2item,,,,}
+        info,
+
+
+
+
+        templatef:{ishall}
+
+
+    /*			REMEMBER : 
+   			 param is inserted by the query/intent  service , see dyn_star_f() : 
+     			question :  cursor can be different from the usual std format of db entities that is in rest response :{reason,rows=db cursor} : YES see after 
+
+        			 db cursor=	[
+					[id,'panda','a small fiat auto','\bpand','1200cc',,,,],//  panda is the instance item name > id,value,descr.patt,data,bl fields in this order 
+					[id,'tipo','a medium fiat auto','\btip','1500cc',,,,]  
+					,,,]
+
+        // cursor=[['type','a small fiat auto','\bpand','1200cc',,,,],,, ]  // so different from db cursor ?
+
+
+    /*
+        // format : resu={reason,rows}, rows in std format 
+        resu=await services.onChange_dynField(entSchema,null,wheres,null,true);// dbEntFw=services.onChange_dynField
+    
+        if(resu.reason=='runned'){
+        mydata=toArray(resu.rows);// flat cursor to array with rigth format
+        console.log(' onchange star hotel : querying services.onChange_dynField() returned  ',mydata);
+
+        res=runQuery__(mydata,matches.mod_Serv.match,matches.mod_loc,matches.colazione_menu);// query locally
+
+         format : res={ind:[3,6,8],rows:[mydata[3],mydata[6],mydata[8]]}=runQuery(mydata,cq)
+			>> so rows={      }??????
+
+
+    */
+
+
+
+
+
+        cursor:{rows:res.rows,medSyntL:[value1,,,],
+        
+        mydyn.param.cursor={rows:res.rows,resModel,medSyntL} ;
+                resModel:{		// used .....  ?
+			  val1:{
+                                patt:regexstr,
+                                vname:'pippo' // set as array also in medSyntL x list in template
+                                }
+                          ,,,,
+                }
+	medSyntL:[vname1,,,]   medSyntL : used x list in template
+
+        //or instead of param :
+
+	// NBNBNB this intent status vars.matchers/askmatches.intent , the target entity/intent can be set in matches , or  askmatches as shown here !!!!!!!!!!
+
+        intent:{// start as wit.ai format but add some match/vmatch as usual to vars.matches/askmatchers  >>>>>>>   SEE doc.curl_witai.txt x UPDATED DEFINITION 
+		name,
+		conf,
+		matched:{'miss','match','err',null}
+		match:ent,vmatch:ent,
+		entities:{
+			ent:{// like ....
+				name:'ent',/// needed?
+				matched:
+				match:   itemname or {ent:itemname}
+			}
+		text:  // added by matcher from above info 
+		}
+
+
+		entity:{// extracted from intent case , could be good idea mantain the static model match/vmatch and add node-nlp , dackling/witai std !!!!
+			// >>> se updated in nlpai.js : Entity() constructor 
+			ent:{// like ....
+				matched:'match' or null 
+				match:   itemname=row.value  (???or {ent:itemname}) 
+
+				row:{ value,descr,,,, bl ,,,} // the db std model
+
+
+					},
+
+				// witai : 
+				type: 	// witai dim + ...  es : type=number,datetime-val/interval,location,customentitynameAssigned( the name referas to a entity described on staticmodel or a db schema)
+				name:'ent',/// needed?
+
+			}
+
+
+
+
+	}
+
+        group:{
+                name,
+                vname,
+                best,
+                calce,
+                what,
+                nextserv,
+            
+            
+                sel:{item:mydata[blRes],index:blRes},
+                def:{item:mydata[gr[4]]},,
+                }
+
+
+
+    // obsolete if( mydyn.param.group.sel)mydyn.param.group.isdef=true;else mydyn.param.group.isdef=false;// seems ok , ? to do 
+    mydyn.param.group.vgroup=gr[5];
+
+
+        }
+
+		}
+
+
+_________________________________________________________

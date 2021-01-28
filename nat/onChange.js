@@ -213,7 +213,7 @@ let vfwF = {// framework functions module used in convo obj
         // storemat={type:'Ent'/'Int'/'Cur',.....} can be obj in case of nt std matcher
 
         
-        storeMId // storemat is
+        storeMId // Avoid , use storemat 
         // if the model is static   or is no model , we use a regex matcher , so is a string : the value/name matched ,  
         //                          storeMId is the index p,  in static  model definition 
         // if the model is dyn,,, , we use a directive matcher   , so (isStatic=false) is a obj the matcher returns:
@@ -222,13 +222,13 @@ let vfwF = {// framework functions module used in convo obj
         , routing// routing=linematch is true if not $% case ( not routing case ) so this condition will stop the cond loop
         , rematch// the regex matched extraction (....) , in revision 102020 seems to be changed with storeVal
         , reset// reset matches ???? never called !!!!!!!!!!!!!!!
-        , param,// not nul if this is a resolver selection ask, entity is a askname or modelname , param can be param or intent !
+        , param,// not nul if this is a resolver selection ask, entity is a askname or modelname , param can be param or intent ! // nb not null only if entity matches (mat=true) ?
         storeVal// old a integer or string to get from user  .02102020 : changed , manage case storemat='value' , see below news 
         , step, previous
         //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
         //              if we need a var that knows if the matcher used is std regex static model or a custom matcher use isStatic_
         // needed ? now we see if we have simple entity looking at value field ! , isStatic_ // will decide to put std static match or use 
-        , pattArray // access to mapping entity info from cond model fields name .= step.values.excel[entity].model pattArray={itema-regexa&itemb-regexb&.......}
+        , pattArray // access to mapping entity info from cond model fields name .= step.values.excel[entity].model pattArray={itema-regexa&itemb-regexb&.......} 
 
     ) {
         // 24102020 : rivedere i campi di matching nel .param cosi come suggerito in master_df_builder... in : logic di addMatcRes()
@@ -566,7 +566,7 @@ let vfwF = {// framework functions module used in convo obj
                 else // no std matcher , entity will be stored on var ASWG , can depend from type (?)
                 if (storemat.type == 'Ent') rT = 1;
                 else if (storemat.type == 'Int') rT = 2;
-                else if (storemat.type == 'Cur') rT = 3;// Cur or param or query 
+                else if (storemat.type == 'Query') rT = 3;// Cur or param or query 
     
                // console.log(' result should be a string :', isStatic && rT == 1);
 
@@ -586,6 +586,7 @@ let vfwF = {// framework functions module used in convo obj
                 if (isVal&&rT==0) {// the entity is a value got with external , here unkown, matching model( item is the regex match value)
                     // , no ASWG support
                     mv.match = mv.vmatch=storeVal;// storemat;// 'value'
+                    mv.matched='match';
                     mv.mid=0;// register under values.matches.entity=itemvalue
                     //mv.mid = 0;// dont use this, usable to see if is match is good (mid>0) 
                     // use storeval x  ??
@@ -597,7 +598,7 @@ let vfwF = {// framework functions module used in convo obj
 
 
                         // GET the result Type 
-                        mv.match =mv.vmatch = storemat;mv.mid=storeMId;
+                        mv.match =mv.vmatch = storemat;mv.mid=storeMId;mv.matched='match';
                         // no mv.matched='match' ? 
                     } else // a non static matcher (db call) will provide the entity match obj
                         if (rT == 1) {// we must set a Ent entities from Ent api storemat in a convenient var: ...............
@@ -611,40 +612,112 @@ let vfwF = {// framework functions module used in convo obj
 
                         let setSt=mv;// no more : setSt_(entity)||mv;// std : attach in mv ( the entity of the condition )
 
-                        let EntMod=setSt.entity=storemat;//the row matching with std model + bl
+                        let EntMod=setSt.entity=storemat;// VAL with match set in convo
                         // the std format matching entity fields :
                         // alredy done in matcher mv.entity.match=storemat.value;mv.entity.vmatch=storemat.descr;
                         // like was a value to get with a regex , copy down to event model mv ( launching the db rest , in realta e' event binario matcha o no il db query !)
 
+                        if (EntMod.matched) setSt.matched = EntMod.matched; else if (setSt.match) setSt.matched = 'match';
+
+                        let row;
 
                         //  EntMod=storemat comes from a entity type  matcher doing a  service call, so meets ASWQ entity matcher interface   see reference in dynMatch() service helper
-                        if( EntMod.rows.value){// a simple entity because row contains value field, row can be in std db format ( have bl  fields oltea a patt e descr )
-                            setSt.match=EntMod.value;
-                            if( EntMod.descr)setSt.vmatch=EntMod.descr;else setSt.vmatch=setSt.match;
-                            
-                            // bl fields can be recovered by vars.matches[].someblfiled
-                            // the event binary result , alredy filled ?
-                            
+                            if (EntMod.rows.value) {// rows={value,,,} nota array , a simple entity because row contains value field, row can be in std db format ( have bl  fields oltea a patt e descr )
 
-                        }else{// complex ent : in row is not present value field . there are more entity (each with  only its key/name)
-                            EntMod.type='Ent-Vector';//   mark complex ent type='Ent-Multi' , ex row={color,size:}
-                            //   extract main entity matching from fields described in model  pattArray = step.values.excel[entity].model pattArray={itema-regexa&itemb-regexb&.......}
-                        if(pattArray&&pattArray.value){
-                            // error pattarray is a string !!
+                            row=EntMod.rows;// rows is row
+
+
+                            } else {
+                                row=EntMod.rows[0];
+                            }
                             
-                            // that will say what is main entity, if there is one 
-                            // say where is the entity in row obj  . run eval like convo looseJsonParse(), temporarely treat like a field :
-                            // make easy: pattArray.value  = 'x.y.z'
-                            // xeval='X.'+ pattArray.value+';' so something like match=looseJsonParse(xeval,context=EntMod)
+                                                            // better use an alredy set match at entity level ? 
+                                if (EntMod.match) {
+                                setSt.match = EntMod.match;
+                                setSt.instance =EntMod.instance;// must be set 
 
-                            // temp :suppose  just a string as the property of EntMod:
-                            // if pattArray.value is string :
-                            // ex $%amod:value-pippo&descr-caio  will set matchers.match=row.pippo and matchers.vmatch=row.caio
-                            EntMod.match=EntMod.row[pattArray.value];
-                            if(pattArray.descr)EntMod.vmatch=EntMod.row[pattArray.descr];else   EntMod.vmatch=EntMod.match;
+                                }
+                                else {// set match here 
+                                    let stdval=false;// the first item row
+                                setSt.instance =row;// x convenience ,  a instance result independent from model type 
 
-                        }else EntMod.match='?';// no main entity .match will be extracted from .row  by following ask custom field/ onchange  from matches.supportingmodel.entity !!
-                        // no : EntMod.matched=null;// match val  not found
+                                
+
+                            
+                                let ival,mapval;
+                                //   extract main entity matching ,mapval, from fields described in model  pattArray = step.values.excel[entity].modelpattArray={value-mapval&itemb-regexb&.......}  > get value mapval
+                                if (pattArray) {// pattArray={value-mapval&itemb-regexb&.......}  > get value mapval
+                                    // error pattarray is a string !!
+                                    // so 
+                                    
+                                    if((ival=pattArray.indexOf('value'))>=0){
+                                            mapval=pattArray.substring(ival+6);
+                                            if((ival=mapval.indexOf('&'))>=0)mapval=mapval.substring(0,ival);
+                                        
+                                    }
+
+
+                                                                
+                                if(mapval){// complex ent : in row is not present value field . there are more entity (each with  only its key/name)
+                                EntMod.type = 'Ent-Vector';//  the row contains also bl fields .  mark complex ent type='Ent-Multi' , ex row={color,size:}
+
+
+
+
+
+
+
+                                    /*
+                                    if (pArray) itr1 = Object.getOwnPropertyNames(pArray);
+                                    else {
+                                        // TODO TODO todo : do the same on mod_feature branch
+                                        if(pattArray.length>7&&pattArray.charAt(0)=='{'&&pattArray.charAt(3)=='}'){// set x,y
+                                            itemSep=pattArray.charAt(2);nameSep=pattArray.charAt(1);
+                                            pattArray=pattArray.substring(4);
+
+
+
+                                        }}
+                                        */
+
+
+
+
+
+
+
+
+
+                                    // that will say what is main entity, if there is one 
+                                    // say where is the entity in row obj  . run eval like convo looseJsonParse(), temporarely treat like a field :
+                                    // make easy: pattArray.value  = 'x.y.z'
+                                    // xeval='X.'+ pattArray.value+';' so something like match=looseJsonParse(xeval,context=EntMod)
+
+                                    // temp :suppose  just a string as the property of EntMod:
+                                    // if pattArray.value is string :
+                                    // ex $%amod:value-pippo&descr-caio  will set matchers.match=row.pippo and matchers.vmatch=row.caio
+                                    EntMod.match = row[mapval];
+
+                                    // future use 
+                                    // if (pattArray.descr) EntMod.vmatch = EntMod.row[pattArray.descr]; else EntMod.vmatch = EntMod.match;
+
+
+                                } else{
+                                    stdval=true;
+    
+                                } // EntMod.match = '?';// no main entity .match will be extracted from .row  by following ask custom field/ onchange  from matches.supportingmodel.entity !!
+                                // no : EntMod.matched=null;// match val  not found
+                            }else{stdval=true;
+   
+                            }
+
+                            if(stdval){// set the value field as bl match 
+                                setSt.match = row.value;
+                                if (row.descr) setSt.vmatch = row.descr; else setSt.vmatch = setSt.match;
+                                // bl fields can be recovered by vars.matches[].someblfiled
+                                // the event binary result , alredy filled ?
+
+                            }
 
                         }
                         // redirect mng 
@@ -704,6 +777,7 @@ let vfwF = {// framework functions module used in convo obj
                          // alredy done in convo !! if(mv.matched=='match')mv.match =mv.vmatch=entity;else mv.match=null;
 
                           //  mv.match = null;
+                          if(setSt.intent.complete)setSt.complete=setSt.intent.complete;
                         } else if (rT == 3) {// query cursor : very like to intent case
                           // ASWG  support let EntMod=key.masterQ,// was param in dyn_medicine
                           // ......
@@ -719,7 +793,10 @@ let vfwF = {// framework functions module used in convo obj
 
                                                 // like was a value to get with a regex , copy down to event model setSt ( launching the db rest , in realta e' event binario matcha o no il db query !)
                        // see format. reference
-                       setSt.match=setSt.vmatch = setSt.param.match;
+                       setSt.match=setSt.vmatch = setSt.param.match
+                       setSt.matched=setSt.param.matched||'match';// or copy setSt.param.matched
+                       setSt.instance=setSt.param.instance;// needed ???
+                       if(setSt.param.complete)setSt.complete=setSt.param.complete;
 
                         } else  mv.vmatch = null;// do no set matchers
                 }// ends a finit dimension entity
@@ -734,20 +811,32 @@ let vfwF = {// framework functions module used in convo obj
             //if (isVal) 
             {// anyway
 
-                if (param && param.cursor) {  // desire entity selection see above 
+                if (mat&&param && param.cursor) {  // desire entity selection see above 
                     /* - set inside these fields :  param={
                                                         match:,vmatch:,selmatched:,
                                                         group:{sel:{item: param.cursor.rows[storeMId]}}
 
                         -  attach param to model ( AND to this normal ask ? )
                             mv.param = param;
-                            ask.param = param;
+                            (ask.param = param;)
                     }*/
                     
-                    // this condition is selecting on cursor param set by a desiredE dyn ask : param=step.values.askmatches[desiredE].param
-                    // the model that matches the cursor has the same  name as this desiredE ask :
+                    // review 012021
+                    // >> this condition is selecting a desideredE unselected model using its cursor param set : param=step.values.(ask)matches[desiredE].param 
+                    // building a inline condition model the current run time model 
+
+                    // 
+                    // the inline model set on matches.nameofthemactingmodel ( if not specified by $$desideredE:> nameofthemactingmodel)  that matches the cursor 
+                    //      has the same  name as this desiredE model attached to a ask model askmatches.desideredE.:
+                    //      nameofthemactingmode=entity and the match value is the value of the desideredE matched 
+                    //      so we attached also a instance :
+                    //      matches.nameofthemactingmodel.instance=(ask)matches.desiredE.query/param.rows[correspondingIndex]
+
+                    // ?? 
                     // NB in this case the model that matches is 'created' here: entity =previous.collect.key , the name of this ask in testing
                     //      so is not the name of a declared model in excel ! or in line condition : &&model:....
+
+
 
                     /* remember what said in bot.js onchange :
                     the cursor can be passed to a resolver ask that will find a single match , so will complete the setting of :
@@ -765,23 +854,40 @@ let vfwF = {// framework functions module used in convo obj
                     // param=step.values.askmatches[desiredE].param
 
                     // UPdate the desire query param ( so add a match and a sel)
-                    let isMasterQ;
+                    let isMasterQ;// the model is a query , not intent
+                    let rows=param.rows||param.cursor.rows;// prefer param.rows
                     if(param.group)
-                    if(param.cursor.rows)isMasterQ=true;else isMasterQ=false;// otherwise is isIntent
+                    if(param.intents)isMasterQ=false;else isMasterQ=true;// otherwise is isIntent
                     // set context staff to mark a selection was done ( probably would to be move position of selected item as first position )
                     let mName,mVname,instance;// the matching itemname and vname
-                    if(isMasterQ){instance=param.cursor.rows[storeMId] ;// 
-                        param.group.sel ={
-                        item: instance,matched:mv.matched // ERRDS: ERROR ! should be used storemat  to calc storeMId as : param.cursor.rows[storeMId].value=storemat (as resModel[storemat] describes rows[storeMId]]!) 
-                        //,index:blRes
+                    if(isMasterQ){
+                        
+                        if(rows){
+                            instance=param.rows[storeMId] ;//
+                            mName=param.match=param.rows[storeMId].value;
 
+
+                            // copy of group.sel
+                            param.instance=param.rows[storeMId];// convenience
+                            param.index=storeMId;
+
+                        }else if(param.rows&&param.rows[storeMId]){// delete !
+                            instance=param.rows[storeMId] ;//
+                            mName=param.match=param.rows[storeMId].value;
+
+                        }
+                        if(mName!=storemat)console.error(' addMatRes, setting desire query selecting , found error in array indexing ');
+                         
+                        param.group.sel ={
+                        item: instance,matched:'match'//mv.matched // ERRDS: ERROR ! should be used storemat  to calc storeMId as : param.cursor.rows[storeMId].value=storemat (as resModel[storemat] describes rows[storeMId]]!) 
+                        //,index:blRes
+                        ,index:storeMId
                         };// index storeMId refears to cursor.rows index not to table/data index !! so take care ! 
-                        mName=param.match=param.cursor.rows[storeMId].value;
                         if(instance.descr){mVname=param.vmatch=instance.descr;// ? or vname ??
  
                         }
 
-                    }else {
+                    }else {// is intent
                         instance=null;
 
                         //instance=param.intents[storeMId];// WARNING  ::::::::::::::TODO     better use the value/name and storemat to get the corrispondence !!!!!!! so also in Query case !!!!
@@ -822,13 +928,13 @@ let vfwF = {// framework functions module used in convo obj
 
                     //  its match value will copy the name of selected desidere item ! ( not the item name of run time selector model )
                     if(mVname)mv.vmatch = mVname;// pass in param ??
-                    mv.match= mName;//param.group.sel.item.name ;// reset , in convo just set intents[0].name . set also if selector is not run
+                    mv.match= mName;//should alredy set as storemat ! , param.group.sel.item.name ;// reset , in convo just set intents[0].name . set also if selector is not run
                     mv.instance=instance;// convenience reference. set also if selector is not run ,
                     mv.matched='matched';  // todo set 'best' if we got manyresult and still to select  means that anyone can take this as a selected value instance 
 
                     ///* ?????????
                     // attach param/intent to entity=selector of model param/intent( AND to this normal ask ? )
-                    if(isMasterQ)// if mv different then desidered
+                    if(isMasterQ)// if mv different then desidered :  $$desidered:>mv copy complex model desidere in mv status  (mv.intents/param)
                     mv.param = mv.param||param;//  , param is just take as mv=desiredE.param in convo, where desired can be ask or also a model . so if is a ask here add a model of same name 
                     else
                     mv.intent= mv.intent||param;

@@ -49,15 +49,20 @@ let fsmfactory = {
             console.log('application endpoint begin_def called. def thread called for cmd : ', cmd,', request: ', request);
 
         },
-        post:function(action, vars, session, request) {// request is a qs : ?ask=pippo&colore=giallo  (actionurl,convovars,session,req);
+        post:async function // >>>>>>>>>>    122020 ok async and await transaction ????
+                            //               Still to implment async res returing  like matchers services/adapters !!!!!
+
+        (action, vars, session, request) {// that is like the post middleware on express. will deliver req (qs+session+uri) to uri post ctl 
+                                                        // request is a qs : ?ask=pippo&colore=giallo  (actionurl,convovars,session,req);
+                                                        // in future use a middleware package  to organize and dispatch functions chains on req 
             let log_='post-action:'+action+'-request:'+JSON.stringify(request)+'-session:'+JSON.stringify(session);
             botstatus.log.push(log_);
             //logger({user:session.user,text:log_},'post','');
-            transaction(action, vars, session, request);
+            await transaction(action, vars, session, request);
             console.log('application endpoint post called. session : ', session, '\n vars ', vars);
 
         },
-        post_aiax_fw_chain:function(action, vars, session, request) {
+        post_aiax_fw_chain:function(action, vars, session, request) {// a post returning just the data, the next page/thread/ask is managed by dialog fw like local  spa browser tech  
             // here we implement a middleware organized by rooting level (ctl/app routing) and adapter to interface ext service (ve)
             // that will receive and respond data in model format to onchange that use model and directive fw support 
 
@@ -67,8 +72,18 @@ let fsmfactory = {
     }
 }
 }
-function transaction(action, vars, session, request) {// web server routing sys session = app user status; vars=app user view status
+ async function // >>>>>>>    122020 ok async and await transaction ????
+ 
+ transaction(action, vars, session, request) {// web server routing sys, will deliver eq to its uri/action ctl , here using a case 
+                                                    //   session = app user status; vars=app user view status
     // will work on session and less on vars (i/o)
+
+    if (action == 'simplybooking') {// in construction , see present implementation on plugin.ai.book
+        // realy not a poist but a aiax  (returns just context not page/template or routing info  )temporarely implemented as ai.book service
+        
+        return require('./simplybookingAiaxCtl.js')(vars,request);// a promise
+
+    } else
 
     if (action.length > 5 && action.substring(0, 4) == 'tour') {
         let action_ = action.substring(5);

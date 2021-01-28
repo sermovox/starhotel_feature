@@ -849,7 +849,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
                         let condition = paths[pp];
 
                         if (condition.type && (condition.type === 'regex'||condition.type.substring(0,5) === 'macro')) {
-                            if (condition.pattern.substring(0, 2) == '$$' || condition.pattern.substring(0, 2) == '$%') {
+                            if(( (condition.pattern.substring(0, 2) == '$$' || condition.pattern.substring(0, 2) == '$%') )&&condition.pattern.charAt(2)!='$'){
                                 
 
                                 let itr = condition.pattern.indexOf(':'),str=2;

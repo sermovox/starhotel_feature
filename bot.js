@@ -97,12 +97,13 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
     debug: true,
     port:wsPort,
     webhook_uri: '/api/messages',
-    webserver,// take webserver alredy config , comment if want to ler controller to create http and webserver 
+    webserver,// take webserver alredy config , if not provided the controller will create internally a http and webserver 
     adapter: adapter,// in configureWebhookEndpoint() will tie post webserver endpoint ( webhook_uri) handler  to adapter that will use bot to process req then use res to sent response
                     //      webserver.post(webhook_uri, (req, res) => {...        this.adapter.processActivity(req, res, logic=this.handleTurn.bind(this))   ; nb  this=controller
                     // then add as plugin  usePlugin(this.adapter), so when controller is ready in controiller.ready(handler) ????????really????  call adapter.init(controller) to add websocket using controller.http
                     //      adapter.createSocketServer(controller.http,optn, controller.handleTurn.bind(botkit)); but if controller.http is not set as webserver is provided , i have to call manually  see TYU
     storage
+    // ,adapterConfig:{path:'/x'}
 });
 let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 
@@ -126,7 +127,8 @@ console.log('*** instantiating Botkit CMS');
 ///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
-const xmpp_on=true;
+// const xmpp_on=true;
+const xmpp_on=false;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
@@ -250,9 +252,23 @@ if(process.env.QeATrain)qea=require('./nat/qea.js') // a function (interface) = 
 
 let nlpai;
 
-if (process.env.NLPAI) {// local ai service to inject: some endpoint x each interface nlpjs,duck,qea . following the factory initiated with nlpjs,duck,qea config obj 
-                        // qea engine is injected 
-    nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'},qea:{url:null}});// in matcher macro url= service://plugins.ai.duck.datetime?qs
+if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to inject: some endpoint x each interface nlpjs,duck,qea . following the factory initiated with nlpjs,duck,qea config obj 
+                        // ex  : qea engine is injected 
+                        // usually all end point (also called adapter ) serves a same matcher type , so implements its interface mr={reason,rows}
+    // nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'},qea:{url:null}
+    nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:process.env.NLPAI_DUCK},duck:{url:process.env.NLPAI_DUCK},qea:{url:null}
+    
+    
+    ,bookApp:{url:null}// {url:null} is the init param x a set of some matcher type (query) endpoint build process defined in builder (builder=require('./nat/nlpai')(jrest,qea) )
+                    // usually the set is a obj containing endpoint/adapters connecting a rest server of some related data to make available in fw as complex model 
+                    // the endpoint returns mr obj containing the val data x the matcher mr={}reason,rows=val}
+                    // so the endpoint is a 'adapter' use some rest interface to simulate a post controller returning a complex model  
+                    // assuming registering this services as 'ai' plugin,  the adapter can be called in a condition macro using directive:  
+                    //        "url":"service://plugins.ai.book.....anAvailableAdapter
+                    // nb book is better port to app controller 
+}
+    
+    );// in matcher macro url= service://plugins.ai.duck.datetime?qs
     // NO  :    ai.nlpai={url:'service://data',agents:[{data:manager.process}]};// nb url can be ovewrite in .dir or excel 
     // because like witai the api is in a http end point or we must set a local interface , usually as plugin , so create a plugin 
 }
@@ -350,11 +366,14 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
             await bot.cancelAllDialogs() ;
            
            });
-           controller.interrupts('\b%%exit-ok','message', async(bot, message) => {
-            // when the bot ends the dialog send %%exit-.... the sys answer %%exit-ok but the convo alredy died so this interrupt will cancel nothing   
-           /// verificare che non serve rispondere  await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');
-           /// verificare che non serve  await bot.cancelAllDialogs() 
-           await bot.cancelAllDialogs() ;
+           controller.interrupts('\b%%exit-ok','message', async(bot, message) => {// the pbx puo' rispondere al bot confermando che chiuderà  , ma il bot oramai ha chius tutto cosi non si tiene conto del input 
+            // when the bot ends the dialog send %%exit-.... the voip sys answer %%exit-ok but the convo alredy died so this interrupt will cancel nothing   
+           /// verificare che non serve rispondere  await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');// ma invece sembra che faccia un eco !?
+           //               tuttavia cosa succede se ho un webhook ?? cosa si risponde ?? un msg dummy? e' necessario esplicitare un bot.reply() ? 
+           /// verificare che non serve  await bot.cancelAllDialogs() :
+            // await bot.cancelAllDialogs() ;
+
+            //  >> forse e' meglio che il sys non risponda al bot %%exit-ok, solo esegua l'abbattimento della call !
            });
 
         //let color='colazione_dyn',myscript='room',myth='default';

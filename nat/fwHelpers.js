@@ -1983,7 +1983,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     
         }, //end rest__
         
-        run_jrest: async function (url, formObj, method,head) {// see chart 112020
+        run_jrest: async function (hostqs, formObj, method,head,step) {// see chart 112020 
 
             // - service:// : check if can route to internal controller put in this ( service extension)
             //          service://dbmatch  : route to service://plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
@@ -1997,6 +1997,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             // method='GET'   accept formObj map instead of qs 
 
 
+
+
+            // let hostqs= getHost(url);// evaluate $model matchee in qs  ! 
+            let url=hostqs.url;
+
+
             if (true) {
                 //let form;// wrk var 
                 let mr;//   return
@@ -2006,18 +2012,18 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                     // for now  can be only app://localhost?qs
 
                     let host, qs;// host is action on a ctl  !
-                    let hostqs;
-                    if ((hostqs = getHost(url)) && (host = hostqs.host)) {
-                        // ex service://service.plugins.apluginctl/date?term=1 >
-                        // host = service.plugins.apluginctl
+
+                    if (hostqs  && (host = hostqs.host)) {
+                        // ex service://plugins.apluginctl/date?term=1 >
+                        // host = plugins.apluginctl
                         // uri =service_function=date , qs ='term=1'
-                        let qs = hostqs.qs;
+                        let qs = hostqs.qs,qs_=hostqs.qs_;
 
                         //
                         let myf;
                         if(host=='localhost'){
                             host='plugins.app';
-                        let lev = host.split('.');// lev=['service','plugins','apluginctl']
+                        let lev = host.split('.');// lev=['plugins','apluginctl']
 
                         if (lev) lev.forEach((element, i) => {
                             if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
@@ -2031,19 +2037,29 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                             // pass qs in url into form if form is null
 
                             let form = formObj ;// will be vars ( + session !)
-                            form.qs=querystring.parse(qs);//add qs : action/url + form request x 
+                            form.qs=qs_;//add qs : action/url + form request x 
 
                             // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
 
                             // GENERAL RULE if the result do not have .reason  embedd it !!! 
-                            mr=await  myf(form);
+                            mr=await  myf(form);// ERROT to code ......
+                            /* see app.js myf={post:function(action, vars, session, request){},,,,}  
+
+                                so if a obj ,we must call myf.post , then extract from session the rows we return to fw that will use to det the action to returns from condition !!!!!
+                                 nb post will update/set session, like session.curprocess  ,  the redirect / next gotothread !!! 
+
+                            */ 
+
                            // mr = {reason:'runned/err',rows:await myf(form)};// .catch {reason:err,null} 
                            // in this special case rows={redirect:'name',action:'repeat/next/begin....'}
                         }
                     } 
 
-                    let response = await this.run_rest(url, formObj, method,head);
-                    if (response) return {reason:'runned',rows:JSON.parse(response)};
+                    if(mr)console.log(' service run_jrest(url=',url,') returning from registered app :  {reason:',mr.reason,',rows = Entity/[]format } =',mr);// service runned
+                    else console.log(' service run_jrest(url=',url,') returning NULL from registered app ');// not found serevice
+                   return mr;
+                    
+
                 } else 
 
                 if (url.substring(0, 10) == 'service://') {// :service//dbmatch'
@@ -2062,72 +2078,34 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         .catch(error =>{ // seems not to thrown if got in previous catch . in this case result mr is null and the thread goon as we didnt have error
                             console.error('  .catch because the promise was rejected mr null , returning from rest service request :  returns:',mr,',error: ',error);});
 
-                        // mr={reason,rows:[{},,,]}
-                        let mm;if(mr.reason=='runned'&&mr.rows&&mr.rows.length>0){
+                        // required : mr={reason,rows:[{entity1},,,]}
 
-                            // rows must be a array 
-                            
-                            mm='match';
-                            if(formObj.sel_ctx){// is a query 
-                                    /*
-                                    if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
 
-                                    // like qea intent add context to support  process selection in a selector thread:
-                                        cursor:{resModel: {value1=rows[0].value:{ 
-                                                                                            patt:rows[0].patt // a regex ? or just like vname
-                                                                                            vname:vname0=rows[0].value
-                                                                                            },,,
-                                                                                },
-                                                                    medSyntL:[vname0,vname1,,,]// to list all items
-                                                                    },
-                                        group:{sel:{item:this.intents[0]}
-                                    */
-
-                                   let resModel={},medSyntL=[];
-                                mr.cursor={
-                                       // rows:res.rows,  ??
-                                    resModel,medSyntL} ;// data useless, rows is enougth. 
-                                                                    
-                                   /*
-                                   resModel={val1:{
-                                       patt:regexstr,
-                                       vname:'pippo' // set as array also in medSyntL x list in template
-                                       }
-                                   }*/
-
-                                res.rows.forEach(function(v,i){
-                                    let vname;
-                                    if(v.vname)vname=v.vname;
-                                    else vname=v.value;// usually should be a vname key
-                                    
-                                    medSyntL.push(vname);
-                                    
-                                    resModel[v.value]={patt:v.patt,vname:vname}});// calc matching [rows], then returns rows [] with just some cols (1:name)
-
-                                mr.group={sel:{item:mr.rows[0]}};
-                            
-                            }
-                        }
-
-                        // >>>>>>   EMBED rows result in a obj with minimum meta as requested by Entity Matcher 
-                        mr.rows={matched:mm,type:'?',rows:mr.rows};// must be mr={reason,rows={matched,,,,rows={}}} because mr.rows must be in entity matcher type 
+                        // >>>>>>   enrich VAL=ROWS   : set rows the std format x 
+                        mr.rows={objMod:true,// good format 
+                            matched:mm,type:'?',rows:mr.rows
+                        // complete:'match','miss','incomplete',,,,
+                        // cursor: set by run_jrest
+                        // group:  set by adapter
+                    
+                        };// must be mr={reason,rows={objMod:true,matched,,,,rows={}}} because mr.rows must be in entity matcher type 
                                              
                         // call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows,reason} reason  'err' or 'runned'
 
-                    } else {// std service interface (no specific case of service://dbmatch) , search a this.service_function to act like a rooted express ctl service://service_function 
+                    } else {// >>> STD service interface (no specific case of service://dbmatch) , search a this.service_function to act like a rooted express ctl service://service_function 
                         // infact service is a bunch of : functions|amapwithfunctions_or_amapofsomemapwithfuncion !
                         // usually service={,,,,f1,f2,f3,plugins:{p1,p2,,,}} so we must find fx or px (url='service://plugins....', )
 
                         let host, qs;// host is action on a ctl  !
-                        let hostqs;
-                        if ((hostqs = getHost(url)) && (host = hostqs.host)) {
-                            // ex service://service.plugins.apluginctl/date?term=1 >
-                            // host = service.plugins.apluginctl
+                        
+                        if (hostqs && (host = hostqs.host)) {
+                            // ex service://plugins.apluginctl/date?term=1 >
+                            // host = plugins.apluginctl
                             // uri =service_function=date , qs ='term=1'
-                            let qs = hostqs.qs;
+                            let qs = hostqs.qs,qs_=hostqs.qs_;
 
-                            let lev = host.split('.');// lev=['service','plugins','apluginctl']
+                            let lev = host.split('.');// lev=['plugins','apluginctl']
                             let myf;
                             if (lev) lev.forEach((element, i) => {
                                 if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
@@ -2141,26 +2119,47 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                                //  let form = formObj || querystring.parse(qs);
                                 // better add :
-                                formObj=formObj ||{};let form;
-                               if(qs) form=Object.assign(formObj,querystring.parse(qs));else form=formObj;
+                                let form=formObj=formObj ||{};
+                               // if(qs) form=Object.assign(formObj,querystring.parse(qs));else form=formObj;
+                               if(qs) {form.qs=qs_;// insert qs into form.qs
 
+                                // insert in qs some var obj if key='$vars.......'  
+                                insVars(form.qs,step);//  let vars = step.values;
+                               }
                                 // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
                                 // GENERAL RULE if the result do not have .reason  embedd it !!! 
                                 mr=await  myf(form);
-                               // mr = {reason:'runned',rows:await myf(form)};// .catch {reason:err,null} // embed reason if needed 
+
+                                // check format 
+                                if(mr.rows&&mr.rows.objMod){// surely the interface adapter returns a well format matcher result obj , goon 
+                                        ;
+                                }else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
+                                    // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
+                                    if(Array.isArray(mr.rows)){
+                                        mr = {reason:'runned',rows:{rows:mr.rows,objMod:true}};// .catch {reason:err,null} // embed reason if needed 
+
+                                    }else if(typeof (mr) === 'string') {// atomic value
+                                            // future use 
+                                            mr=null;
+                                    } else mr=null;
+
+                                }
+
+
+
+
+                               
                             }
 
                         } 
-                    }
-                    if(mr)console.log(' service run_jrest(url=',url,') returning from rest service request :  {reason:',mr.reason,',rows = Entity/[]format } =',mr,
-                    '\n  entity.rows([])  if no complex ( +entities)  the better format for entity item  is db view std format ( value,descr,patt, blfields) ');// service runned
-                    else console.log(' service run_jrest(url=',url,') returning NULL from rest service request  ');// not found serevice
-                   return mr;
+                    
+
+
                 } else
 
                     if (url.substring(10, 16) == 'custom') {// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
                         form = { entity, term, wheres, meta };// excel is debug param, usually is in the service
-                        let mr, custserv;
+                        let  custserv;
                         // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         if (!url.charAt(6) == ':') return false;
                         custserv = url.substring(7);
@@ -2187,15 +2186,75 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                         // std POST REST 
 
-
+                        // is required the http returns :
+                        // - a array of row ( in std format , ) ( a query matchers ) 
+                        // - or if returns a obj must be in std format )
                         let response = await this.run_rest(url, formObj, method,head);
-                        if (response) return {reason:'runned',rows:JSON.parse(response)};
+                        if (response) {
+                            mr=JSON.parse(response);
+                                // check format 
+                                if(mr.rows&&mr.rows.objMod){// surely the interface adapter returns a well format matcher result obj , goon 
+                                    ;
+                            }else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
+                                // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
+                                if(Array.isArray(mr.rows)){
+                                    mr = {reason:'runned',rows:{rows:mr.rows,objMod:true}};// .catch {reason:err,null} // embed reason if needed 
+
+                                }else if(typeof (mr) === 'string') {// atomic value
+                                        // future use 
+                                        mr=null;
+                                }
+
+
+
+                            return {reason:'runned',rows:JSON.parse(response)};
+                        }
                     } else {
                         // look for a custom rest adapter 
                         //  if(fwCb.model[entity].matcher)cb(await fwCb.model[entity].matcher);
-                        return false;
+                        return {reason:'err',rows:null};
                     }
-                return false;
+
+                    if(mr){
+
+                        // in case of std format check if exists  rows and is  array so add cursor x selection 
+                        let mm;if(mr.reason=='runned'&&mr.rows.objMod&&mr.rows.rows.length>1){// is probably  query matcher ( seldom entity) 
+
+                            // rows must be a array 
+                            
+
+                            
+                            mm='match';
+
+
+                            if(formObj.sel_ctx){// is a Entity query , so if not provided by query engine , build selector instruction for fw . intents will have its proper method 
+                                    /*
+                                    if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
+
+                                    // like qea intent add context to support  process selection in a selector thread:
+                                        cursor:{resModel: {value1=rows[0].value:{ 
+                                                                                            patt:rows[0].patt // a regex ? or just like vname
+                                                                                            vname:vname0=rows[0].value
+                                                                                            },,,
+                                                                                },
+                                                                    medSyntL:[vname0,vname1,,,]// to list all items
+                                                                    },
+                                        group:{sel:{item:this.intents[0]}
+                                    */
+                                   setSelectData(mr);
+
+                            }
+                        }
+
+
+                        console.log(' service run_jrest(url=',url,') returning to matchers from rest service request :  {reason:',mr.reason,',val=rows = [Entity1,,,]/{[Entity1,,,],cursor,group,complete} =',mr,
+                    '\n  EntityX  if no complex ( +entities)  the better format for entity item  is db view std format ( value,descr,patt, blfields) ');// service runned
+                }else {console.log(' service run_jrest(url=',url,') returning NULL from rest service request  ');// not found serevice
+                mr= {reason:'err',rows:null};
+            }
+                   return mr;
+
+                    
 
             }// ends if true
 
@@ -2301,6 +2360,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 if (entDir && entDir.url)
                     url = entDir.url;// get url from excel
 
+                let hostqs= getHost(url,vars.matches);// evaluate $model matchee in qs  ! 
+
                 console.log(' service:intMatch, a type Int API matcher , queryng ai agent service  url : ', url, ', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ', entity, ' , key  ', key);
 
                 let isGET = 'GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
@@ -2350,6 +2411,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                     //       url=service://plugins.intentai.res_intent // intent interface is added as plugin !
 
                     if (url.substring(0, 8) == 'https://') {// a) : direct interface ,
+
                     if (this.ai) {// a) : direct interface , 
 
                         // get specific agent connection info from this.ai for each possible endpoint:
@@ -2371,8 +2433,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
-                            // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer duty  
-                            let ag, agi, tk; if ((agi = url.indexOf('?v=')) > 0) { ag = url.substring(agi + 3); tk = this.ai.witai.agents[ag]; }
+                            // pass in meta the name of mapping db resource because in debug we pass this data from here instead to let caller to resolve this data layer processing staff 
+                            let ag, agi, tk; if ((agi = url.indexOf('?v=')) > 0) { ag = url.substring(agi + 3); tk = this.ai.witai.agents[ag]; }// get token x this special case
 
                             if (tk && isGET == 'GET') {// must be , sborone
 
@@ -2387,7 +2449,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                     form = { v: ag, q: term };
                                 }
                                 let head = { Authorization: 'Bearer ' + tk };
-                                let mr = await await this.run_jrest(url, form, isGET, head);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                                let mr = await await this.run_jrest(hostqs, form, isGET, head);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                                 //  // returns  res={rows,reason} reason  'err' or 'runned'
                                 if (!(mr && mr.reason == 'runned' && mr.rows.intents)) return false;
                                 else {
@@ -2397,6 +2459,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                 }
                             }// ends GET
                         }// ends witai agent
+
                     }else return false;// ends here direct agent calls
 
                 }else{// set here the intent service interface provided as plugin 
@@ -2433,9 +2496,15 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         >>>>>  so  addMatchRes  will store qea the same as it was a intent  ( similar anyway to entity, just that in entity matcher the where are flattened in the row and not in entities:[{},,,])
 
                     */
-                    let wheres= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
-                    let form={entity,term,wheres};// excel is debug param, usually is in the service
-                        let  mr=await await this.run_jrest(url,form,true);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                  // let {wheres,wheresInst}= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+                   let wheres,wheresInst,fwh;
+                   fwh= findWhere(excel[entity],vars);                  // exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+                   if(fwh){if(fwh.wheres)wheres=fwh.wheres;
+                       if(fwh.wheresInst)wheresInst=fwh.wheresInst;
+                   }
+ 
+                   let form={entity,term,wheres,wheresInst};// excel is debug param, usually is in the service
+                        let  mr=await await this.run_jrest(hostqs,form,true);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                         if(!mr||mr.reason!='runned'||!mr.rows)return false;
                         else {
@@ -2484,7 +2553,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
-            return dynMatch(term,cmd,key,entity,step,cb,true);// isQuery=true , added to run query too, nb query now run only with url=service://dbmatch
+            return this.dynMatch(term,cmd,key,entity,step,cb,true);// isQuery=true , added to run query too, nb query now run only with url=service://dbmatch
 
 
         },
@@ -2572,9 +2641,11 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 }
                 if(wc==0)wheres=null;
                 *////////////
-
-                let wheres= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
-
+                let wheres,wheresInst,fwh;
+                fwh= findWhere(excel[entity],vars);// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+                if(fwh){if(fwh.wheres)wheres=fwh.wheres;
+                    if(fwh.wheresInst)wheresInst=fwh.wheresInst;
+                }
 
             // isDb_Aiax use local rest db interface ORM , to put in a module 
             // schema_url: the name of entity entry point in rest db interface
@@ -2623,7 +2694,10 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             if(entDir&&entDir.url)
                 url=entDir.url;// get url from excel
 
-                console.log(' service:dynMatch, a type Ent API matcher , queryng service url : ',url,', will returns true and callingback with first matching row or returns false \n will use json condition directive dbmeta or excel dbmeta x entity ',entity,' , key  ',key);
+                let hostqs= getHost(url,vars.matches);// evaluate $model matchee in qs  ! 
+
+                console.log(' service:dynMatch, a type Ent API matcher , queryng service url : ',url,', will returns true and callingback with first matching row or returns false \n form={entity,term,wheres,meta,whMmeta} so will use also json condition directive meta/dbmeta or excel meta/dbmeta x entity,\n service requesting Entity: '
+                ,entity,' , key:  ',key, ', wheres recovered from directives : ',wheres,' , its instances : ',wheresInst);
 
             let isGET='GET';// from the url format we can tell it, for example we put a ? in get  url :   localhost/echo?
             // if(url&&url.slice(-1)=='?')isGET=true;// url end with '?' means goon with a get request !!!
@@ -2644,7 +2718,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
             */
 
-           meta=getMeta(excel,dir,entity,key);// seems done : TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT/get off / discard !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           meta=getMeta(excel,dir,entity,key);// seems done : TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT/get off / discard !!!!!!!!!!!!!!!!!!!!!!!!!!!! > cioe eliminare il level .asks, sembrafatto
 
             // relations :
             let whMmeta={};// as this is an entity matcher the schema is find in escel.model (too hard to put in macro ???)
@@ -2657,10 +2731,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
             }
 
-            let form={entity,term,wheres,meta,whMmeta
-            ,isQuery// future use now useless
+            let form={entity,term,wheres,wheresInst,meta,whMmeta
+            ,isQuery// future use now useless. means it comes from dynQuery ?
             };// excel is debug param, usually is in the service
-            if (url.substring(0, 3) == 'app://'&&!isQuery)form.vars=vars;
+            if ((url.substring(0, 6) == 'app://'&&!isQuery)||
+            (url.substring(0, 20) == 'service://plugins.ai')// temporarely , because here is put a express ctl , so needs to access to vars and session. usually the ctl is put in vars.app !!!!
+            )form.vars=vars;
 
             
 
@@ -2679,7 +2755,6 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
             
             if (url.substring(0, 8) == 'https://'&&!isQuery) {// a) : direct interface , 
-
             if (url.substring(0, 12) == 'https://host'&&!isQuery) {// a) : direct interface x  host end point 
                 // ...
             }}
@@ -2715,8 +2790,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
             }else {// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
 
-
-           let  mr=await await this.run_jrest(url,form,isGET);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+            let head=null;
+           let  mr=await await this.run_jrest(hostqs,form,isGET,head,step);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                 //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                 if(!mr||mr.reason!='runned'||!mr.rows)return false;
                 else {
@@ -2783,35 +2858,38 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
 
-    function findWhere(exc_ent,vars){// exc_ent=excel[entity]  ;fills matched wheres ={dependingWhere1:val1,,,} x dependant entity
+    function findWhere(exc_ent,vars){// exc_ent=excel[entity]  ;fills MATCHED wheres ={dependingWhere1:val1,,,} x dependant entity, filled in fwbase find_wheres()
         let wheres_,wc=0;
     if(exc_ent&&exc_ent.wheres)wheres_=exc_ent.wheres;// the depend on models,  wheres_=['mod_city',,,]
     // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
 
-    let wheres;// {mod_city:'rome',,,,}
+    let wheres,wheresInst;//  wheres={mod_city:'rome',,,,}  wheresInst={mod_city:{the matched instance matches.mymod.instance},,,,}
 
 
 
     if(wheres_)
-    { wheres={};
+    { wheres={};wheresInst={};
         for(wh in wheres_){// fills where dependency resolved by ... in 
         wc=1;
         if(vars.matches[wheres_[wh]]&&vars.matches[wheres_[wh]].match)
-            wheres[wheres_[wh]]=vars.matches[wheres_[wh]].match;// a matched where condition
+           { wheres[wheres_[wh]]=vars.matches[wheres_[wh]].match;// a matched where condition
+            wheresInst[wheres_[wh]]=vars.matches[wheres_[wh]].instance;// a matched where condition
+
+           }
     }}
-    if(wc==0)return null;else return wheres;
+    if(wc==0)return null;else return {wheres,wheresInst};
 }
 
 
 
-    function getHost(url){// return host , qs 
+    function getHost_(url){// OLD return host , qs 
     let cstop,cstop1,r,qs;
     // 10 letters of 'service://host' should be start with host name  ,  url='service://host?.....'  or  url='service://host/.....'
     cstop=url.indexOf('?'); cstop1=url.substring(10).indexOf('/');// hostname:stop before qs (cstop) and anyway at first / (cstop1)
 
     // prendo / se >0 e non (?>0 e / > ?
     if(cstop1>0&&!(cstop>0&&(cstop1+10)>cstop))cstop=cstop1+10;// nb the position of / is 10+cstop1
-    //   20           27      20+10    20 
+    //   20           27      20   +10    20 
     if(cstop>1){// cstop can be before a ? or /
     r=url.substring(10,cstop);qs=url.substring(cstop);let qm=qs.indexOf('?');if(qm>=0)qs=qs.substring(qm+1);else qs=null;
     }
@@ -2819,18 +2897,125 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     return {host:r,qs};
     }
 
+function getHost(url, matches) {// return host , qs . new good also for any protocol e
+    let flag=false,cstop, cstop1, r, qs,qs_, url_;// url_='host/f/ko?.....' 
+    // 10 letters of 'service://host' should be start with host name  ,  url='service://host?qs'  or  url='service://host/po/bo?qs' or url='app://host/k'
+    let stHost = url.indexOf('://');
+
+    if (stHost > 0) url_ = url.substring(stHost + 3); else return { url, host: r, qs ,qs_};
+    cstop = url_.indexOf('?'); cstop1 = url_.indexOf('/');// hostname:stop before ?qs (cstop) and anyway at first / (cstop1)
+
+    // prendo / se >0 e non (?>0 e / > ?
+    if (cstop1 > 0 && !(cstop > 0 && (cstop1) > cstop)) cstop = cstop1;// nb the position of / is 10+cstop1
+    //   20           27      20   +10    20 
+    if (cstop > 1) {// cstop can be before a ? or /
+        r = url_.substring(0, cstop); qs = url_.substring(cstop);
+        let qm = qs.indexOf('?');
+        if (qm >= 0) {
+            qs = qs.substring(qm + 1);
+            qs_=querystring.parse(qs);// qs='pippo=ok&$caio=x&city=rome'
+
+            for(let amod in qs_){
+                let mod=qs_[amod];
+                if(mod.charAt(0)=='$'){
+                    mod=mod.substring(1);
+                    if(matches[mod]){
+                        flag=true;
+                    if(matches[mod].match){
+                        qs_.amod=matches[mod].match;
+                    }else qs_.amod='';
+                }
+                }
+            }
+            if(flag)qs=querystring.stringify(qs_);
+
+        } else qs = null;
+    }
+    else r = url_;
+    return { url, host: r, qs ,qs_};
+}
 
 
-    function getMeta(excel,dir,entity,key){// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // this fun get the excel or dir.asks[ask].cond   obj and get its dbmeta structure !!
+
+    function getMeta(excel,dir,entity,key){// TODO TODOO : dir.asks MUST a LEVEL TO LEAVE OUT !, done !
+        // this fun get the excel or dir.asks[ask].cond  > dir.cond obj and get its dbmeta structure !!
         let meta;
+    /* old
     if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;
    // if(dir&&dir.asks[key]&&dir.asks[key].cond[entity]&&(dbmeta=dir.asks[key].cond[entity].dbmeta));
     if(dir&&dir.cond[entity]&&(meta=dir.cond[entity].dbmeta)||(meta=dir.cond[entity].meta));
     else if(excel[entity]&&(meta=excel[entity].dbmeta));else return false;  
     return meta;
+    */
+
+        // new 122020 
+    // if(excel[entity]&&(meta=excel[entity].dbmeta||dir.cond[entity].meta));
+    if(excel[entity]&&(meta=excel[entity].dbmeta));
+    else if(dir&&dir.cond[entity]&&(meta=dir.cond[entity].dbmeta||dir.cond[entity].meta));
+    else if(excel[entity]&&(meta=excel[entity].dbmeta||excel[entity].meta));else return false;  
+    return meta;
+
 
     }
+
+
+    function setSelectData(mr){// only for query and entity  type (has rows.rows)
+
+    let mm;if(mr.reason=='runned'&&mr.rows&&mr.rows.rows)
+    {if(mr.rows.objMod&&mr.rows.rows.length>1&&!(mr.rows.group&&mr.rows.group.sel&&mr.rows.group.sel.item)){
+        // mr.rows.rows must be a array 
+
+               let resModel={},medSyntL=[];
+            mr.rows.cursor={
+                   // rows:res.rows,  ??
+                resModel,medSyntL} ;// data useless, rows is enougth. 
+                                                
+               /*
+               resModel={val1:{
+                   patt:regexstr,
+                   vname:'pippo' // set as array also in medSyntL x list in template
+                   }
+               }*/
+
+            res.rows.rows.forEach(function(v,i){
+                let vname;
+                if(v.vname)vname=v.vname;
+                else vname=v.value;// usually should be a vname key
+                
+                medSyntL.push(vname);
+                
+                resModel[v.value]={patt:v.patt,vname:vname}});// calc matching [rows], then returns rows [] with just some cols (1:name)
+
+                mr.rows.group=mr.rows.group||{sel:null};
+            //mr.rows.group={sel:{item:mr.rows.rows[0]},match:mr.rows.rows[0].value};
+        
+        
+    }else if(mr.rows.rows.length==1){
+        mr.rows.group=mr.rows.group||{sel:null}
+        mr.rows.group.sel=mr.rows.group.sel||{sel:{match:mr.rows.rows[0],item:mr.rows.rows[0].value}}
+
+    }}
+}
+
+function insVars(form, step) {// insert qs oby val if the value is $vars....    so the param in qs is : "...&param=$vars,matches......&....." 
+    let vars = step.values;
+    for (let avar in form) {
+        if (form[avar].charAt(0) == '$') {
+            let lev = form[avar].split('.');// lev=['plugins','apluginctl']
+            let myf;
+            if (lev) lev.forEach((element, i) => {
+                if (i == 0) {
+                    if (element.substring(0, 5) == '$vars') myf = vars; // starting sets myf=this.service, probaly exists ( mf not null )
+                    
+                }
+                else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
+            });
+            if (myf) form[avar] = myf;else form[avar]=null;
+        }
+    }
+
+}
+
 
     /*function MatchSt(){// std matcher status constructor 
         // most used :

@@ -1,0 +1,1 @@
+copy here the install section from :     install_do_voice_bot.txt	

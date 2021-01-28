@@ -382,6 +382,8 @@ initCmd('config',{meds:[11,22,33],cur:'rossi',service:'hotel'},['dyn_medicine','
 
    console.log('\n starting FW initCmd , so registering convo.before for cmd   ',myscript_,' thread default ');
             //let  myscript_='televita';// launch a closure with a internal var the script well be registering :
+            let skipcmd=false;
+            try{
             controller.plugins.cms.before(myscript_,myth, async(convo, bot) => {// default thread will be enougth
                 // convo can be eredited from father , but if this convo do not have fw support :
                 //          ->  must not use father fw structures (matches,asmatches,,,,)so null it 
@@ -432,6 +434,17 @@ oo
 
             // SESSION / APP MNG 
             // > when cmd starts on def thread is like a page download so after some data gathering the user fire a onclick/onChange
+
+                // 122020 better :
+                // after got user match we can do bl 
+                //  - like in web app we do postingback to the server page controller with some data (session + some vars)
+                //      the controller will do some local remote call/rest, then set new model and come back with a new route to follow ( new page )
+                //  - we here after got some model match we ca do 
+                //      - a condition (with macro or $$$$)  that will launch a rest and fils some model(data) and relay var then route to the relay ask to do routings to new thread
+                //      - goto next ask without user prompt so really we chain the next ask onchange where do the same staff as the macro in below condition 
+                //      - in the condition call the app plugin ,that is really the app server controller of our app!!!!! , 
+                //          asking a post on the current cmd/thread/ask (often the ask ends  a major thread , we got the all major intent entity so do bl )
+
             //      THAT ONCHANGE CAN  
             //      - DO AIAX/REST 
             //      - POST BACK to the post host ctl that gave the page  waiting on the page end point to manage the user session data and the postback forms data 
@@ -530,8 +543,8 @@ oo
              //     >> 
              appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}to goon this convo
 
-             console.log('+++++++++++++ ùùùùùùùùùù convo begin : init fw vars for  cmd   ',myscript_);
-             // alredy set  : convo.setVar('appSt/appWrap',appSt);
+             console.log('+++++++++++++  convo begin a new cmd ',myscript_, ' : init/extend fw vars, excel, direc  , register :\n custom begin with fw support (in directive.thread[default]) and \n custom onChange (in directive.direc[mkey] or ((onChange.js).onChange=require(./onChangeFunc.js)) [cmd] ');
+             // alredy set  : convo.setVar('appSt/appWrap',appSt); 
 
              // GENERAL FUNCTION TO INJECT in ALL convo >>> better set in ?????
              //convo.step.mustacheF=dynJs[myscript_].mustacheF;
@@ -603,6 +616,17 @@ oo
             
             // every time ???????   TODO put above also these !!!!!!!!!!!!!!!
             let {askMod,modsOnAsk}=fwOnC.modsOnAsk(script);// to be safe unique askname , and modelname are requested 
+
+            // would be better to leave model that has property noNMP=true, these model are in a ask but not to be prompt if dont match ! 
+            
+            for(let mask in modsOnAsk){
+                let maskM=[];
+                modsOnAsk[mask].forEach(el => {
+                    if(!(directive.excel[el]&&directive.excel[el].noNMP))
+                    maskM.push(el);
+                });
+                if(maskM.length>0)modsOnAsk[mask]=maskM;else delete modsOnAsk[mask];
+            }
 
  
             convo.setVar('modsonask',modsOnAsk);//  modsOnAsk=[] is used in .out miss func x current script  
@@ -686,7 +710,14 @@ oo
              }
              return;
             });// end before()
+        }catch (e) {
 
+
+                    console.error(' initCmd , cant process  cmd   ',myscript_,' because is not in dialogset ');
+                    
+                    skipcmd=true;
+                
+            }
 
 
 
@@ -694,7 +725,7 @@ oo
             // add a directive fw cb bank, so put here 
 
             // >>>>>  SET botkit convo FW ONCHANGE ASK service/handler/controller
-           if(monchange)monchange.forEach(function(mkey){// for each monchange add a ask onChange with fw support : calc fw staff so call 
+           if(monchange &&!skipcmd)monchange.forEach(function(mkey){// for each monchange add a ask onChange with fw support : calc fw staff so call 
                                                         // onChThis.onChange.call(that,bot,convo,res,myscript_,mkey); , 
                                                         // that is :
                                                         // - call the method onChange , that is (2 cases )in major case: 
@@ -823,7 +854,7 @@ oo
                         //let that=Object.assign(this,{cmdModels:directive},directive.direc[mkey],{service},{fwCb});
                         let that=Object.assign(this,onChThis);
                         //reassign the context 
-                        return onChThis.onChange.call(that,bot,convo,res,myscript_,mkey);// seems useless the call
+                        return onChThis.onChange.call(that,bot,convo,res,myscript_,mkey);// seems useless the call , just to clone the context !?
         
                     }
 
@@ -866,15 +897,15 @@ function find_wheres(directive){
 let p=directive.excel;
 
 
-    for (var key in p) {
+    for (var key in p) {// only model can be requisite of other model or ask 
         let amod;
         if (p.hasOwnProperty(key)) {
             amod=p[key];
-            if (amod.mod_wh_Of) {//key is a  model declaration (excel=p).key=amod={model:,mod_wh_Of:adependantModel} OR amod={model:,mod_wh_Of:adependantAsk}
+            if (amod.mod_wh_Of) {//key is a excel model declaration (excel=p).key=amod={model:,mod_wh_Of:adependantModel} OR amod={model:,mod_wh_Of:adependantAsk}
                 let ins;
 
-                if(directive.direc&&directive.direc[amod.mod_wh_Of]){//  ins=  direc.adependingAsk
-                   ins= directive.direc[amod.mod_wh_Of];// ads the depending model to dependant  ask dyn 
+                if(directive.direc&&directive.direc[amod.mod_wh_Of]){// the dependency is a ask so register in direc.  ;  ins=  direc.adependingAsk
+                   ins= directive.direc[amod.mod_wh_Of];// ads the depending model to dependant  ask 
                 }
                 else // if ( p[key.mod_wh_Of].type && p[key.mod_wh_Of].type != 'static') // ?? 
                 {

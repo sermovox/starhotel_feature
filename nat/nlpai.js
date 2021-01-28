@@ -1,7 +1,8 @@
 const { NlpManager } = require('node-nlp');// npm install node-nlp
 let manager;
-const aiRestInt=false;//
-let rest;
+const aiRestInt=false,//
+debug=false;
+let rest,qea;
 
 // interface 
 // cfg agents to know what end point will use , ???
@@ -42,8 +43,6 @@ when using matchers we set  url=service://plugins.witai?v=20201025, or =service:
 - that service is here config to perform an action calling a service end point using params passed in .init
 
 */
-
-
 
 
 module.exports=// copy of db part of  refImplementation 
@@ -118,16 +117,123 @@ module.exports=// copy of db part of  refImplementation
            services[ep] ={};
            services[ep][srvNam]=duck(active[ep]);// register the implemented endpoint  plugins.ai=services so call  /  plugins.ai.nlpjs.datetime
 
-
           } else if (ep == 'witai') {// witai means general interface to ai intent resolver agent , choosing witai format as std 
-            // todo
+            // todo ( this will  substitutes intmatch witai case )
+            // ...................
+          } else if (ep == 'bookApp') {//book end point , al posto di un app post , portare li appena possibile perche ho tutte le var e session disponibili 
+
+            srvNam = 'aiaxpost';// the service provided by this master factory nb in matcher macro we set url=service://plugins.ai.bookApp.aiaxpost?uri=simplybooking . nb qs is inserted on form param by run_jrest
+            services[ep] ={};// an obj with 1 func (srvNam) , got from a  factory :
+            services[ep] [srvNam]=//  called with form param will returns   {reason:'runned',rows:intent/entity/query} depending by the calling matcher type 
+
+            (function(params){// factory FFDA lauched on init data (active[ep])
+            
+                 // returns the function obtained by  another factory ( seem useless complication)
+                 return   (function(params){// the factory closure, returns mf  , params (active[ep]) are set  in closure 
+                    let mf=
+                  async function (form){// the service function :  called with form param will returns   {reason:'runned',rows:intent/entity/query} depending by the calling matcher type 
+                    let res;
+                    // uri coming from qs ( emulate a post/aiax controller selection ):
+                    //   url='service://plugins.ai.bookApp.aiaxpost?uri='simplybooking';
+                  let {entity,term,wheres,wheresInst,vars,qs}=form; // temporary : here a controller (post) function to be put in app. so as exception use here status ( vars and session )
+                  let uri=qs.uri;
+                  //natural internal end point is qea
+          
+                      // note:  dtermis an object, and when converted to a string it will
+              // end with a linefeed.  so we (rather crudely) account for that  
+              // with toString() and then trim() 
+          
+              let text;//term.toString().trim() ;
+              text=term;
+             console.log("you entered: [" + text + "]")
+
+
+
+             let postR= require('./simplybookingAiaxCtl.js');
+          ///*    
+                   // let wheres=null;
+
+                    // temporary : here a controller (post) function to be put in app. and called with a macrodirective : url='service://app/simplybooking'  or url='service://app?uri=simplybooking',
+                    //              so as exception use here status ( vars and session )
+                      // simulate a post dispaching to controller :
+                      if(uri=='simplybooking')
+                    {
+                     //  var answ = bookctl.post(text, vars,wheres);// the post controller of uri serving a complex medel rows query 
+                     // pass rest in param or bind as context 
+                      let answ ;
+                      answ= await postR.simplybooking(vars,wheresInst,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                                                                                              // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
+                                                                                              // probably just modify wheres match recovery , take full instance not just the item name value !!!!
+                                                                                              //        or simply the model itself !!!  , >>> so pass wheresInst , or both ?
+                                                                                              // NBNB this service id temporarely doing a express post controller job ( move to app fast !! )
+                                                                                              // so we pass vars, to get the session, url, to get the post ctl , and also :
+                                                                                              // form.qs.book_res_child.curStatus=matches.entity.param instead to use cooky to get the multi turn query status/session
+                                  // now manage the reject call
+                                .catch((err) => { console.error(' the simplybook ctl rejected with error: ',err); });//   or  .catch(console.error);
+
+
+                      if (answ == null) {
+                          console.log('no answer found ');
+                        //  bot.say('Sorry, I\'m not sure what you mean');
+                        return {reason:'runned',rows:null};
+                      }
+                      else {
+                        // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
+                          console.log('answer found ', answ);
+
+                        // ????? 
+                        //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
+                        // old :let qmodel={rows:answ.query,objMod:true};
+                        let qmodel=answ.query;
+                       if(qmodel){ qmodel.complete=answ.chroot;// child param to navigate the query, 2 type of query : intradays slots and in day slot 
+                        // NBNBNB  this is intented as query ctl aiax response so a complexx transaction not only a simle query , so each transaction has its navigation result child dialog and model with group context !!!!
+                       // so the aiax ctl get the user preference , then depending on situation of query result wereturn a result indicating in the context (group) also the page/child that can diaplay the query result 
+                       // , intraday slot 
+                       // days slots 
+                        return {reason:'runned',rows:qmodel};
+                       }else  return {reason:'runned',rows:null};
+                      }
+                    } else if(uri=='book')
+
+                    { let slot=qs.slot;
+                      let answ ;
+                      answ= await postR.book(vars,slot,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                                                                                              // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
+                                                                                              // probably just modify wheres match recovery , take full instance not just the item name value !!!!
+                                                                                              //        or simply the model itself !!!  , >>> so pass wheresInst , or both ?
+                                  // now manage the reject call
+                                .catch((err) => { console.error(' the simplybook ctl rejected with error: ',err); });//   or  .catch(console.error);
+                      if (answ == null) {
+                                  console.log('no answer found  on book ');
+                                //  bot.say('Sorry, I\'m not sure what you mean');
+                                return {reason:'runned',rows:null};
+                              }
+                              else {
+                                // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
+                                  console.log('answer found on book  ', answ);
+        
+                                // ????? 
+                                //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
+                  
+                                // let qmodel={rows:answ.result,objMod:true}; rows='booked'
+                                let qmodel={rows:[{value:answ.result}],objMod:true}; // rows={value:'booked',descr:'booked'}
+
+                                return {reason:'runned',rows:qmodel};
+                  
+                              }
+
+                    }else return {reason:'ctlnotfound',rows:null};
+          
+              }
+              return mf;})(params);
+
+            })(active[ep]);
+            
           }else if (ep == 'qea') {// very similar interface to witai,  but specilized to interface qea rest end point 
             srvNam = 'natural';// the service provided by this master factory nb in matcher macro we set url=service://plugins.ai.nlpjs.datetime?qs
-            services[ep] ={};
-            services[ep] [srvNam]=natural(active[ep]);//  plugins.ai=services so call  /  plugins.ai.nlpjs.datetime
+            services[ep] ={};// an obj with 1 func (srvNam) , got from a natural factory : natural(active[ep]) using registered init param x the endpoint (active[ep]) 
+            services[ep] [srvNam]=natural(active[ep]);//  plugins.ai=services so call  with : macro directive  "url":"service://plugins.ai.qea.natural
           }
-
-
 
         }// end register endpoint :
         return services;
@@ -135,7 +241,7 @@ module.exports=// copy of db part of  refImplementation
     };
   }// end rest_
 
-  let natural=function(params){
+  let natural=function(params){// a func factory, after a test get the func by a internal factory 
 
     if(qea)
       return  (
@@ -173,9 +279,9 @@ module.exports=// copy of db part of  refImplementation
               // no run_jrest() call so 
               let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
 
-
-
-              return {reason:'runned',rows:intent};
+              
+              if(intent)intent.objMod=true;// mark std format 
+              return {reason:'runned',rows:intent};// rows stands for a value to return , if objMod we are sure has the format the calling matchers requires 
 
             }
 
@@ -364,7 +470,7 @@ nlpjs={datetime=fact(manager)} dove fact ritorna funzione che ha in closure para
 return datematch(manager);
 }
 
-let duck=function(params){
+let duck=function(params){// a func factory, after a test get the func by a internal factory 
 
 // >>>  the ai.duck interface is specific to the ImplementingFactory tyed to the  utilizator: 
 //    "matcher":"dynMatch"  , helper of  convo Entity matcher type mT='Ent';
@@ -373,9 +479,6 @@ let duck=function(params){
 
 // - returns = {reason:'runned'/'err',
 //              rows:
-
-
-
 
 
                         {// like a complex entity with bl related (inflated) entity 
@@ -399,10 +502,7 @@ let duck=function(params){
 */
 
 
-
 ///            };
-
-
 
 
   /* 2 template :
@@ -417,7 +517,7 @@ let duck=function(params){
 
 
 
-    datematch2= // this function returns a Promise and do  use await  . so async function  OR function ? 
+    datematch2= // this is the factory of a async function , so returning a Promise and do  use await  . so async function  OR function ? 
 
     function(params){
       let mf=
@@ -437,22 +537,60 @@ let duck=function(params){
 {"body":"2","start":12,"value":{"value":2,"type":"value"},"end":13,"dim":"number","latent":false},{"body":"domani alle 7 e trenta di pomeriggio","start":20,"value":{"values":[{"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"}],"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"},"end":56,"dim":"time","latent":false},
 {"body":"14","start":0,"value":{"value":14,"type":"value"},"end":2,"dim":"number","latent":false},{"body":"domani alle 18","start":13,"value":{"values":[{"value":"2020-10-31T18:00:00.000-07:00","grain":"hour","type":"value"}],"value":"2020-10-31T18:00:00.000-07:00","grain":"hour","type":"value"},"end":27,"dim":"time","latent":false}]
 
+also :
+
+       DGTG  : 
+
+[
+{"body":"domani pomeriggio","start":0,"value":{
+                                                // not used:
+                                              "values":[{ "to":{"value":"2020-12-28T19:00:00.000-08:00","grain":"hour"},
+                                                          "from":{"value":"2020-12-28T12:00:00.000-08:00","grain":"hour"},
+                                                          "type":"interval"}
+                                                        ],
+                                              "to":{"value":"2020-12-28T19:00:00.000-08:00","grain":"hour"},
+                                              "from":{"value":"2020-12-28T12:00:00.000-08:00","grain":"hour"},
+                                              "type":"interval"
+                                              },
+                  
+                  "end":17,"dim":"time","latent":false}
+,
+{"body":"domani alle 8 e 32","start":0,"value":{
+                                                // not used :
+                                              "values":[{"value":"2020-12-28T08:32:00.000-08:00","grain":"minute","type":"value"}
+                                                        ],
+                                                
+                                              "value":"2020-12-28T08:32:00.000-08:00",
+                                              "grain":"minute",
+                                              "type":"value"
+                                              },
+                  "end":18,"dim":"time","latent":false}
+]
+
 so main json result template is :
 
 datetime="2020-10-31T19:30:00.000-07:00"
 
 result =[// conf=  ????
-  {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},
-  {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},
-   {start:3,end:8,dim:"number",value:{type:"value",value:2}},
+  {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+  {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+  {start:3,end:8,dim:"number",value:{type:"value",value:2}},                                                  >> so row:{value:13,dim:'number',type:'value'}
 ]
 */
       
        //let url=http://192.168.1.15:8000/parse
-        let result = await  rest(params.url,'POST',{locale:'it_IT',text:term},null, true,null) // no extra header,true:send urlencoded (calc from map obj data {locale:'it_IT',text:term}, no qs)
-        .catch((err) => { console.error(' REST got ERROR : ',err); }); 
+        let result ;
+       if(!debug) // debug
+       result= await  rest(params.url,'POST',{locale:'it_IT',text:term},null, true,null) // no extra header,true:send urlencoded (calc from map obj data {locale:'it_IT',text:term}, no qs)
+        .catch((err) => { console.error(' REST got ERROR : ',err,',  so set test datetime');
+       // dont work , too late :  result= JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-14T09:00:00.000+00:00'}}]);
+        //'[{"body":"2","start":12,"value":{"value":2,"type":"value"},"end":13,"dim":"number","latent":false},{"body":"domani alle 7 e trenta di pomeriggio","start":20,"value":{"values":[{"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"}],"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"},"end":56,"dim":"time","latent":false},
 
-        console.log('duck service , datematch got :',JSON.stringify(result, null, 2));
+      }); 
+      result= result||JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-18T09:00:00.000+00:00',values:{},type:'value'}}]);
+  
+
+        console.log('duck service , on text: ',term,' datematch got :',result,', json: ',JSON.stringify(result, null, 2));// see DGTG for expected format 
 
           let o,res;
           if (result&&typeof result === 'string') {
@@ -461,15 +599,30 @@ result =[// conf=  ????
             o = JSON.parse(result);
 
         }
-        catch (e) { o=null;}
+        catch (e) { o=null;}// works ?
+
+        console.log('duck service , on text: ',term,' datematch got o :',o);// see DGTG for expected format 
 
         // return {reason:'runned',rows:res}; with res set by Entity constructor basing from : 
         //      get the result o={item1,,,} , look at itemx with dim='time' so res={value:itemx.value.value} 
-         if(o) o.forEach(el => {
-            if(el.dim=='time'&&el.value&&el.value.value){    // can be many ? no should find interval
-              let mainEnt={value:el.value.value};// main row
-              res=new Entity(entity,el.dim,mainEnt);// main ent the date time ent 
+         if(o) o.forEach(el => {// from duck extract only time info (TODO in case needed also numbers info .....)
+            if(el.dim=='time'&&el.value
+            // &&el.value.value  also el.value.values
+            &&el.value.values
+            ){    // can be many ? no should find interval
+              let mainEnt={value:
+                null// el.value.value
+              };// main row
+
+              res=new Entity(entity,el.dim,mainEnt,el.value);// main ent : the date time ent , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
               // but this is a multi entity ( a intent quasi )so treat like complex entity : a main ent + bl of other entity 
+
+                            // 122020 >>>>>  this value is the entity obj but is more complete then std VAL expected format see Matcher_AdapterInterface.txt
+                            // done  got entity for type value ( see above DGTG )
+                            // to do   : define the entity found : Time or/e Interval
+                            
+              //  ????? keep localtime schift ??????????????????????????
+              
               let t=res.rows.value.indexOf('T'),date,time;
               if(t>0){res.rows.date=res.rows.value.substring(0,t);res.rows.time=res.rows.value.substring(t+1,t+6);}
             }
@@ -477,7 +630,11 @@ result =[// conf=  ????
         // if ()
         // if(result&&result.entities&&result.entities[0]&&result.entities[0].resolution&&result.entities[0].resolution.value)
         if(res)
+        {
+          // res is better then std format ( see Matcher_AdapterInterface.txt ), so set objMod
+          res.objMod=true;// better then std form expected by entity matcher type Ent
          return {reason:'runned',rows:res};//{reason:'runned',rows:result.entities[0].resolution.value==new Entity()=.....................};
+        }
         else return {reason:'runned',rows:null};
         // other nlp func ....
     }else return {reason:'err',rows:null};
@@ -499,8 +656,8 @@ function Intent(res, wheres) {// std intent wit.ai obj  see formatx.txt, is wher
                                                     },,,
                                                   }
                                       },
-                                group:{sel:{item:this.intents[0]},
-                                compl_ctx:{         // the model that is context to a thread to match the complete list of next turn qeaitem to chain 
+                                group:{ sel:{item:this.intents[0]},
+                                        compl_ctx:{         // the model that is context to a thread to match the complete list of next turn qeaitem to chain 
                                             cursor:{rows:[{value:qeaitemname,patt},,]},
                                             resModel: {disc0:{ 
                                                                     patt: vv1,
@@ -577,7 +734,15 @@ witai_std = {intents:[{name,confidence,
 
 
 
-  function fillE(res, ent) {// fills entities of a qea item (intent wit.ai format like )
+  function fillE(res, ent) {// extract entities from a qea item (qea thought as intent in  wit.ai format like ) returns {entities,compl_ctx}
+                            // build the complex model (compl_ctx.param,) as context of a resolver child with  rows/intents,cursor, group properties :
+                            //    compl_ctx={param:{cursor,group,rows}};// a second (after entities , associated  child model ) child navigation  model to select completation after examined the qea entities 
+                            //   group : contains ( when resolved) :
+                            //    sel :  selected  item in rows and 
+                            //    prompt : a prompt to select in rows/intents the sel item 
+                            //   cursor : ( no  rows, are null,   ) containing the runtime model to select the items in rows/intents 
+                            //  rows/intents : now just void to fill after
+
 
      // debug sistemare  : tiodo
 
@@ -587,7 +752,7 @@ witai_std = {intents:[{name,confidence,
     rows=[];
     compl_ctx={param:{cursor,group,rows}};//{cursor:{rows:[{value:qeaitemname,patt}]}};
 
-    for (let e in ent) {// scan properties
+    for (let e in ent) {// scan properties e in ent 
 
        // debub : tiodo
       if( e == 'link'// 'linkchild'
@@ -711,7 +876,7 @@ spiego :
     // entities.descr=ent.answer;// rename answer in descr why? descr is a short descr answer is a long descr 
 
     return {entities,compl_ctx};
-  }
+  }// ends fillE()
 
 let resu=0;// itents got
 if(res.intent)resu=1;else{
@@ -721,26 +886,25 @@ if(res.intent)resu=1;else{
   // main intent entities
   let {entities,compl_ctx} = fillE(res, res.data[res.intent]);
 
-  this.entities = entities;// intents[0] entities ( common ?) 
+  this.entities = entities;// is a copy of entities of firse intent ( just x convenience ) , intents[0] entities ( common ?) 
   this.compl_ctx=compl_ctx;
-  // attach
+  // attach as first intent in intents , just x convenience
   this.intents = [{ name: res.intent, confidence: res.score,
     // discr: res.discr,
     entities,compl_ctx }];// best result, first intent
 
-
-
     this.discr=res.discr;
 
-      // second/alternative intent + its entities
-  let secInt = fillE(res, res.data[res.intent2]);
+  /*
+  let secInt = fillE(res, res.data[res.intent2]);  // second/alternative intent + its entities
   let entities2=secInt.entities,compl_ctx2=secInt.compl_ctx; 
 
   // copy in selecting , take main intents[0] as default selection
+  // group is the context of navigation child 
   this.group={sel:{item:this.intents[0]}//this.cursor={sel:{item:this.intents[0]}
   // some navigation context ,,,,
   };// or simply this.cursor={sel:this.intents[0]};
-
+*/
 
   if (res.intent2 && res.discr) {//
 
@@ -757,11 +921,15 @@ if(res.intent)resu=1;else{
 
 
       // copy in selecting , take main intents[0] as default selection
-      this.group={sel:{item:this.intents[0]}//this.cursor={sel:{item:this.intents[0]}
-      // some navigation context ,,,,
+      this.group={sel:{item:this.intents[0],match:this.intents[0].name}//this.cursor={sel:{item:this.intents[0]}
+      // nb in this  impl, the child will fire a selection fw loop il .desr found , independently by group.sel !
+      // >> so in this case (following )do not set selected the model !!! 
+
+      // ,chctx1:1 //,some child param used in conditions or template ( navigation context ),,,,
+
       };// or simply this.cursor={sel:this.intents[0]};
 
-    this.cursor={resModel: {},medSyntL:null};// this run time model do not describe the intents items that needn't to be matched , but the values of entities that can discriminate the intents !!!!!!!!
+    this.cursor={resModel: {},medSyntL:null};// this run time model do not describe the intents items that needn't to be matched , but is a model containing the values of entities that can discriminate the intents !!!!!!!!
 
     // LIKE a QUERY prepare the context in .param/ .params  to be used by selector child , so do same staff here
     //  remember , in a query matcher we :
@@ -820,7 +988,11 @@ if(res.intent)resu=1;else{
       
     }
     if(resul==2){
-      // goon to discriminating thread
+      // 2 intents with discr field , goon to discriminating thread
+      this.group.sel=null;//   the child will fire a selection fw loop if .desr found , 
+                          // >> so we ALSO set  unselected the model !!! 
+
+
     }else{// that will be selecter alredy so set  instance , so this model can be used like a resolved model ( has match and instance )
 
 
@@ -832,41 +1004,79 @@ if(res.intent)resu=1;else{
 
 }
 
-function Entity(name,type,row_){// std entity obj inside the  associated matches see formatx.txt, 
-                          // is class, the value is : std row {value,descr(,patt,data + bl entity name/key)}+ std matcher var :{match,vmatch} 
-/*
-    constructor , returs obj :
-			{// like ....
-				matched:'match' or null 
-        match:   itemname=row.value  (???or {ent:itemname}) 
-        vmatch:
+function Entity(name, dim, row_, value) {// only datetime info , add interval , get only the from 
 
-        rows:row_={ value,descr,,,, bl ,,,} // the db std model (a obj with a entity (value=key + patt,descr (view/match property)+ some propertyes value (bl field)) 
-                                      //   ex row={value='red',descr'red color',patt='', paint:'acrilic'}
-                                      // OR 
-                                      // a custom obj with its properties ( so a object with many entity item key) : used here if we have 2 entity 
-                                      // example : row={value:null,datex:'31122020',timex:'23:59'} so as :
-                                      // $%complexent:date-datex&time-timex   we can set status with a intent ( named like condition models) with 2 entities :
-                                      //    named date : {value=descr='31122020'} and time : {value=descr='23:59'}
-
-
-					},
-
-				// witai like : 
-				type: 	// witai dim + ...  es : type=number,datetime-val/interval,location,customentitynameAssigned( the name referas to a entity described on staticmodel or a db schema)
-				name:'ent',/// needed?
-
-      }
-
-
-*/
-let value;match=null;this.matched=null;
-this.type=type;
-this.name=name;
-if(row_&&(value=row_.value)){this.rows=row_;
-  this.match=value;this.vmatch=row_.descr;
-  this.matched='match';
+  /* see    DGTG  : 
   
-}else this.row=null;
+    {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+    {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+    {start:3,end:8,dim:"number",value:{type:"value",value:2}},                                                  >> so row:{value:13,dim:'number',type:'value'}
+  */
+
+
+
+
+
+  // std entity obj inside the  associated matches see formatx.txt, 
+  // is class, the value is : std row {value,descr(,patt,data + bl entity name/key)}+ std matcher var :{match,vmatch} 
+
+  // >>>>>  this value is the entity obj but is more complete then std VAL expected format see Matcher_AdapterInterface.txt
+  // to do   : define the entity found : Time or/e Interval 
+
+  /*
+      constructor , returs obj :
+        {// like ....
+          matched:'match' or null 
+          match:   itemname=row.value  (???or {ent:itemname}) 
+          vmatch:
+  
+          rows:row_={ value,descr,,,, bl ,,,} // the db std model (a obj with a entity (value=key + patt,descr (view/match property)+ some propertyes value (bl field)) 
+                                        //   ex row={value='red',descr'red color',patt='', paint:'acrilic'}
+                                        // OR 
+                                        // a custom obj with its properties ( so a object with many entity item key) : used here if we have 2 entity 
+                                        // example : row={value:null,datex:'31122020',timex:'23:59'} so as :
+                                        // $%complexent:date-datex&time-timex   we can set status with a intent ( named like condition models) with 2 entities :
+                                        //    named date : {value=descr='31122020'} and time : {value=descr='23:59'}
+  
+  
+            },
+  
+          // witai like : 
+          type: 	// witai dim + ...  es : type=number,datetime-val/interval,location,customentitynameAssigned( the name referas to a entity described on staticmodel or a db schema)
+          name:'ent',/// needed?
+  
+        }
+  
+  
+  */
+  // let value; match = null; 
+  this.matched = null;
+  this.type = dim;
+  this.name = name;
+  if (value.type == 'value') {// its a time 
+    if (row_&&value.value) {
+      row_.value=value.value;
+      row_.type='time-value';
+      // row_.descr=.......
+
+    this.rows = row_;
+      this.match = row_.value; this.vmatch = row_.descr;
+      this.matched = 'match';
+
+    } else this.row = null;
+  } else if (value.type == 'interval') {// its a time interval : take from 
+    if (row_ && value.from&&value.from.value) {
+      row_.value=value.from.value;
+      if(value.to)row_.to=value.to.value;
+
+      row_.type='time-interval';
+      // row_.descr=.......
+
+    this.rows = row_;
+    this.match = row_.value; this.vmatch = row_.descr;
+      this.matched = 'match';
+
+    } else this.row = null;
+  } else this.row = null;
 
 }

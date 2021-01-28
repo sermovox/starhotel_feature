@@ -59,8 +59,8 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
      * @param botkit
      */
     init(botkit) {
-        // when the bot is ready, register the webhook subscription with the Webex API
-        botkit.ready(() => {
+        // when the bot is ready ?? or at plugin registration ???, register the webhook subscription with the Webex API
+        botkit.ready(() => {// when the bot is ready 
             console.log('in init of actions adapter: ') ;
            // this.createSocketServer(botkit.http, this.socketServerOptions, botkit.handleTurn.bind(botkit));
         });
