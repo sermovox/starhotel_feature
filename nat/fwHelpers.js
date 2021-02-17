@@ -1983,24 +1983,42 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     
         }, //end rest__
         
-        run_jrest: async function (hostqs, formObj, method,head,step) {// see chart 112020 
+        run_jrest: async function (hostqs, formObj, method, head, step,isQuery) {// see chart 112020 
+                                                                                // is the preferred method to build model from ext service . its return has a specified format . 
+                                                                                // http ext servers can be called also by  run_rest() that returns just json of returned data
 
             // - service:// : check if can route to internal controller put in this ( service extension)
             //          service://dbmatch  : route to service://plugins.dbs.restAdapter2Mongodb_ so fire this.plugins.dbs.restAdapter2Mongodb_ (formObj)
             //              if form is null filling form with url qs
             //- http://host...  call run_rest: and return the json obj of http_response
-            //  std RETURN : return {reason:'runned'/'err',rows:JSON.parse(http_response)};  rows is row obj . its format depends from service called and will be passed and managed by matchers
+
+            //  std RETURN : return {reason:'runned'/'err',rows};  
+            //      - each protocol (http://, service://) requires a returns properly formatted from the end point , generally {reason=runned/err,rows} or rows (json or js ojb ) 
+            //          ex: in http rows:JSON.parse(http_response)
+            //      - val=rows: its format is set by the end point return data (rows part) format (end point called according to hostqs)
+            //          and must be in format expected by run_jrest() callers 
+            //           can be usually :
+            //          - condition matchers or direct call in $$$$ condition invoking service :
+            //          - $$$$let out;par.sF=service.run_jrest;par.sP=':service//plugins.gCal.listEvents?calend='+vars.nome;par.cb=function(x){vars.nome=vars.nome+' abbiamo disponibile a calendario  '+x.rows;vars.askmatches.rel2detail={cursor:x};};out=false;
+            //      generally :
+            //          - matchers entity require val=stdrow={value.patt,descr,...blfields }} or [stdrow]
+            //          - query and intent matcher require val=param={rows,cursor,group,complete,,,,(match/matched will be added by conversation.js)}
             //      (if entity , if used in view , better at least std db entity {value,descr.patt,,,}) or [row1,,,]  
-            //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( asmatches.param format if we run a query )
+            //      response  is usually a row or [row1,,,] with row in std format ( like dynMatch type Ent matcher) , but can be everything ( matches/askmatches.param format if we run a query )
             //              if failed :{reason:something,'err string'}
+            // isQuery : just used in 
 
             // method='GET'   accept formObj map instead of qs 
-
-
-
+            let url,dbSelector=false;
+            if (typeof hostqs === 'string') { // 022021 some code ex $$$$ on custom field calls parm.Fc   so calls run_jrest(stringurl)
+                // ex : par.sF=service.run_jrest;par.sP=':service//plugins.gCal.init?calend='+vars.nome; that will call  run_jrest(par.sP)
+                //hostqs= getHost(hostqs,step.values.matches);// code hostqs according getHost hostqs= getHost(hostqs,step.values.matches);// code hostqs according getHost
+                hostqs = getHost(hostqs, null);// code hostqs according getHost
+                console.error(' fwHelpers : WARNING  run_jrest called using a straight url param : ', hostqs);
+            }
 
             // let hostqs= getHost(url);// evaluate $model matchee in qs  ! 
-            let url=hostqs.url;
+            url = hostqs.url;
 
 
             if (true) {
@@ -2013,83 +2031,92 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                     let host, qs;// host is action on a ctl  !
 
-                    if (hostqs  && (host = hostqs.host)) {
+                    if (hostqs && (host = hostqs.host)) {
                         // ex service://plugins.apluginctl/date?term=1 >
                         // host = plugins.apluginctl
                         // uri =service_function=date , qs ='term=1'
-                        let qs = hostqs.qs,qs_=hostqs.qs_;
+                        let qs = hostqs.qs, qs_ = hostqs.qs_;
 
                         //
                         let myf;
-                        if(host=='localhost'){
-                            host='plugins.app';
-                        let lev = host.split('.');// lev=['plugins','apluginctl']
+                        if (host == 'localhost') {
+                            host = 'plugins.app';
+                            let lev = host.split('.');// lev=['plugins','apluginctl']
 
-                        if (lev) lev.forEach((element, i) => {
-                            if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
-                            else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
+                            if (lev) lev.forEach((element, i) => {
+                                if (i == 0) myf = this[element]; // starting sets myf=this.service, probaly exists ( mf not null )
+                                else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
 
-                        });
-                    }
+                            });
+                        }
 
                         if (myf) { // usually url='service.plugins.apluginctl , so myf is the function to call
 
                             // pass qs in url into form if form is null
 
-                            let form = formObj ;// will be vars ( + session !)
-                            form.qs=qs_;//add qs : action/url + form request x 
+                            let form = formObj;// will be vars ( + session !)
+                            form.qs = qs_;//add qs : action/url + form request x 
 
                             // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
 
                             // GENERAL RULE if the result do not have .reason  embedd it !!! 
-                            mr=await  myf(form);// ERROT to code ......
+                            mr = await myf(form);// ERROT to code ......
                             /* see app.js myf={post:function(action, vars, session, request){},,,,}  
 
                                 so if a obj ,we must call myf.post , then extract from session the rows we return to fw that will use to det the action to returns from condition !!!!!
                                  nb post will update/set session, like session.curprocess  ,  the redirect / next gotothread !!! 
 
-                            */ 
+                            */
 
-                           // mr = {reason:'runned/err',rows:await myf(form)};// .catch {reason:err,null} 
-                           // in this special case rows={redirect:'name',action:'repeat/next/begin....'}
+                            // mr = {reason:'runned/err',rows:await myf(form)};// .catch {reason:err,null} 
+                            // in this special case rows={redirect:'name',action:'repeat/next/begin....'}
                         }
-                    } 
+                    }
 
-                    if(mr)console.log(' service run_jrest(url=',url,') returning from registered app :  {reason:',mr.reason,',rows = Entity/[]format } =',mr);// service runned
-                    else console.log(' service run_jrest(url=',url,') returning NULL from registered app ');// not found serevice
-                   return mr;
-                    
+                    if (mr) console.log(' service run_jrest(url=', url, ') returning from registered app :  {reason:', mr.reason, ',rows = Entity/[]format } =', mr);// service runned
+                    else console.log(' service run_jrest(url=', url, ') returning NULL from registered app ');// not found serevice
+                    return mr;
 
-                } else 
 
-                if (url.substring(0, 10) == 'service://') {// :service//dbmatch'
+                } else if (url.substring(0, 10) == 'service://') {// :service//dbmatch'
                     //form={entity,term,wheres,meta,whMmeta};// excel is debug param, usually is in the service
 
                     // MAPS local service into is registered func 
                     if (url.substring(10, 17) == 'dbmatch') {// dbmatch interface meets Entity type matcher interface , the interface should be the usual case put in this.plugins.....
                         // route to internal db service ctl 
-
+                        dbSelector=true;//require selector building 
                         let wt = false;// new db service , ok 
                         if (wt) mr = await this.restAdapter2Mongodb(formObj);// old , call specific caller to internal data service adapter that knowing additional scheme cal call a db
 
                         // a service pluging so we put here . if was a custom put in service.js 
                         else mr = await this.plugins.dbs.restAdapter2Mongodb_(formObj)// best
-                        
-                        .catch(error =>{ // seems not to thrown if got in previous catch . in this case result mr is null and the thread goon as we didnt have error
-                            console.error('  .catch because the promise was rejected mr null , returning from rest service request :  returns:',mr,',error: ',error);});
+
+                            .catch(error => { // seems not to thrown if got in previous catch . in this case result mr is null and the thread goon as we didnt have error
+                                console.error('  .catch because the promise was rejected mr null , returning from rest service request :  returns:', mr, ',error: ', error);
+                            });
 
                         // required : mr={reason,rows:[{entity1},,,]}
 
+                        //  re FORMAT mr.rows : 
+                        // >>>>>>   enrich VAL=ROWS   : set rows the std format x any service://dbmatch protocol calls:
+                        // se chiamata fatta da un query matcher allora isQuery= true  qundi deve trovare al minimo:
+                        //      - rows =[row1,,,] in stdformat or rows=[]
+                        //      - se length=1 :
+                        //          -  group.sel:{match:rows[0].value,instance:rows[0],vmatch:rows[0].descr} null se length=0
+                        //              ma cio e' gia fatto nel return del matcher se si accorge che rows ha dmension 1 ( 0 lo considera query model not matched ( ma runned perche reason runned))
+                        //      - se >1 deve trovare .sel null ma settato il cursor !!!!!
+                        // se chiamata fatta da un entity matcher o altro 
+                        // ci si aspetta solo val=stdrow o val=[stdrow1,,,] e il ricevente becchera comunque il stdrow1
+                        mr.rows = {
+                            objMod: true,// good format 
+                            // matched: mm, 
+                            type: '?', rows: mr.rows
+                            // complete:'match','miss','incomplete',,,,
+                            // cursor: set by run_jrest below is isQuery
+                            // group:  set by adapter
 
-                        // >>>>>>   enrich VAL=ROWS   : set rows the std format x 
-                        mr.rows={objMod:true,// good format 
-                            matched:mm,type:'?',rows:mr.rows
-                        // complete:'match','miss','incomplete',,,,
-                        // cursor: set by run_jrest
-                        // group:  set by adapter
-                    
                         };// must be mr={reason,rows={objMod:true,matched,,,,rows={}}} because mr.rows must be in entity matcher type 
-                                             
+
                         // call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows,reason} reason  'err' or 'runned'
 
@@ -2098,12 +2125,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         // usually service={,,,,f1,f2,f3,plugins:{p1,p2,,,}} so we must find fx or px (url='service://plugins....', )
 
                         let host, qs;// host is action on a ctl  !
-                        
+
                         if (hostqs && (host = hostqs.host)) {
                             // ex service://plugins.apluginctl/date?term=1 >
                             // host = plugins.apluginctl
                             // uri =service_function=date , qs ='term=1'
-                            let qs = hostqs.qs,qs_=hostqs.qs_;
+                            let qs = hostqs.qs, qs_ = hostqs.qs_;
 
                             let lev = host.split('.');// lev=['plugins','apluginctl']
                             let myf;
@@ -2117,144 +2144,148 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                                 // pass qs in url into form if form is null
 
-                               //  let form = formObj || querystring.parse(qs);
+                                //  let form = formObj || querystring.parse(qs);
                                 // better add :
-                                let form=formObj=formObj ||{};
-                               // if(qs) form=Object.assign(formObj,querystring.parse(qs));else form=formObj;
-                               if(qs) {form.qs=qs_;// insert qs into form.qs
+                                let form = formObj = formObj || {};
+                                // if(qs) form=Object.assign(formObj,querystring.parse(qs));else form=formObj;
+                                if (qs) {
+                                    form.qs = qs_;// insert qs into form.qs
 
-                                // insert in qs some var obj if key='$vars.......'  
-                                insVars(form.qs,step);//  let vars = step.values;
-                               }
+                                    // insert in qs some var obj if key='$vars.......'  
+                                    if (step) insVars(form.qs, step);//  let vars = step.values;
+                                }
                                 // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
                                 // GENERAL RULE if the result do not have .reason  embedd it !!! 
-                                mr=await  myf(form);
+                                mr = await myf(form);
 
-                                // check format 
-                                if(mr.rows&&mr.rows.objMod){// surely the interface adapter returns a well format matcher result obj , goon 
+                                if (mr) {
+                                    // check format 
+                                    if (mr.rows && mr.rows.objMod) {// surely the interface adapter returns a well format matcher result obj , goon 
+                                        // mr=param={rows,cursor,group,,,,}
                                         ;
-                                }else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
-                                    // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
-                                    if(Array.isArray(mr.rows)){
-                                        mr = {reason:'runned',rows:{rows:mr.rows,objMod:true}};// .catch {reason:err,null} // embed reason if needed 
+                                    } else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
+                                        // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
+                                        if (Array.isArray(mr.rows)) {
+                                            mr = { reason: 'runned', rows: { rows: mr.rows, objMod: true } };// .catch {reason:err,null} // embed reason if needed 
 
-                                    }else if(typeof (mr) === 'string') {// atomic value
+                                        } else if (typeof (mr) === 'string') {// atomic value
                                             // future use 
-                                            mr=null;
-                                    } else mr=null;
+                                            mr = null;
+                                        } else mr = null;
 
                                 }
-
-
-
-
-                               
                             }
 
-                        } 
-                    
 
 
-                } else
 
-                    if (url.substring(10, 16) == 'custom') {// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
-                        form = { entity, term, wheres, meta };// excel is debug param, usually is in the service
-                        let  custserv;
-                        // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
-                        if (!url.charAt(6) == ':') return false;
-                        custserv = url.substring(7);
-                        if (this[custserv]) {
 
-                            // a service pluging so we put here . if was a custom put in service.js 
-                            mr = await this[custserv](form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
-                            //  // returns  res={rows,reason} reason  'err' or 'runned'
-                            if (mr.reason == 'err') return false;
-                            else {
-
-                                cb(mr.rows);
-                                return true;
-                            }
                         }
-                        return false;
 
-
-
-
-
-                    } else if (url.substring(0, 4) == 'http') {// just map the post param wheres  if find excel[entity].restmap
-                        // wheres=rmap(entDir.restmap); functopn rmap(){}
-
-                        // std POST REST 
-
-                        // is required the http returns :
-                        // - a array of row ( in std format , ) ( a query matchers ) 
-                        // - or if returns a obj must be in std format )
-                        let response = await this.run_rest(url, formObj, method,head);
-                        if (response) {
-                            mr=JSON.parse(response);
-                                // check format 
-                                if(mr.rows&&mr.rows.objMod){// surely the interface adapter returns a well format matcher result obj , goon 
-                                    ;
-                            }else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
-                                // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
-                                if(Array.isArray(mr.rows)){
-                                    mr = {reason:'runned',rows:{rows:mr.rows,objMod:true}};// .catch {reason:err,null} // embed reason if needed 
-
-                                }else if(typeof (mr) === 'string') {// atomic value
-                                        // future use 
-                                        mr=null;
-                                }
-
-
-
-                            return {reason:'runned',rows:JSON.parse(response)};
-                        }
-                    } else {
-                        // look for a custom rest adapter 
-                        //  if(fwCb.model[entity].matcher)cb(await fwCb.model[entity].matcher);
-                        return {reason:'err',rows:null};
                     }
 
-                    if(mr){
-
-                        // in case of std format check if exists  rows and is  array so add cursor x selection 
-                        let mm;if(mr.reason=='runned'&&mr.rows.objMod&&mr.rows.rows.length>1){// is probably  query matcher ( seldom entity) 
-
-                            // rows must be a array 
-                            
-
-                            
-                            mm='match';
 
 
-                            if(formObj.sel_ctx){// is a Entity query , so if not provided by query engine , build selector instruction for fw . intents will have its proper method 
-                                    /*
-                                    if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
+                } else if (url.substring(10, 16) == 'custom') {// put in service.js custom:customservicemethod added  whith this signature call(form) return the same obj 
+                    form = { entity, term, wheres, meta };// excel is debug param, usually is in the service
+                    let custserv;
+                    // old mr=await this.restAdapter2Mongodb(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                    if (!url.charAt(6) == ':') return false;
+                    custserv = url.substring(7);
+                    if (this[custserv]) {
 
-                                    // like qea intent add context to support  process selection in a selector thread:
-                                        cursor:{resModel: {value1=rows[0].value:{ 
-                                                                                            patt:rows[0].patt // a regex ? or just like vname
-                                                                                            vname:vname0=rows[0].value
-                                                                                            },,,
-                                                                                },
-                                                                    medSyntL:[vname0,vname1,,,]// to list all items
-                                                                    },
-                                        group:{sel:{item:this.intents[0]}
-                                    */
-                                   setSelectData(mr);
+                        // a service pluging so we put here . if was a custom put in service.js 
+                        mr = await this[custserv](form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+                        //  // returns  res={rows,reason} reason  'err' or 'runned'
+                        if (mr.reason == 'err') return false;
+                        else {
 
-                            }
+                            cb(mr.rows);
+                            return true;
                         }
+                    }
+                    return false;
 
 
-                        console.log(' service run_jrest(url=',url,') returning to matchers from rest service request :  {reason:',mr.reason,',val=rows = [Entity1,,,]/{[Entity1,,,],cursor,group,complete} =',mr,
-                    '\n  EntityX  if no complex ( +entities)  the better format for entity item  is db view std format ( value,descr,patt, blfields) ');// service runned
-                }else {console.log(' service run_jrest(url=',url,') returning NULL from rest service request  ');// not found serevice
-                mr= {reason:'err',rows:null};
-            }
-                   return mr;
 
-                    
+
+
+                } else if (url.substring(0, 4) == 'http') {// just map the post param wheres  if find excel[entity].restmap
+                    // wheres=rmap(entDir.restmap); functopn rmap(){}
+
+                    // std POST REST 
+
+                    // is required the http returns :
+                    // - a array of row ( in std format , ) ( a query matchers ) 
+                    // - or if returns a obj must be in std format )
+                    let response = await this.run_rest(url, formObj, method, head);
+                    if (response) {
+                        mr = JSON.parse(response);
+                        // check format 
+                        if (mr.rows && mr.rows.objMod) {// surely the interface adapter returns a well format matcher result obj , goon 
+                            ;
+                        } else // mr.rows is in a format acceptable by  calling matchers . but if it is a array we consider is a array of std row so we can set in std format ( is a entity or query matcher !)
+                            // and add if possible the cursor support to select in case is a query matcher ( so length > 1 )
+                            if (Array.isArray(mr.rows)) {
+                                mr = { reason: 'runned', rows: { rows: mr.rows, objMod: true } };// .catch {reason:err,null} // embed reason if needed 
+
+                            } else if (typeof (mr) === 'string') {// atomic value
+                                // future use 
+                                mr = null;
+                            }
+
+
+
+                        return { reason: 'runned', rows: JSON.parse(response) };
+                    }
+                } else {
+                    // look for a custom rest adapter 
+                    //  if(fwCb.model[entity].matcher)cb(await fwCb.model[entity].matcher);
+                    return { reason: 'err', rows: null };
+                }
+
+                if (mr) {// 022021 : TODO TODO : need to review the consolidation of different protocol (service://  http://  ... )
+                        // so make the run_jrest  returns a std return. probably take intents matcher case the standard format : param , so :
+
+                    // in case of std format check if exists  rows and is  array so add cursor x selection if find a flag formObj.sel_ctx
+                    let mm; if (mr.reason == 'runned' && mr.rows.objMod && mr.rows.rows.length > 1) {// is probably  query matcher ( seldom entity) 
+
+                        // rows must be a array 
+
+
+
+                        mm = 'match';// ?? 
+
+
+                        if (isQuery&&(formObj.sel_ctx||dbSelector)) {// add selector only if requested or we are using db service
+                            /*
+                            if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
+
+                            // like qea intent add context to support  process selection in a selector thread:
+                                cursor:{resModel: {value1=rows[0].value:{ 
+                                                                                    patt:rows[0].patt // a regex ? or just like vname
+                                                                                    vname:vname0=rows[0].value
+                                                                                    },,,
+                                                                        },
+                                                            medSyntL:[vname0,vname1,,,]// to list all items
+                                                            },
+                                group:{sel:{item:this.intents[0]}
+                            */
+                            setSelectData(mr);
+
+                        }
+                    }
+
+
+                    console.log(' service run_jrest(url=', url, ') returning to matchers from rest service request :  {reason:', mr.reason, ',val (=rows) = param={rows:[Entity1,,,]/{[Entity1,,,],cursor,group,complete} =', mr.rows,'}',
+                        '\n  EntityX  if no complex ( +entities)  the better format for entity item  is db view std format ( value,descr,patt, blfields) ');// service runned
+                } else {
+                    console.log(' service run_jrest(url=', url, ') returning NULL from rest service request  ');// not found serevice
+                    mr = { reason: 'err', rows: null };
+                }
+                return mr;
+
+
 
             }// ends if true
 
@@ -2791,7 +2822,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             }else {// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
 
             let head=null;
-           let  mr=await await this.run_jrest(hostqs,form,isGET,head,step);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
+           let  mr=await await this.run_jrest(hostqs,form,isGET,head,step,isQuery);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                 //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                 if(!mr||mr.reason!='runned'||!mr.rows)return false;
                 else {
@@ -2913,11 +2944,11 @@ function getHost(url, matches) {// return host , qs . new good also for any prot
         let qm = qs.indexOf('?');
         if (qm >= 0) {
             qs = qs.substring(qm + 1);
-            qs_=querystring.parse(qs);// qs='pippo=ok&$caio=x&city=rome'
+            qs_=querystring.parse(qs);// qs='pippo=ok&$caio=x&city=rome' qs_={pippo:'ok',,,,}
 
-            for(let amod in qs_){
+            for(let amod in qs_){// amodelmatch=$amodel  >  {amodelmatch:vars.matches.amodel.match,,,,,}
                 let mod=qs_[amod];
-                if(mod.charAt(0)=='$'){
+                if(mod.charAt(0)=='$'&&matches){
                     mod=mod.substring(1);
                     if(matches[mod]){
                         flag=true;
@@ -2927,7 +2958,7 @@ function getHost(url, matches) {// return host , qs . new good also for any prot
                 }
                 }
             }
-            if(flag)qs=querystring.stringify(qs_);
+            if(flag)qs=querystring.stringify(qs_);// riassegno il qs con i var ($vars.matches.somemodels.....  only) resolved
 
         } else qs = null;
     }

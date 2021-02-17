@@ -127,8 +127,8 @@ console.log('*** instantiating Botkit CMS');
 ///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
-// const xmpp_on=true;
-const xmpp_on=false;
+const xmpp_on=true;
+//const xmpp_on=false;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
@@ -266,6 +266,7 @@ if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to 
                     // assuming registering this services as 'ai' plugin,  the adapter can be called in a condition macro using directive:  
                     //        "url":"service://plugins.ai.book.....anAvailableAdapter
                     // nb book is better port to app controller 
+                    ,infoApp:{url:null}
 }
     
     );// in matcher macro url= service://plugins.ai.duck.datetime?qs

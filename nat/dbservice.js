@@ -1699,9 +1699,14 @@ let res={// called by  exsec  , will call resolve_
     },
     results:function(  bytes,code ){// used 
         //let bytes;
-        console.error('db query exit code ',code,' with cursor: :',bytes)
-        if(code==0)resolve_({rows:bytes,reason:'runned'});
-        else if(code==1)resolve_({rows:bytes,reason:'err'});// rows can be array?
+        console.error('db query exit code ',code,' with cursor: :',bytes);
+        if(code==0){console.log('db query exit code ',code,' returning {reason:runned,rows: ',bytes,'}');
+            resolve_({rows:bytes,reason:'runned'});
+         }
+        else {
+            console.error('db query exit code ',code,' returning {reason:runned,rows: ',bytes,'}');
+            resolve_({rows:bytes,reason:'err'});// rows can be array?
+        }
     }
 
 

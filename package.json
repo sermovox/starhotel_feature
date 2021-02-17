@@ -10,6 +10,7 @@
   "dependencies": {
     "@xmpp/client": "^0.11.1",
     "@xmpp/debug": "^0.11.0",
+    "ahocorasick": "^1.0.2",
     "botbuilder-adapter-web": "^1.0.3",
     "botbuilder-storage-mongodb": "^0.9.5",
     "botkit": "^4.0.1",

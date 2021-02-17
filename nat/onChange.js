@@ -222,7 +222,7 @@ let vfwF = {// framework functions module used in convo obj
         , routing// routing=linematch is true if not $% case ( not routing case ) so this condition will stop the cond loop
         , rematch// the regex matched extraction (....) , in revision 102020 seems to be changed with storeVal
         , reset// reset matches ???? never called !!!!!!!!!!!!!!!
-        , param,// not nul if this is a resolver selection ask, entity is a askname or modelname , param can be param or intent ! // nb not null only if entity matches (mat=true) ?
+        , param,// not nul if this is a resolver selection ask, entity is a askname or modelname , param can be param/query or entity or intent ! // nb not null only if entity matches (mat=true) ?
         storeVal// old a integer or string to get from user  .02102020 : changed , manage case storemat='value' , see below news 
         , step, previous
         //  see AQJU ,  probably the var isStatic just is indeed true if the type result is text . 
@@ -447,7 +447,7 @@ let vfwF = {// framework functions module used in convo obj
         
         */
         let vars=step.values,askmatches = vars.askmatches;
-        console.log(' ** addMatcRes called to set matching result on ask ',previous.collect.key,'  ,matches: ', mat, ',entity: ', entity, ',model item (name(static) or obj) storemat: ', storemat, ', routing: ', routing);
+        console.log(' ** addMatcRes called to set matching result on ask ',previous.collect.key,'  ,matches: ', mat, ',entity: ', entity, ',model item (name(static) or obj) storemat: ', storemat, ', routing: ', routing,', selecting a desire ent:',param!=null);
         if (reset) {
             if (entity) step.values.matches[entity] = null;
             askmatches[previous.collect.key] = null;
@@ -564,10 +564,11 @@ let vfwF = {// framework functions module used in convo obj
                  ) rT = 0;// std matcher , no ASWG
                  // id object :
                 else // no std matcher , entity will be stored on var ASWG , can depend from type (?)
-                if (storemat.type == 'Ent') rT = 1;
+                {if (storemat.type == 'Ent') rT = 1;
                 else if (storemat.type == 'Int') rT = 2;
                 else if (storemat.type == 'Query') rT = 3;// Cur or param or query 
-    
+                console.log('  addMatcRes is set a matching of complex entity: ',entity,', of type: ', storemat.type);
+                }
                // console.log(' result should be a string :', isStatic && rT == 1);
 
                // >>>>>  FIND the status (matches or askmatches ) to attach the match in format wanted by matcher type 
@@ -846,7 +847,7 @@ let vfwF = {// framework functions module used in convo obj
                     param.vmatch=blResItem[12];// voice name 
                     */
 
-
+                   console.log('  addMatcRes is matching a selector entity: ',entity,', (can be same desire ) on a desire query ');
 
                     // entity is the on running generated model by the condition resolver with same name as the ask !
                     //  step.values.matches[entity]={match: storemat};// alredy done 
@@ -930,7 +931,7 @@ let vfwF = {// framework functions module used in convo obj
                     if(mVname)mv.vmatch = mVname;// pass in param ??
                     mv.match= mName;//should alredy set as storemat ! , param.group.sel.item.name ;// reset , in convo just set intents[0].name . set also if selector is not run
                     mv.instance=instance;// convenience reference. set also if selector is not run ,
-                    mv.matched='matched';  // todo set 'best' if we got manyresult and still to select  means that anyone can take this as a selected value instance 
+                    mv.matched='match';  // 13022021  todo set 'best' if we got manyresult and still to select  means that anyone can take this as a selected value instance 
 
                     ///* ?????????
                     // attach param/intent to entity=selector of model param/intent( AND to this normal ask ? )

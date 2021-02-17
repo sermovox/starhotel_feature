@@ -157,8 +157,10 @@ myRequest.end()
 let http,https,request;
  module.exports ={
      init:function(http_,https_,request_){http=http_;https=https_;request=request_},
-     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  ,
-                                                      //  post only param : qs, urlenc . IF want url encode data we can  provide qs instead of data map obj
+     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
+                                                      //  post :
+                                                      //        qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
+                                                      //        if urlenc=false: send json from  data . data must be a plain js obj or its json string . anyway will be sent as json ( header is built)
          // use :
          // response = await jrest("http://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
          // response = await jrest("http://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:1,base:10,format:'plain',rnd:'new'})
@@ -288,8 +290,10 @@ opt,
 
 
 function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ is a map obj, qs is query string .
-                                                                       //  encJson=true needs data_,
-                                                                      //   encJson=false  needs qs or  data_
+                                                                       //  urlenc =encJson=true needs data_,
+                                                                      //   urlenc =encJson=false  needs qs or  data_
+                                                                      // if urlenc =true :  put in body the  urlencoded  qs or get it from the js map data_
+                                                                      // if urlenc= false : put in body the  json of the js map data_
   let body, head_;
 
 
@@ -297,7 +301,8 @@ function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ i
       if (!data_) {
         body={};// no data , data cant be provided from qs if we want to encode data with  json format
       } else {// case data_ + json enc :
-        body = JSON.stringify(data_);//{    title: "Make a request with Node's http module"  })
+        if (typeof (data_) === 'string') body=data_;
+        else body = JSON.stringify(data_);//{    title: "Make a request with Node's http module"  })
         head_= {
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body)
@@ -353,8 +358,9 @@ function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ i
   //  http://jsfiddle.net/mg511z7w/
 
 // var data = {"apple": [{"kiwi": "orange"}, {"banana": "lemon"}], "pear": "passion fruit"};
+// to check : toplevel={"pear": "passion fruit"} ??
 
-var stringifyParam = function(data, topLevel, keyProp) {
+var stringifyParam = function(data, topLevel, keyProp) {// from obj to qs
         var string = '';
         for (var key in data) {
             if(keyProp && topLevel[keyProp] ) {
@@ -381,10 +387,10 @@ var stringifyParam = function(data, topLevel, keyProp) {
         }
         return string;
     },
-    toParam = function(data){
-        var string = stringifyParam(data,data);
+    toParam = function(data){// from plain 1 level obj to qs in encoded format
+        var string = stringifyParam(data,data);// from 1 level obj to qs
         //return encodeURI(string.substring(0,string.length-1).split(' ').join('+'));// case 1 :  ' '  >  +
-        return encodeURI(string.substring(0,string.length-1));// case 2 :   ' ' > %20
+        return encodeURI(string.substring(0,string.length-1));// case 2 :   ' ' > %20  // encode qs 
     };
 
 //console.log(toParam(data)); //apple%5B0%5D%5Bkiwi%5D=orange&apple%5B1%5D%5Bbanana%5D=lemon&pear=passion+fruit < case 1

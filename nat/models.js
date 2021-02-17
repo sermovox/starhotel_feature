@@ -2102,141 +2102,148 @@ let OnCh_Register={// minimum  must be :          acmd:{ excel:{}},
         //
         }   
         }},// ends  simple_help_desk
-_yourname:{// starting with _ means that a goto cmd will fire a child !!
-    
-excel:{
+    _yourname: {// starting with _ means that a goto cmd will fire a child !!
+
+        excel: {
 
 
-    witai:{  },// alredy set in .rid
+            witai: {},// alredy set in .rid
 
-    mod_prov:{// registering in basefw will make available so in 
+            mod_prov: {// registering in basefw will make available so in 
 
 
-         //  db data used by dataservice,  not bot 
-        dbmeta:{// dbservice staff  
-            rel:0,// a where condition , not join 
-            dburl:'mongodb://192.168.1.15:27017/',// db mongo server
-            db:'emilia',// the mongo db
-            collect:'J_1_m',// x collection name j_1_ms
-            schema1old: // col mapping x cursor filling is not json , no good 
-        
-            // receiving the cursor rows from db we can flat into a array of format med_data using :
-            // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
-            //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+                //  db data used by dataservice,  not bot . it is here just to config here also the dataservice connections params
+                dbmeta: {// dbservice staff  
+                    rel: 0,// a where condition , not join 
+                    dburl: 'mongodb://192.168.1.15:27017/',// db mongo server
+                    db: 'emilia',// the mongo db
+                    collect: 'J_1_m',// x collection name j_1_ms
+                    schema1old: // col mapping x cursor filling is not json , no good 
 
-                // nb here got is number  not boolean like med_data
-      
-      // DEFAULT FIELDS :
+                    // receiving the cursor rows from db we can flat into a array of format med_data using :
+                    // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+                    //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
 
-         {_id: Number,
-            patt: {type: String, required: true},// the vui key ( voice name)
-            value: {type: String, required: true},// the name or  bl key or the gui key shown in list
-           data: {type: String, required: false},// the fts added terms/relation x refine or some bl detail
-            descr: {type: String, required: false}
+                    // nb here got is number  not boolean like med_data
 
-          },
-          schema: // col mapping x cursor filling in json format
-        
+                    // DEFAULT FIELDS :
 
-    // DEFAULT FIELDS :
+                    {
+                        _id: Number,
+                        patt: { type: String, required: true },// the vui key ( voice name)
+                        value: { type: String, required: true },// the name or  bl key or the gui key shown in list
+                        data: { type: String, required: false },// the fts added terms/relation x refine or some bl detail
+                        descr: { type: String, required: false }
 
-       {_id: 'number',
-          patt: {type: 'string', required: true},// the vui key ( voice name)
-          value: {type: 'string', required: true},// the name or  bl key or the gui key shown in list
-         data: {type: 'string', required: false},// the fts added terms/relation x refine or some bl detail
-          descr: {type: 'string', required: false}
+                    },
 
-        }
-    },
-        // end db data 
 
-    // error paese e' ask deve essere entity pioop 
-    mod_wh_Of:'pippo'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) , so dont put in notmatched prompt list if we already had the dyn_key matched 
-    },
-    pippo:{
-        schemaurl:'Master',// old  data service staff,,to be  pass to it !. to map entity pippo into the name of master collection on data service  wich run query 
+                    schema: // col mapping x cursor filling in json format
 
-        dbmeta:{// dbservice staff 
-            dburl:'mongodb://192.168.1.15:27017/',// db mongo server
-            db:'emilia',// the mongo db
-            collect:'J_1_m',// x collection name j_1_ms
-            schema1old: // col mapping x cursor filling is not json , no good 
-        
-            // receiving the cursor rows from db we can flat into a array of format med_data using :
-            // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
-            //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+                    // DEFAULT FIELDS :
 
-                // nb here got is number  not boolean like med_data
-      
-      // DEFAULT FIELDS :
+                    {
+                        _id: 'number',
+                        patt: { type: 'string', required: true },// the vui key ( voice name)
+                        value: { type: 'string', required: true },// the name or  bl key or the gui key shown in list
+                        data: { type: 'string', required: false },// the fts added terms/relation x refine or some bl detail
+                        descr: { type: 'string', required: false }
 
-         {_id: Number,
-            patt: {type: String, required: true},// the vui key ( voice name)
-            value: {type: String, required: true},// the name or  bl key or the gui key shown in list
-           data: {type: String, required: false},// the fts added terms/relation x refine or some bl detail
-            descr: {type: String, required: false}
+                    }
+                },
+                // end db data 
 
-          },
-          schema: // col mapping x cursor filling in json format
-        
+                // error paese e' ask deve essere entity pioop 
+                mod_wh_Of: 'pippo'// will be used as where to query a dyn_key OR  match another entity ( depending on this entity ex capital of Italy) , so dont put in notmatched prompt list if we already had the dyn_key matched 
+            },
 
-    // DEFAULT FIELDS :
+            pippo: {
+                schemaurl: 'Master',// old  data service staff,,to be  pass to it !. to map entity pippo into the name of master collection on data service  wich run query 
 
-    JSON.stringify(
-        {type:'object',
-        properties:{
-            
-            _id: {type: 'integer'},//, required: true},//'number',
-          patt: {type: 'string'},//, required: true},// the vui key ( voice name)
-          value: {type: 'string'},//, required: true},// the name or  bl key or the gui key shown in list
-         data: {type: 'string'},//, required: false},// the fts added terms/relation x refine or some bl detail
-          descr: {type: 'string'}//, required: false}
-        }
-        })
-        // "{"_id":{"type":"integer"},"patt":{"type":"string"},"value":{"type":"string"},"data":{"type":"string"},"descr":{"type":"string"}}"
-        ,schemax:'{'+
-            '"type":"object",'+
-            '"properties":{'+
-            /*
-              '"address":{'+
-                '"type":"object",'+
-                '"properties":{'+
-                 '"street":{"type":"string"},'+
-                 ' "house":{"type":"string"},'+
-                  '"city":{"type":"string"}'+
-                '}'+
-              '},'+*/
-              '"firstName":{"type":"string"},'+
-              '"lastName":{"type":"string"},'+
-              '"title":{'+
-                '"type":"string",'+
-               ' "enum":["Dr","Prof.","Ph.D."]'+
-              '},'+
-              '"email":{'+
-                '"type":"array",'+
-               ' "items":{"type":"string"}'+
-              '},'+
-             ' "age":{"type": "integer"}'+
-             ', "_id":{"type": "integer"}'+
-           ' }'+
-          '}'
+                dbmeta: {// dbservice staff 
+                    dburl: 'mongodb://192.168.1.15:27017/',// db mongo server
+                    db: 'emilia',// the mongo db
+                    collect: 'J_1_m',// x collection name j_1_ms
+                    schema1old: // col mapping x cursor filling is not json , no good 
+
+                    // receiving the cursor rows from db we can flat into a array of format med_data using :
+                    // no  [xx._id,xx.value,xx.patt,xx.descr,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+                    //     [xx._id,xx.value,xx.patt,xx.descr,xx.data,xx.loc,xx.menu,xx.news,xx.where,xx.how,xx.whenfrom,xx.whento,xx.voicename,xx.res,xx.patt2,xx.spare,xx.time2from,xx.time2to,xx.det_master,xx.det_item,xx.got,xx.dat1,xx.dat2,xx.dat3,xx.dat4,xx.inputdata1]
+
+                    // nb here got is number  not boolean like med_data
+
+                    // DEFAULT FIELDS :
+
+                    {
+                        _id: Number,
+                        patt: { type: String, required: true },// the vui key ( voice name)
+                        value: { type: String, required: true },// the name or  bl key or the gui key shown in list
+                        data: { type: String, required: false },// the fts added terms/relation x refine or some bl detail
+                        descr: { type: String, required: false }
+
+                    },
+                    schema: // col mapping x cursor filling in json format
+
+
+                        // DEFAULT FIELDS :
+
+                        JSON.stringify(
+                            {
+                                type: 'object',
+                                properties: {
+
+                                    _id: { type: 'integer' },//, required: true},//'number',
+                                    patt: { type: 'string' },//, required: true},// the vui key ( voice name)
+                                    value: { type: 'string' },//, required: true},// the name or  bl key or the gui key shown in list
+                                    data: { type: 'string' },//, required: false},// the fts added terms/relation x refine or some bl detail
+                                    descr: { type: 'string' }//, required: false}
+                                }
+                            })
+                    // "{"_id":{"type":"integer"},"patt":{"type":"string"},"value":{"type":"string"},"data":{"type":"string"},"descr":{"type":"string"}}"
+                    , schemax: '{' +
+                        '"type":"object",' +
+                        '"properties":{' +
+                        /*
+                          '"address":{'+
+                            '"type":"object",'+
+                            '"properties":{'+
+                             '"street":{"type":"string"},'+
+                             ' "house":{"type":"string"},'+
+                              '"city":{"type":"string"}'+
+                            '}'+
+                          '},'+*/
+                        '"firstName":{"type":"string"},' +
+                        '"lastName":{"type":"string"},' +
+                        '"title":{' +
+                        '"type":"string",' +
+                        ' "enum":["Dr","Prof.","Ph.D."]' +
+                        '},' +
+                        '"email":{' +
+                        '"type":"array",' +
+                        ' "items":{"type":"string"}' +
+                        '},' +
+                        ' "age":{"type": "integer"}' +
+                        ', "_id":{"type": "integer"}' +
+                        ' }' +
+                        '}'
+
+                },
+            }
 
         },
-    }
 
-},
+        direc: {
+            paese: {
 
-direc:{
-    paese:{
+                loopDir: {// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
 
-    loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
-
-        goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
-    }
-//, autoReg=true
-//
-}   
-}},// ends  _yournam
+                    goon2: false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+                //, autoReg=true
+                //
+            }
+        }
+    },// ends  _yournam
 
 star_desk:{// REFERENCE . all var dyn added at containers values.excel/matches/askmatches of the convo room at defeult thread launch 
 
@@ -3013,7 +3020,7 @@ model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|rec
     }// ends direc all dyn cb and bl 
     },// ends _opportunity
 
-    _book_simple0:{
+_book_simple0:{
         
             opp:'servizi di parrucchiere ',
         vname:' sempre belli ',
@@ -3077,17 +3084,21 @@ model:'barba-barba&capelli-\\bcapel',
  notMatPr:' il servizio parrucchiere desiderato '//  model entity name used in nmList not matched list 
 // vname:=notMatPr
 },
-mod_location:{vmatches:{barba:'barba',capelli:'taglio capelli'},// model specification , item voice name 
+
+/*mod_location:{vmatches:{barba:'barba',capelli:'taglio capelli'},// model specification , item voice name 
 vlist:['barba','taglio capelli'],
-
 model:'barba-barba&capelli-\\bcapel|taglio',
+ notMatPr:' il luogo preferito '//  model entity name used in nmList not matched list 
+},*/
 
- notMatPr:' il servizio parrucchiere , ad esempio barba, taglio capelli '//  model entity name used in nmList not matched list 
-
+mod_location:{// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+notMatPr:' la provincia '//  model entity name used in nmList not matched list 
+,mod_wh_Of:'mod_aiax_prest'
 },
+
 ask_prest_1102:{// no model ,that's are defined in line. just a not match prompt so can be checked in ask 0  and if no match ...$$miss&... will display it 
 
- notMatPr:' lo stile preferito'//  model entity name used in nmList not matched list 
+ notMatPr:' la data e l orario preferito '//  model entity name used in nmList not matched list 
 
 },
 mod_tipo:{vmatches:{cl:'classico',wa:'giovane'},// model specification , item voice name 
@@ -3115,7 +3126,7 @@ model:'cl-\bclas&wa-wave',
         }
 }
 
-},// ends of _book_simple
+},// ends of _book_simple0
 _book_simple:{
         
     opp:'servizi di parrucchiere ',
@@ -3218,7 +3229,132 @@ key_template:{// first step of a displaying view thread . no goon at first step 
 }
 }
 
-},// ends of _book_simple0
+},// ends of _book_simple
+_company_info:{
+        
+    opp:'servizi informativi aziendali ',
+vname:' sempre belli ',
+
+news:'questa settimana abbiamo aggiunto una bella novità da ora potrai avere anche il servizio barba e capelli' ,
+most:' i servizi più richiesti sono taglio , piega e lavaggio ',
+excel:{// 
+
+
+
+
+    mod_azinfo_name:{// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+    notMatPr:' nome azienda  '//  model entity name used in nmList not matched list 
+    ,mod_wh_Of:'mod_aiax_azienda'
+},
+mod_azinfo_prov:{// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+notMatPr:' la provincia '//  model entity name used in nmList not matched list 
+,mod_wh_Of:'mod_aiax_azienda'
+},
+
+
+
+
+
+    mod_date_des:{// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+    notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+    ,mod_wh_Of:'book_res_child'
+},
+book_res_child:{
+notMatPr:' the not match prompt of book_res_child   '//  model entity name used in nmList not matched list 
+
+// not usefull , because is not put in wheres if dont match !
+// ,mod_wh_Of:'book_res_child'// on itself : so add in wheres also its instance !!
+
+},
+/*
+mod_mattsera:{vmatches:{'storico':'culturale'},// model specification , item voice name 
+notMatPr:' il percorso preferito '//  model entity name used in nmList not matched list 
+,mod_wh_Of:'dyn_medicine'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+// prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+// vname:=notMatPr
+},
+mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+,mod_wh_Of:'dyn_rest',// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+// prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+// vname:=notMatPr
+schemaurl:'location'// db data injected here but it is db rest service staff , is the name of the db schema 
+},*/
+mod_P_Serv:{vmatches:{barba:'barba',capelli:'taglio capelli'},// model specification , item voice name 
+vlist:['barba','taglio capelli'],
+
+// news : that is the declaration of model values and patten instead that do it in line on condition .
+// : todo 
+//   if a condition declare instead of :
+//          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+//      :
+//          $$mod_Serv::
+//      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+
+
+
+// message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
+//model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+// model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+// ristVicino=twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2)
+model:'barba-barba&capelli-\\bcapel',
+
+// or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+//      {bar:{
+//          patt='ristorant*|pranzo|cena|trattoria',
+//            ai_url='',
+//            vname=''
+//      },,}
+notMatPr:' il servizio parrucchiere desiderato '//  model entity name used in nmList not matched list 
+// vname:=notMatPr
+},
+mod_location:{vmatches:{barba:'barba',capelli:'taglio capelli'},// model specification , item voice name 
+vlist:['barba','taglio capelli'],
+
+model:'barba-barba&capelli-\\bcapel|taglio',
+
+notMatPr:' il servizio parrucchiere , ad esempio barba, taglio capelli '//  model entity name used in nmList not matched list 
+
+},
+ask_prest_1102:{// no model ,that's are defined in line. just a not match prompt so can be checked in ask 0  and if no match ...$$miss&... will display it 
+
+notMatPr:' lo stile preferito'//  model entity name used in nmList not matched list 
+
+},
+mod_tipo:{vmatches:{cl:'classico',wa:'giovane'},// model specification , item voice name 
+vlist:['classico','giovane'],
+
+model:'cl-\bclas&wa-wave',
+
+notMatPr:' lo stile desiderato '//  model entity name used in nmList not matched list 
+
+}
+
+
+
+
+},
+direc:{
+
+key_template:{// first step of a displaying view thread . no goon at first step  :
+
+    // put here also the static  dyn ask definition  AAA ?? yes
+
+    loopDir:{
+        goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+    }
+}
+
+,ask_azinfo_name:{// first step of a displaying view thread . no goon at first step  :
+
+    // put here also the static  dyn ask definition  AAA ?? yes
+
+    loopDir:{
+        goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+    }
+}}
+
+},// ends of _company_info 
 cmd_template: {// REFERENCE . CMD TEMPLATE
 
 

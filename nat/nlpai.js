@@ -1,4 +1,5 @@
 const { NlpManager } = require('node-nlp');// npm install node-nlp
+let postRinfo;
 let manager;
 const aiRestInt=false,//
 debug=false;
@@ -50,6 +51,8 @@ module.exports=// copy of db part of  refImplementation
 // todo : give ref that in fwHelpers were found in closure !! : db, rest ....
 
   function (rest_,qea_) {//  nlpai interface , from a std param do call to specific ai service according to url qs  ?agent=order Url:'http://192.168.1.15:8000/parse'
+                          // nb  rest_ is the (rest.js).jrest  , so     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
+                          //                                                                                            //  qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
 
 // >>>>>>   MANAGEMENT SUMMARY 
 // THIS INTERFACE FACTORY ( named ai)  :
@@ -89,6 +92,7 @@ module.exports=// copy of db part of  refImplementation
 
 
     rest = rest_;qea=qea_;// rest and qea module are  injected 
+    postRinfo= require('./simplyinfoingAiaxCtl.js')(rest);// inject rest in it
 
 // init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'}})
 
@@ -161,7 +165,7 @@ module.exports=// copy of db part of  refImplementation
                      //  var answ = bookctl.post(text, vars,wheres);// the post controller of uri serving a complex medel rows query 
                      // pass rest in param or bind as context 
                       let answ ;
-                      answ= await postR.simplybooking(vars,wheresInst,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                      answ= await postR.simplybooking(vars,wheresInst,wheres,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
                                                                                               // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
                                                                                               // probably just modify wheres match recovery , take full instance not just the item name value !!!!
                                                                                               //        or simply the model itself !!!  , >>> so pass wheresInst , or both ?
@@ -221,6 +225,86 @@ module.exports=// copy of db part of  refImplementation
                                 return {reason:'runned',rows:qmodel};
                   
                               }
+
+                    }else return {reason:'ctlnotfound',rows:null};
+          
+              }
+              return mf;})(params);
+
+            })(active[ep]);
+          } else if (ep == 'infoApp') {//book end point , al posto di un app post , portare li appena possibile perche ho tutte le var e session disponibili 
+
+            srvNam = 'aiaxpost';// the service provided by this master factory nb in matcher macro we set url=service://plugins.ai.bookApp.aiaxpost?uri=simplybooking . nb qs is inserted on form param by run_jrest
+            services[ep] ={};// an obj with 1 func (srvNam) , got from a  factory :
+            services[ep] [srvNam]=//  called with form param will returns   {reason:'runned',rows:intent/entity/query} depending by the calling matcher type 
+
+            (function(params){// factory FFDA lauched on init data (active[ep])
+            
+                 // returns the function obtained by  another factory ( seem useless complication)
+                 return   (function(params){// the factory closure, returns mf  , params (active[ep]) are set  in closure 
+                    let mf=
+                  async function (form){// the service function :  called with form param will returns   {reason:'runned',rows:intent/entity/query} depending by the calling matcher type 
+                    let res;
+                    // uri coming from qs ( emulate a post/aiax controller selection ):
+                    //   url='service://plugins.ai.bookApp.aiaxpost?uri='simplybooking';
+                  let {entity,term,wheres,wheresInst,vars,qs}=form; // temporary : here a controller (post) function to be put in app. so as exception use here status ( vars and session )
+                  let uri=qs.uri;
+                  //natural internal end point is qea
+          
+                      // note:  dtermis an object, and when converted to a string it will
+              // end with a linefeed.  so we (rather crudely) account for that  
+              // with toString() and then trim() 
+          
+              let text;//term.toString().trim() ;
+              text=term;
+             console.log("you entered: [" + text + "]")
+
+
+
+         //   let postRinfo= require('./simplyinfoingAiaxCtl.js')();
+          ///*    
+                   // let wheres=null;
+
+                    // temporary : here a controller (post) function to be put in app. and called with a macrodirective : url='service://app/simplybooking'  or url='service://app?uri=simplybooking',
+                    //              so as exception use here status ( vars and session )
+                      // simulate a post dispaching to controller :
+                      if(uri=='simplyinfo')
+                    {
+                     //  var answ = bookctl.post(text, vars,wheres);// the post controller of uri serving a complex medel rows query 
+                     // pass rest in param or bind as context 
+                      let answ ;
+                      answ= await postRinfo.simplyinfoing(vars,wheresInst,wheres,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                                                                                              // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
+                                                                                              // probably just modify wheres match recovery , take full instance not just the item name value !!!!
+                                                                                              //        or simply the model itself !!!  , >>> so pass wheresInst , or both ?
+                                                                                              // NBNB this service id temporarely doing a express post controller job ( move to app fast !! )
+                                                                                              // so we pass vars, to get the session, url, to get the post ctl , and also :
+                                                                                              // form.qs.book_res_child.curStatus=matches.entity.param instead to use cooky to get the multi turn query status/session
+                                  // now manage the reject call
+                                .catch((err) => { console.error(' the simplyinfo ctl rejected with error: ',err); });//   or  .catch(console.error);
+
+
+                      if (answ == null) {
+                          console.log('no answer found ');
+                        //  bot.say('Sorry, I\'m not sure what you mean');
+                        return {reason:'runned',rows:null};
+                      }
+                      else {
+                        // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
+                          console.log('answer found ', answ);
+
+                        // ????? 
+                        //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
+                        // old :let qmodel={rows:answ.query,objMod:true};
+                        let qmodel=answ.query;
+                       if(qmodel){ qmodel.complete=answ.chroot;// child param to navigate the query, 2 type of query : intradays slots and in day slot 
+                        // NBNBNB  this is intented as query ctl aiax response so a complexx transaction not only a simle query , so each transaction has its navigation result child dialog and model with group context !!!!
+                       // so the aiax ctl get the user preference , then depending on situation of query result wereturn a result indicating in the context (group) also the page/child that can diaplay the query result 
+                       // , intraday slot 
+                       // days slots 
+                        return {reason:'runned',rows:qmodel};
+                       }else  return {reason:'runned',rows:null};
+                      }
 
                     }else return {reason:'ctlnotfound',rows:null};
           
@@ -739,8 +823,8 @@ witai_std = {intents:[{name,confidence,
                             //    compl_ctx={param:{cursor,group,rows}};// a second (after entities , associated  child model ) child navigation  model to select completation after examined the qea entities 
                             //   group : contains ( when resolved) :
                             //    sel :  selected  item in rows and 
-                            //    prompt : a prompt to select in rows/intents the sel item 
-                            //   cursor : ( no  rows, are null,   ) containing the runtime model to select the items in rows/intents 
+                            //    prompt : a prompt to select in rows/intents the sel item (in the child)
+                            //   cursor : ( no  rows, are null,   ) containing the runtime model (resModel)to select one items in rows/intents in child
                             //  rows/intents : now just void to fill after
 
 
@@ -759,11 +843,11 @@ witai_std = {intents:[{name,confidence,
         ) {// build the complete selector
         // should be very like a param/query matcher that fills a model : matches.param={}  see fromatx,txt
 
-/*
+/* BBCC : building the complex intent/query model thought as a context x process the query in a child ( info about items , selector model to choose a item , param x templates in child , param x child directives and flags used in condition $$$ e $$$$ )
 remember  // res = {data:trainingData,intent:interpretation.guess,intentclass:trainingData[interpretation.guess],answer:trainingData[interpretation.guess].answer,interpretation,score:interpretation.score,
 
 
-ipotesi di qea item :
+ipotesi di qea item (intent with entities=properties):
  quindi in un property metto :
 
 	chapter/argomento: server connectivity 
@@ -780,7 +864,7 @@ ipotesi di qea item :
 	catg2:app/so/net
   help: ? operatore, manuale, test
   
-  quindi il desiredE avra row con value=qeaname  patt=qeaname.patt vname=qeaname.vname descr=qeaname.answer ?
+  quindi il desiredE( the qea/intent/row to select) avra row con value=qeaname  patt=qeaname.patt vname=qeaname.vname descr=qeaname.answer ?
 
   cosi resModel["qeaname"]= {// we tie to intents[0], so when user match item  'disc1' storemat='disc1' (useless) but storeMId should be 0, so we match intents[0]. TO BE CHECKED 
             patt: row.patt,
@@ -790,10 +874,12 @@ ipotesi di qea item :
 spiego : 
 	linkchild='nameofqea1/nameofqea2'
 	linkfather='nameofqea1/nameofqea2'
-	promptlink:'ora puo approfondire argomenti  $linkchild o piu in generale puoi fare riferimento all'agomento $linkfather '// std contex x template di  completamento ,
+  promptlink:'ora puo approfondire argomenti  $linkchild o piu in generale puoi fare riferimento all'argomento $linkfather  dicendo approfondisco argomentox'// std contex x template di  completamento ,
+              022021 : quindi se l'utente vuole approfondire viene mandato in un th/child che  gestisce una altra richiesta (intent matcher )di qea come term + where o banalmente ottiene l'intent matcher gia risolto avendo passato il $linkchild/$linkfather ? 
 	menu:threadgoto, route nameofthread that manage the request  ( a ask gathering the ok to goon calling a office to resolve the problem. if void the next ask father will ask if we can goon in managing the qea answere ( default menu) 
 		the menu is a thread to manage the problem , when finished we ca retun to father to do the pending action got before the qea match  if any  , tipicamente chiedera se oltre al qea vuole fare altro ( default thread without qea part ) 
-	vname:''// x link 
+              022021 : cioe il menu e' circa un .complete che è in pratica un redirect al th che gestisce il completamento/approfondimento del selected item/qea ?
+    vname:''// x link 
 	chapter/argomento
 	subChaptlevel:0-3
 	categoria:hw/sw

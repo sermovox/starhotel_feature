@@ -372,6 +372,8 @@ MATCH STATUS VAR SUMMARY  05112020
 		={
 			match,	: copy of group.sel.match		oppure al posto dei match,vmatch,info flattati sul root del obj ,mgari se ho ancora altri bl attributes/relations :
 			instance:copy of group.sel.item // for convenience a easy reference
+			matched:match/null ( match if match!null) 
+			index:??
 			TODO : copy of group.sel.index
         		vmatch,				select{value/match,vname/descr, bl1item, bl2item,,,,}
         		info,
