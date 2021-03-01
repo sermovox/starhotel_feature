@@ -2887,15 +2887,12 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     }// end refImplementation
 
 
-
-
     function findWhere(exc_ent,vars){// exc_ent=excel[entity]  ;fills MATCHED wheres ={dependingWhere1:val1,,,} x dependant entity, filled in fwbase find_wheres()
         let wheres_,wc=0;
     if(exc_ent&&exc_ent.wheres)wheres_=exc_ent.wheres;// the depend on models,  wheres_=['mod_city',,,]
     // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
 
     let wheres,wheresInst;//  wheres={mod_city:'rome',,,,}  wheresInst={mod_city:{the matched instance matches.mymod.instance},,,,}
-
 
 
     if(wheres_)
@@ -2910,8 +2907,6 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     }}
     if(wc==0)return null;else return {wheres,wheresInst};
 }
-
-
 
     function getHost_(url){// OLD return host , qs 
     let cstop,cstop1,r,qs;
@@ -3034,14 +3029,18 @@ function insVars(form, step) {// insert qs oby val if the value is $vars....    
         if (form[avar].charAt(0) == '$') {
             let lev = form[avar].split('.');// lev=['plugins','apluginctl']
             let myf;
-            if (lev) lev.forEach((element, i) => {
-                if (i == 0) {
-                    if (element.substring(0, 5) == '$vars') myf = vars; // starting sets myf=this.service, probaly exists ( mf not null )
-                    
-                }
-                else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
-            });
-            if (myf) form[avar] = myf;else form[avar]=null;
+            if (lev) {
+                if (lev.length == 1) {// $amodel not $vars.matches.amodel.match
+                    if (vars.matches[lev[0].substring(1)]) myf = vars.matches[lev[0].substring(1)].match;
+                } else lev.forEach((element, i) => {
+                    if (i == 0) {
+                        if (element.substring(0, 5) == '$vars') myf = vars; // starting sets myf=this.service, probaly exists ( mf not null )
+
+                    }
+                    else if (myf) myf = myf[element];// following index 1  set myf=this.service.plugins , 2nd  myf=this.service.plugins.apluginctl
+                });
+            }
+            if (myf) form[avar] = myf; else form[avar] = null;
         }
     }
 

@@ -164,7 +164,7 @@ module.exports=// copy of db part of  refImplementation
                     {
                      //  var answ = bookctl.post(text, vars,wheres);// the post controller of uri serving a complex medel rows query 
                      // pass rest in param or bind as context 
-                      let answ ;
+                      let answ ;//        
                       answ= await postR.simplybooking(vars,wheresInst,wheres,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
                                                                                               // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
                                                                                               // probably just modify wheres match recovery , take full instance not just the item name value !!!!
@@ -197,11 +197,10 @@ module.exports=// copy of db part of  refImplementation
                         return {reason:'runned',rows:qmodel};
                        }else  return {reason:'runned',rows:null};
                       }
-                    } else if(uri=='book')
-
-                    { let slot=qs.slot;
-                      let answ ;
-                      answ= await postR.book(vars,slot,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                    } else if(uri=='book'){ 
+                      let answ ;// 
+                      // answ= await postR.book(vars,slot,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
+                      answ= await postR.book(vars,wheresInst,wheres,qs,rest)// wheres={mod_date_des:thematchingvalueofduck_datetime} or wheresInst={mod_date_des:the matched entity item as instance}
                                                                                               // can we have instance ={value,patt,descr.date,time }  so get easyle date and time !!!? 
                                                                                               // probably just modify wheres match recovery , take full instance not just the item name value !!!!
                                                                                               //        or simply the model itself !!!  , >>> so pass wheresInst , or both ?
@@ -596,7 +595,7 @@ let duck=function(params){// a func factory, after a test get the func by a inte
   */
   // services[ep] = { manager }; services[ep][srvNam] = datematch;//  plugins.ai=services so call 
   // or 
-  return   datematch2(params);
+  return   datematch2(params);// returns the result of datematch2 factory that configure my endpoints with with param=params
   }
 
 
@@ -685,14 +684,14 @@ result =[// conf=  ????
         }
         catch (e) { o=null;}// works ?
 
-        console.log('duck service , on text: ',term,' datematch got o :',o);// see DGTG for expected format 
+        console.log('duck service , on text: ',term,' datematch got: ',o);// see DGTG for expected format 
 
         // return {reason:'runned',rows:res}; with res set by Entity constructor basing from : 
         //      get the result o={item1,,,} , look at itemx with dim='time' so res={value:itemx.value.value} 
          if(o) o.forEach(el => {// from duck extract only time info (TODO in case needed also numbers info .....)
             if(el.dim=='time'&&el.value
             // &&el.value.value  also el.value.values
-            &&el.value.values
+            &&el.value.values// = "2021-02-25T11:00:00.000-08:00"
             ){    // can be many ? no should find interval
               let mainEnt={value:
                 null// el.value.value
@@ -707,7 +706,7 @@ result =[// conf=  ????
                             
               //  ????? keep localtime schift ??????????????????????????
               
-              let t=res.rows.value.indexOf('T'),date,time;
+              let t=res.rows.value.indexOf('T'),date,time;// res.rows.value= "2021-02-25T11:00:00.000-08:00"
               if(t>0){res.rows.date=res.rows.value.substring(0,t);res.rows.time=res.rows.value.substring(t+1,t+6);}
             }
           });
@@ -1093,10 +1092,12 @@ if(res.intent)resu=1;else{
 function Entity(name, dim, row_, value) {// only datetime info , add interval , get only the from 
 
   /* see    DGTG  : 
-  
+  x=
     {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
     {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
     {start:3,end:8,dim:"number",value:{type:"value",value:2}},                                                  >> so row:{value:13,dim:'number',type:'value'}
+
+    value=x.value
   */
 
 
@@ -1141,7 +1142,7 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
   this.name = name;
   if (value.type == 'value') {// its a time 
     if (row_&&value.value) {
-      row_.value=value.value;
+      row_.value=changeLtime(value.value);// value.value= "2021-02-25T11:00:00.000-08:00", port in rome local time (same hour but day can change as losaneles-rome shift is 9 hours)
       row_.type='time-value';
       // row_.descr=.......
 
@@ -1166,3 +1167,33 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
   } else this.row = null;
 
 }
+
+function changeLtime(dateUsLoc) {// dateUsLoc="2021-02-28T08:00:00.000-08:00", hoursShift=9 so if local hour is 8 , return ="2021-03-01T08:00:00.000+01:00"
+                                // so if local hour is 10 , return ="2021-02-28T08:00:00.000+01:00"
+let nd;
+console.log('duckling : date on ustime: ',dateUsLoc);
+    const lochour= new Date().getHours();
+
+  if(lochour<9){
+
+	let date= new Date(dateUsLoc);
+
+        const offsetMs = 24*3600000;// 1min=60000 seconds, 1day =60*24*60000
+        const msLocal = date.getTime() + offsetMs;
+        const dateLocal = new Date(msLocal);
+        const iso = dateLocal.toISOString();
+        let cal=iso.substring(0,10);// next day 
+
+	nd=cal+dateUsLoc.substring(10,23)+'+01:00';
+	console.log('duckling : changed date on localtime: ',nd);
+	}else{
+
+	nd=dateUsLoc.substring(0,23)+'+01:00';
+	console.log('duckling : same date on localtime: ',nd);
+
+}
+return nd;
+
+
+
+    }

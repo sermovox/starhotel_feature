@@ -201,8 +201,8 @@ class ActionsAdapter  extends botbuilder_1.BotAdapter // needs? yes x middleware
             // create a conversation reference context to read back the bot answers/newprompt
             const context = new botbuilder_1.TurnContext(this, activity);
             context.turnState.set('httpStatus', 200);
-            yield this.runMiddleware(context, logic);
-            // send http response back after middlewarefinished 
+            yield this.runMiddleware(context, logic);// adapter middleware , dopo il middleware chiama il logic e quando risponde risolve il promise
+            // send http response back after middlewarefinished ( bot answered (how many msg ??))
             //if(res.status)res.status(context.turnState.get('httpStatus'));
 
             let botansw=context.turnState.get('httpBody');// get context new bot  prompt 

@@ -57,8 +57,8 @@ const xmpp_cfg1={// the xmpp client channel x group 1
 	  service: "wss://visionmeet.beevoip.it:7443/ws/",
 	  domain: "visionmeet.beevoip.it",
 	  resource: "testresource",
-	  username: "test",
-	  password: "testmarson01"
+	  username: "marson",//"test",
+	  password: "marson01"//testmarson01"
 
 /*
 service: "wss://404.city:5222/xmpp-websocket/",
@@ -127,8 +127,8 @@ console.log('*** instantiating Botkit CMS');
 ///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
-const xmpp_on=true;
-//const xmpp_on=false;
+  const xmpp_on=true;
+// const xmpp_on=false;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
