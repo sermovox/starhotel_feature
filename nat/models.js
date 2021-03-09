@@ -3230,6 +3230,222 @@ key_template:{// first step of a displaying view thread . no goon at first step 
 }
 
 },// ends of _book_simple
+    _book_simple0_v2: {
+
+        opp: 'servizi di parrucchiere ',
+        vname: ' sempre belli ',
+
+        news: 'questa settimana abbiamo aggiunto una bella novità da ora potrai avere anche il servizio barba e capelli',
+        most: ' i servizi più richiesti sono taglio , piega e lavaggio ',
+        excel: {// 
+
+
+
+            mod_date_des: {// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+                notMatPr: ' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+                , mod_wh_Of: 'book_res_child'
+            },
+            book_res_child: {
+                notMatPr: ' the not match prompt of book_res_child   '//  model entity name used in nmList not matched list 
+
+                // not usefull , because is not put in wheres if dont match !
+                // ,mod_wh_Of:'book_res_child'// on itself : so add in wheres also its instance !!
+
+            },
+            /*
+            mod_mattsera:{vmatches:{'storico':'culturale'},// model specification , item voice name 
+            notMatPr:' il percorso preferito '//  model entity name used in nmList not matched list 
+            ,mod_wh_Of:'dyn_medicine'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+            // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+            // vname:=notMatPr
+            },
+            mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+            notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+            ,mod_wh_Of:'dyn_rest',// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+            // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+            // vname:=notMatPr
+            schemaurl:'location'// db data injected here but it is db rest service staff , is the name of the db schema 
+            },*/
+            mod_P_Serv: {
+                vmatches: { barba: 'barba', capelli: 'taglio capelli' },// model specification , item voice name 
+                vlist: ['barba', 'taglio capelli'],
+
+                // news : that is the declaration of model values and patten instead that do it in line on condition .
+                // : todo 
+                //   if a condition declare instead of :
+                //          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+                //      :
+                //          $$mod_Serv::
+                //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+
+
+
+                // message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
+                //model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+                // model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+                // ristVicino=twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2)
+                model: 'barba-barba&capelli-\\bcapel',
+
+                // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+                //      {bar:{
+                //          patt='ristorant*|pranzo|cena|trattoria',
+                //            ai_url='',
+                //            vname=''
+                //      },,}
+                notMatPr: ' il servizio parrucchiere desiderato '//  model entity name used in nmList not matched list 
+                // vname:=notMatPr
+            },
+
+            /*mod_location:{vmatches:{barba:'barba',capelli:'taglio capelli'},// model specification , item voice name 
+            vlist:['barba','taglio capelli'],
+            model:'barba-barba&capelli-\\bcapel|taglio',
+            notMatPr:' il luogo preferito '//  model entity name used in nmList not matched list 
+            },*/
+
+            mod_location: {// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+                notMatPr: ' la provincia '//  model entity name used in nmList not matched list 
+                , mod_wh_Of: 'mod_aiax_prest'
+            },
+
+            ask_prest_1102: {// no model ,that's are defined in line. just a not match prompt so can be checked in ask 0  and if no match ...$$miss&... will display it 
+
+                notMatPr: ' la data e l orario preferito '//  model entity name used in nmList not matched list 
+
+            },
+            mod_tipo: {
+                vmatches: { cl: 'classico', wa: 'giovane' },// model specification , item voice name 
+                vlist: ['classico', 'giovane'],
+
+                model: 'cl-\bclas&wa-wave',
+
+                notMatPr: ' lo stile desiderato '//  model entity name used in nmList not matched list 
+
+            }
+
+
+
+
+        },
+        direc: {
+
+            key_template: {// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+
+                loopDir: {
+                    goon2: false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            }
+        }
+
+    },// ends of _book_simple0
+    _book_simple_v2: {
+
+        opp: 'servizi di parrucchiere ',
+        vname: ' sempre belli ',
+
+        news: 'questa settimana abbiamo aggiunto una bella novità da ora potrai avere anche il servizio barba e capelli',
+        most: ' i servizi più richiesti sono taglio , piega e lavaggio ',
+        excel: {// 
+
+
+
+            mod_date_des: {// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+                notMatPr: ' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+                , mod_wh_Of: 'book_res_child'
+            },
+            book_res_child: {
+                notMatPr: ' the not match prompt of book_res_child   '//  model entity name used in nmList not matched list 
+
+                // not usefull , because is not put in wheres if dont match !
+                // ,mod_wh_Of:'book_res_child'// on itself : so add in wheres also its instance !!
+
+            },
+            /*
+            mod_mattsera:{vmatches:{'storico':'culturale'},// model specification , item voice name 
+            notMatPr:' il percorso preferito '//  model entity name used in nmList not matched list 
+            ,mod_wh_Of:'dyn_medicine'// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+            // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+            // vname:=notMatPr
+            },
+            mod_loc:{vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+            notMatPr:' dove sono ad esempio hall o terrazza   '//  model entity name used in nmList not matched list 
+            ,mod_wh_Of:'dyn_rest',// will be used as where to query a dyn_key, so dont put in notmatched prompt list if we already had the dyn_key matched 
+            // prefChoich:' terrazza o hall' da usare come default quando supero un ask replay maxretry
+            // vname:=notMatPr
+            schemaurl:'location'// db data injected here but it is db rest service staff , is the name of the db schema 
+            },*/
+            mod_P_Serv: {
+                vmatches: { barba: 'barba', capelli: 'taglio capelli' },// model specification , item voice name 
+                vlist: ['barba', 'taglio capelli'],
+
+                // news : that is the declaration of model values and patten instead that do it in line on condition .
+                // : todo 
+                //   if a condition declare instead of :
+                //          $$mod_Serv:bar-bar&rest-ristorant*|pranzo|cena|trattoria&port-portin*|recept&pisc-piscina&lav-lava*puli*&col-colaz*|brekfast
+                //      :
+                //          $$mod_Serv::
+                //      >> means that the value and pattern and vnames and vlist names and ... are declares as axcel attributes ! 
+
+
+
+                // message:"Invalid regular expression: /\b(?:risto|tratt|ester|vicin|fuori)\w*(?:s+[A/: Unterminated character class"
+                //model:'bar-\\bar&rest-\\bristorant|pranzo|cena|trattoria&port-\\bportin|recept&pisc-piscina&lav-lava*puli*&col-\\bcolaz|\\bbre&ext-\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+                // model:'{>!}bar>\\bbar!rest>\\bristorant|pranzo|cena|trattoria!port>\\bportin|recept!pisc>piscin!lav>lava|pulizi!col>\\bcolaz|\\bbre!ext>\\b(?:risto|tratt|ester|vicin|fuori)\\w*(?:\\s+[A-Za-z][A-Za-z0-9]*){0,2}\\s(?:risto|tratt|ester|vicin|fuori)\\w*\\s*',
+                // ristVicino=twoWordNear('risto|tratt|ester|vicin|fuori','risto|tratt|ester|vicin|fuori',2)
+                model: 'barba-barba&capelli-\\bcapel',
+
+                // or , a general declaration that is inflated in convenience structures vmatches,vlist,....
+                //      {bar:{
+                //          patt='ristorant*|pranzo|cena|trattoria',
+                //            ai_url='',
+                //            vname=''
+                //      },,}
+                notMatPr: ' il servizio parrucchiere desiderato '//  model entity name used in nmList not matched list 
+                // vname:=notMatPr
+            },
+            mod_location: {
+                vmatches: { barba: 'barba', capelli: 'taglio capelli' },// model specification , item voice name 
+                vlist: ['barba', 'taglio capelli'],
+
+                model: 'barba-barba&capelli-\\bcapel|taglio',
+
+                notMatPr: ' il servizio parrucchiere , ad esempio barba, taglio capelli '//  model entity name used in nmList not matched list 
+
+            },
+            ask_prest_1102: {// no model ,that's are defined in line. just a not match prompt so can be checked in ask 0  and if no match ...$$miss&... will display it 
+
+                notMatPr: ' lo stile preferito'//  model entity name used in nmList not matched list 
+
+            },
+            mod_tipo: {
+                vmatches: { cl: 'classico', wa: 'giovane' },// model specification , item voice name 
+                vlist: ['classico', 'giovane'],
+
+                model: 'cl-\bclas&wa-wave',
+
+                notMatPr: ' lo stile desiderato '//  model entity name used in nmList not matched list 
+
+            }
+
+
+
+
+        },
+        direc: {
+
+            key_template: {// first step of a displaying view thread . no goon at first step  :
+
+                // put here also the static  dyn ask definition  AAA ?? yes
+
+                loopDir: {
+                    goon2: false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
+            }
+        }
+
+    },// ends of _book_simple
+
 _company_info:{
         
     opp:'servizi informativi aziendali ',

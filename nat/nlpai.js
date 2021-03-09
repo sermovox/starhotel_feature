@@ -1153,8 +1153,8 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
     } else this.row = null;
   } else if (value.type == 'interval') {// its a time interval : take from 
     if (row_ && value.from&&value.from.value) {
-      row_.value=value.from.value;
-      if(value.to)row_.to=value.to.value;
+      row_.value=changeLtime(value.from.value);
+      if(value.to)row_.to=changeLtime(value.to.value);
 
       row_.type='time-interval';
       // row_.descr=.......
@@ -1173,23 +1173,32 @@ function changeLtime(dateUsLoc) {// dateUsLoc="2021-02-28T08:00:00.000-08:00", h
 let nd;
 console.log('duckling : date on ustime: ',dateUsLoc);
     const lochour= new Date().getHours();
-
-  if(lochour<9){
-
+    console.log('duckling : local hour: ',lochour);
+  const nev=false;
+  if(nev){//if(lochour<9){
 	let date= new Date(dateUsLoc);
 
         const offsetMs = 24*3600000;// 1min=60000 seconds, 1day =60*24*60000
         const msLocal = date.getTime() + offsetMs;
+
         const dateLocal = new Date(msLocal);
         const iso = dateLocal.toISOString();
+
+      // debug
+
+        const msLocalx = date.getTime(),dateLocalx = new Date(msLocalx);// date in local hour
+        const iso0 = date.toISOString();
+        const isox = dateLocalx.toISOString();
+        console.log('duckling,changeLtime : changing  , isox : ',isox,' iso0 : ',iso0,' iso : ',iso);
+
         let cal=iso.substring(0,10);// next day 
 
 	nd=cal+dateUsLoc.substring(10,23)+'+01:00';
-	console.log('duckling : changed date on localtime: ',nd);
+	console.log('duckling, changeLtime : changed date on localtime: ',nd);
 	}else{
 
 	nd=dateUsLoc.substring(0,23)+'+01:00';
-	console.log('duckling : same date on localtime: ',nd);
+	console.log('duckling,changeLtime : same date on localtime: ',nd);
 
 }
 return nd;

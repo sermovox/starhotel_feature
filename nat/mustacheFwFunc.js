@@ -193,7 +193,6 @@ mustacheF.qeA=function(qstring){
                 <template >
                 </template>
                  {{/mustacheF.out}}
-
 */ 
 
 // 25032020 : instead of if : TODO idea out can be like in condition pattern a regex or a even a function or a code to eval 
@@ -201,16 +200,15 @@ mustacheF.qeA=function(qstring){
         let value_,vs={vars:stepp.values};
         // can use jVar as in conversation or must chech for eval error (cant find property of undefined !)
         try{
-        eval( "value_ = vs." + param2 );// or use the parser in conversation.js, that means jVar ?
+        eval( "value_ = vs." + param2 );// calc value_ using eval, or use the parser in conversation.js, that means jVar ?
         } catch(e){value_=null;}
-        if(value_){
+        if(value_){// nb value_ is the value of a variable, param4 is a string , so treat the integer parsing if string is numeric
         if(param3=='=='){if(value_!=param4)template=null;
         }else if(param3=='!='){if(value_==param4)template=null;
         }else if(param3.charAt(0)=='>'){if(value_<=param4)template=null;
         }else if(param3.charAt(0)=='<'){if(value_>=param4)template=null;
         }
         }else template=null;
-
         }
         
         else  if(param=='ff'){// 2 param) 
@@ -244,9 +242,7 @@ mustacheF.qeA=function(qstring){
                    if(value_){
                     ;
                    }else template=null;
-           
                    }
-                   
                    else if(param=='list'&&(itr1.length>1)){// > 2-4 param  , its a more complex list display then just std mustache array+ static func
 
  /*         example of template extract on askA msg :
@@ -291,24 +287,17 @@ mustacheF.qeA=function(qstring){
 
 */
             let excel_=stepp.values.excel;
-            
             let col,cursor,firstit=null;// you can put in the template any array of string and {{rendQ}} will list the col but if you specify param2 i can customize it and add e in between 
-
-
             if(itr1.length==4&&param4){
             if(stepp.values.askmatches[param4]&&stepp.values.askmatches[param4].param&&stepp.values.askmatches[para4].param.itemS)cursor=stepp.values.askmatches[param4].param.itemS;// a dynask query result set by a dym match as :vars.askmatches[adyn_ask].param.itemS
- 
                 excel_.queryL=cursor;// optional if use ** .  must be available in context to be referencied in template 
                 // firstit=cursor[0][param2];
                 col=param3;
             }else if(itr1.length==3&&param2){// the col 
                 col=param2;
                 }
-
             // now i can use a function factory or just to set a closure param of a static function , start with the factory : 
                 mustacheF.rendQuery=listAitem1(firstit,col);// firstit is now useless, param3 is the col , remember to use queryL as context array inside 
-            
-
         }else if(param=='miss') {// render list of a jet not matched model used in dyn ask dyn_rest, 1,2 param 
 
 
@@ -440,15 +429,10 @@ x {{vars.matches.mod_Serv.vmatch}}
     // so do another loop with if(param2)askname=param2;
     let vars=stepp.values;
                 if (askname) {// fills clVars.notmatlist with the asks models modsonask[askname] didnot matched jet from matching list askmatches 
-
                     //method A old , long :
                     am = vars.askmatches[askname];// testing ask  present ask matches status :am={matches:[],match:not$%match,nomatches:[]} , to calc the model still to  match
-
                     ma = vars.modsonask[askname];// models that are testing for get matches in testing ask  ( $$ or $% ), a string array. ma[i]=entity/model name
-
-
                     for (ii = 0; ii < ma.length; ii++) {// for each model tested in the ask (ma[ii]) find if was already matched
-
                         let nmpDir,
                         disc=true;// si scartano i model che sono where di dyn_ask (dyn_ask=excel[modelname].mod_wh_Of) che matchano dyn_ask.match!=null 
 
@@ -622,34 +606,22 @@ example : . {{.}}  {{#func2}}a template tobe rendered by func2 {{.}} {{/func2}}
 
       /* // nb this=step , text will be rendered using context_ set in conversation.js, remembering HHJJ  :
       
-        
-      
         // so 
         //      run a context 
          
         text=' magari puoi darmi qualche missing come 
         {{[mod1,mod2]}}
 
-
-
         - luogo  {{}}
-
-
-
       */
 
       console.log(' : out$miss is rendering its template in which is abilited mustacheF.rendnotmatch that displays the items of its context (vars.excel.notMatchL), item is the {name:entityname,,,}',
       '\n it passes item to calls mustacheF.nmList that displays the entity name having available in params also  step and \n clVars={notmatlist:[n1,,],notMatchL:[{name:n1},,,]} :',clVars);
-
-       
-       
 }// end miss out function 
 else;
 
      if(template)return  render(template) ;
     else return
-
-
     }// end if param 
     else{// no param found or no $$ found >  render template as is 
         return  render(template) ;
