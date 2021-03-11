@@ -7,7 +7,7 @@ converter.setOption('openLinksInNewWindow', true);
 const navig=true;
 var Botkit = { 
     config: {
-        ws_url: (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host,
+        ws_url: (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host,       // + location.pathname //+ "/ws"
         reconnect_timeout: 3000,
         max_reconnect: 5,
         enable_history: false,

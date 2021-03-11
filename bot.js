@@ -57,8 +57,8 @@ const xmpp_cfg1={// the xmpp client channel x group 1
 	  service: "wss://visionmeet.beevoip.it:7443/ws/",
 	  domain: "visionmeet.beevoip.it",
 	  resource: "testresource",
-	  username: "marson",//"test",
-	  password: "marson01"//testmarson01"
+	  username: process.env.XMPP_username,//"marson",//"test",
+	  password: process.env.XMPP_password//"marson01"//testmarson01"
 
 /*
 service: "wss://404.city:5222/xmpp-websocket/",
@@ -103,7 +103,7 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
                     // then add as plugin  usePlugin(this.adapter), so when controller is ready in controiller.ready(handler) ????????really????  call adapter.init(controller) to add websocket using controller.http
                     //      adapter.createSocketServer(controller.http,optn, controller.handleTurn.bind(botkit)); but if controller.http is not set as webserver is provided , i have to call manually  see TYU
     storage
-    // ,adapterConfig:{path:'/x'}
+    // debug : ,adapterConfig:{path:'/x'}
 });
 let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 

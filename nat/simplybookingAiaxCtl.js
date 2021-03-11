@@ -2,7 +2,7 @@
 // const debugL=false;
 const debugL=true;
 
-const SimplyBook = require("simplybook-js-api");
+const SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
 const orReg = /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
 // see simplyinfoingAiaxCtl.js the global field approach . here prefers to work with rest passed as param in simplybooking(vars, form_whInst,form_wheres, qs, rest)
 // let rest;// got from nlpai.js :
@@ -1224,7 +1224,7 @@ slotHelpers=object.assign{{},data_,func_ctl} >> use this as alredy done in oncha
 async function book(vars, form_whInst, form_wheres, qs, rest) {//
     // 取得Token
     let eventId, unitId, slot = qs.slot, customer = qs.customer, tele = qs.tele, sc = 0;// sc=0 return problem
-    let qq = qs.curStatus,booked_start,booked_end,bId,bookingsInfo;
+    let qq = qs.curStatus,booked_start,booked_end,bId=777,bookingsInfo;
     console.log('inside api simplybook, book try to book  , slot :', slot, ' cust tele: ', tele, ' cust : ', customer, ' status: ', qq);
     // some sort of cache     let token = await auth.getToken().catch( (err) => { console.error(' simplybook  got ERROR : ',err); }); 
     if (token) {
@@ -1248,7 +1248,7 @@ async function book(vars, form_whInst, form_wheres, qs, rest) {//
         eventId = qq.ctl.serviceId; unitId = qq.ctl.unitId;
         if (eventId && unitId && slot&&sc>0) {
             myday = slot.substring(0, 10); time = slot.substring(11);
-            let bookings=[];bookings.push({start_date_time:myday+'T'+time,bId:777,end_date_time:myday+'T'+time});
+            let bookings=[];bookings.push({start_date_time:myday+'T'+time,bId,end_date_time:myday+'T'+time});// used in debug as response 
             if(!debugL)
             bookingsInfo = await publicService.book(eventId, unitId, myday, time, clientData, additionalFields)
                 .catch((err) => { console.error('simplybook: book() , a slot matrix booking was rejected: ', err); sc = 0; }); // or  .catch(console.error);;
@@ -1256,7 +1256,7 @@ async function book(vars, form_whInst, form_wheres, qs, rest) {//
             // seems that : nb in case of err the rejected promise run the .catch then the following code is launched with null await value !
             console.log('simplybook book request feedback : ', bookingsInfo);
             //  bookingsInfo.then((val)=>{console.log('simplybook booked data',val);});
-            if(!bookingsInfo)sc=0;else if(bookingsInfo.success){let book_=bookingsInfo.data.bookings[0];booked_end=book_.end_date_time;booked_start=book_.start_date_time;bId=book_.id}else sc=0;
+            if(!bookingsInfo)sc=0;else if(bookingsInfo.success){let book_=bookingsInfo.data.bookings[0];booked_end=book_.end_date_time;booked_start=book_.start_date_time;bId=book_.bId}else sc=0;
         }
     }
     let name = 'mod_bookSt', row;// 
@@ -1378,7 +1378,7 @@ simplybooking
     // old : 
     // let desDateTimeEntityMatch=form.mod_date_des;// form.thenameofentity;
     //  let desBookingDate,desBookingSlot;// calc from desDateTimeEntityMatch !!!!
-    console.log('\n Simplybooking book ctl received form instance where : ', form_whInst);
+    console.log('\n Simplybooking book ctl received form instance where : ', form_whInst,' qs: ',qs);
     // now rest on simplybooking to find available slot on desBookingDate
     // so form_whInst={value,date,time}  ?????
     // calc start(dateFrom,dateTo )
@@ -1872,9 +1872,13 @@ simplybooking
                         qq.group.ctx.th_book_geit.meetDes=100;//
 
                     } else {
-                        console.error(' simplybook: selstat= 2 got slot match : ',match,' , error');
+                        if(false){
 
-                        chroot = 'repeat';
+                        console.log(' simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different day proposal   : ',match,' , error');
+                        }else{
+                            console.log(' simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different hour proposal in same day  : ',match,' , error');
+                        }
+                        chroot = 'repeat';// error TODO
                     }
 
                 } else if (selStat == 3) {// matched slot 

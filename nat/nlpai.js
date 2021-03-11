@@ -219,7 +219,7 @@ module.exports=// copy of db part of  refImplementation
                                 //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
                   
                                 // let qmodel={rows:answ.result,objMod:true}; rows='booked'
-                                let qmodel={rows:[{value:answ.result}],objMod:true}; // rows={value:'booked',descr:'booked'}
+                                let qmodel={rows:[answ.query.instance],objMod:true};//OLD : {rows:[{value:answ.result}],objMod:true}; // rows={value:'booked',descr:'booked',blfields.....  ,objMod}
 
                                 return {reason:'runned',rows:qmodel};
                   
