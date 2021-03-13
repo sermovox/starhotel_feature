@@ -1386,7 +1386,84 @@ simplybooking
     let qq = qs.curStatus,// the passed last query obj request to this controller , at init is null
         desDtatTime,
         chroot,// the complete directives : will be used as redirection url in ask relay 
-        sc = 0;// the number of (filtered) item to select set in  medSync,medSyntL,resModel obj
+        sc = 0,// the number of (filtered) item to select set in  medSync,medSyntL,resModel obj
+        prefHM,prefDay,
+        prefHour,prefHour_,
+        hou;// target hour
+
+        // extrack preferred datetime Duck
+        if (form_whInst && form_whInst.mod_date_des && form_whInst.mod_date_des.value) {// the user select performaer and asked a preferred date 
+
+            desDtatTime = form_whInst.mod_date_des.value;// local (+01) but duckling presented as was US local "2016-02-09T00:00:00-08:00" , the new request/desidered  datetime about the query
+
+            // 2 cases : 
+            // a new query > build a new query/param model obj 
+            // a current query update > get status and goon to respond to the new request 
+            //      ex: if the status is 0 ( day/prefhour to match ) and new req is day matched , a new hour is requested > go to selAction n2 ......
+            //      staus is a session var  that we put inside the query model
+            //      the event associate the input to a function that will se the status , then give selAction/output and set the new status 
+            // event means that from the input we can test what function to call to process the input on the current status  usually the test try to see if the function has the condition to process the input data
+            // in altre parole l'imput prima ancora di vedere lo status  dichiara o implicitamente determina la funcion/operazione/servizio che lo processa in funzione dello stato 
+            // 
+
+            // ancora : nel processare un input , viene definito o desunto implicitamente seguendo un   generale check (framework o level 1 of bl )  al verificarsi di alcune match 
+            //      quando l'evento si materializza si triggera la funzione/callback  che lo gestisce che puo al suo interne definire alri eventi gestiti da altri call back (asincroni  se uso  chiamate di sistema che gestisce le code di eventi)
+
+            // in parale povere qui nel controller che e' dedicato a navigare un complex model  gestisco eventi che sono determinati/raccolti dal bot e qui processati 
+            // - tenendo conto dello status imbeddato nel query da processare  
+        }
+
+
+
+    if (!qs.prefDuck) {// preferred policy, duck is desDtatTime, prefer duck instead of qs....
+        if (qs.hour_pref) {
+            prefHour = parseInt(qs.hour_pref);// rettifica il preferred hour se c'e entity specifica piu aggiornata .hour_pref , se disponibile
+            if (prefHour) if (prefHour < 10) prefHM = '0' + prefHour + ':00'; else prefHM = prefHour + ':00';
+
+                // check if duck get a date time when hour_pref detected , 
+                // so if a new desidered datetime is got but if less  then 2 integer number or a week day and qs.hour_pref we ll discard desDtatTime
+                // if we are in 3 hour selection state = 2
+                // so keep track of prefHour _ :
+                prefHour_=prefHour;
+
+
+            if (desDtatTime) {
+
+
+
+                prefDay = parseInt(desDtatTime.substring(8, 10));
+            }
+
+
+
+        } else if (desDtatTime) {// altrimenti se ora diversa 00  predi il desiered hour 
+            //  hour is >0 !
+            if (desDtatTime.substring(11, 13) != '00') {
+                prefHM = desDtatTime.substring(11, 16);
+                prefHour = parseInt(prefHM.substring(0, 2));
+            }
+            prefDay = parseInt(desDtatTime.substring(8, 10));
+        }
+    } else {
+        if (desDtatTime) {// altrimenti se ora diversa 00  predi il desiered hour 
+            //  hour is >0 !
+            if (desDtatTime.substring(11, 13) != '00') {
+                prefHM = desDtatTime.substring(11, 16);
+                prefHour = parseInt(prefHM.substring(0, 2));
+            }
+            prefDay = parseInt(desDtatTime.substring(8, 10));
+        } else {
+            if (qs.hour_pref) {
+                prefHour = parseInt(qs.hour_pref);// rettifica il preferred hour se c'e entity specifica piu aggiornata .hour_pref , se disponibile
+                if (prefHour) if (prefHour < 10) prefHM = '0' + prefHour + ':00'; else prefHM = prefHour + ':00'
+
+
+
+            }
+        }
+
+    }
+
  
 
     /* https://www.toptal.com/software/definitive-guide-to-datetime-manipulation
@@ -1494,26 +1571,7 @@ simplybooking
 
                 qq.ctl.unitId = inst.id;// the Unit Id selected . store as status property  at first level , used to set slot matrix    ST1
 
-                if (form_whInst && form_whInst.mod_date_des && form_whInst.mod_date_des.value) {// the user select performaer and asked a preferred date 
 
-                    desDtatTime = form_whInst.mod_date_des.value;// local (+01) but duckling presented as was US local "2016-02-09T00:00:00-08:00" , the new request/desidered  datetime about the query
-
-                    // 2 cases : 
-                    // a new query > build a new query/param model obj 
-                    // a current query update > get status and goon to respond to the new request 
-                    //      ex: if the status is 0 ( day/prefhour to match ) and new req is day matched , a new hour is requested > go to selAction n2 ......
-                    //      staus is a session var  that we put inside the query model
-                    //      the event associate the input to a function that will se the status , then give selAction/output and set the new status 
-                    // event means that from the input we can test what function to call to process the input on the current status  usually the test try to see if the function has the condition to process the input data
-                    // in altre parole l'imput prima ancora di vedere lo status  dichiara o implicitamente determina la funcion/operazione/servizio che lo processa in funzione dello stato 
-                    // 
-
-                    // ancora : nel processare un input , viene definito o desunto implicitamente seguendo un   generale check (framework o level 1 of bl )  al verificarsi di alcune match 
-                    //      quando l'evento si materializza si triggera la funzione/callback  che lo gestisce che puo al suo interne definire alri eventi gestiti da altri call back (asincroni  se uso  chiamate di sistema che gestisce le code di eventi)
-
-                    // in parale povere qui nel controller che e' dedicato a navigare un complex model  gestisco eventi che sono determinati/raccolti dal bot e qui processati 
-                    // - tenendo conto dello status imbeddato nel query da processare  
-                }
                     // if we alredy got the first date available ( looking in  
                     let sess_firstdate,// array of  predownloaded fist date  x prbably unit to select 
                         sel=1,// 1 3 day sel ,2 hour sel 
@@ -1719,8 +1777,8 @@ simplybooking
                         // so ctl is exended qq.ctl . NEVER do like ctl=something  if plan to reuse qq.ctl . in this case : ctl=qq.ctl=something
 
 
-                        next = await firstReq(fromDate,desDtatTime,gotdate);// us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
-
+                        next = // await firstReq(fromDate,desDtatTime,gotdate);// us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
+                        await firstReq(fromDate,desDtatTime,prefDay,prefHour,prefHM,gotdate)
 
                         if (next == 2) {// .....// manage result of firstReq ??
 
@@ -1735,7 +1793,7 @@ simplybooking
 
 
 
-                } else if (selStat == 0) {// the ctl has alredy set the event structure query.ctl={eventSt}, and choosed the service and the performer .now build the multiturn model datetime/slot matrix and itsstructure on ctl.
+                } else if (selStat == 0) {// DELETE   ! .the ctl has alredy set the event structure query.ctl={eventSt}, and choosed the service and the performer .now build the multiturn model datetime/slot matrix and itsstructure on ctl.
                     // OLD AVOID using 
                     // if (selAction == 0) 
                     if (match) {
@@ -1788,9 +1846,10 @@ simplybooking
                         // ex , when as here the selStat is 0 , means that  it matched the day so , as no option selAction is required, we goon with std hour selection on any hour available in sel day 
                         if (match) {
                                 qq.ctl.selDayId =qq.rows[matInd].date;// the selected day  Id/key/name selected . store as status property  at first level , used to select hour on selected day
+                                qq.ctl.selDayIndex =matInd;
                                 qq.ctl.vselDayId =qq.cursor.resModel[match].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
-                            let prefHour;
-                            if (qs.hour_pref) prefHour = parseInt(qs.hour_pref);// querystring
+                           // let prefHour;
+                           // if (qs.hour_pref) prefHour = parseInt(qs.hour_pref);// querystring
 
                             // todo TODO : check if in this day we have got prefHour like in firstReq(). . in this case goto selStat == 2 !!!!
 
@@ -1817,18 +1876,46 @@ simplybooking
                                             // x example a refusal of current hour selector and new date request triggered by some qs param like qs.hour_pref   
                                             // qs.newdate
 
+                            // in 3 hour selection prefHour where got by qs.hour_pref regex to do selection
+                            // here we check if the used wanted a different day using duck desDtatTime so we can go to a new selection also if we got hour selection using hour got from duck
+                            // - BUT as we are in 3 hour selection context if in speech miss at least 2 integer or a week day we assume the day is day of current hour selection !
+                            // - AND if  qs.hour_pref is got we prefer it to the duck hour 
+                            // a new desidered datetime is got but if less  then 2 integer number or a week day and qs.hour_pref we discadrd
+                            // if we are in 3 hour selection state 
+
+
+                                            if(desDtatTime&&qs.desidere_asked&&qs.desidere_asked=='asked'){// ok we can count on the duck day 
+                                                if(qs.desidere_asked=='asked'){// ok we can count on the duck day and time/hour
+                                                // just if the duch new date is the same as current day we can leave the duch and keep only prefHour 
+                                                let selDayId=qq.ctl.selDayId;// "2021-03-12", current hour selection day 
+                                                if(selDayId==prefDay){
+                                                    desDtatTime=null;
+                                                    if(prefHour_)// exist and not 0 
+                                                    prefHour=prefHour_;
+                                                }
+                                                
+                                            }else{// the duck day is not valid so null it , and recover  qs.hour_pref if present 
+                                                desDtatTime=null;
+                                                if(prefHour_)// exist and not 0 
+                                                prefHour=prefHour_;
+
+                                            }
+                                        
+                                        }
+
 
                     qq.match = qq.matched = null;// >>>>  multiturn select : ONLY in case of matched result MUST be reset before return to match  : qq.match=match
                     qq.group.sel = qq.instance = null; // also the copied in group (needs ?)
-                    let index=qq.index,// recover after 
-                    prefHour,prefDay;// other concept that are input x this major intent ctl
+                    let index=qq.index;// recover after 
+                   // prefHour,prefDay;// other concept that are input x this major intent ctl
                     
+                   /* do that after:
                     if (!match) {
                         // the only other input that  addressed this ctl multi turn ctl is a change in date because the hour selection dont satisfy the user 
                     if (qs.day_pref){
                         prefDay = parseInt(qs.day_pref);// if a model , must be reset before last user speeches
                         // .....
-                    }else if (qs.hour_pref||selAction == 2||selAction == 3){// hour_pref : change hour, selAction  2 if want to chse pom , selAction  3 if want to chse mat
+                    }else if (prefHour||selAction == 2||selAction == 3){// hour_pref : change hour, selAction  2 if want to chse pom , selAction  3 if want to chse mat
 
                             // this match is a user intent about hour that not matches the hour selector 
                             // es selector matches   alle 4 , per le 5, il pomeriggio , dopo le 5 .... ()
@@ -1836,7 +1923,7 @@ simplybooking
 
                         if(selAction == 2)prefHour=8;
                         else if(selAction == 3)prefHour=14;
-                        else if(qs.hour_pref)prefHour = parseInt(qs.hour_pref);// if a model , must be reset before last user speeches
+                        //else if(qs.hour_pref)prefHour = parseInt(qs.hour_pref);// if a model , must be reset before last user speeches
                         // match=prefHour;// can be ?
                         // or reset hour selector , ex 'vorrei il pomeriggio' o 'a partire dalle 14'
     
@@ -1850,10 +1937,26 @@ simplybooking
                    }
 
 
-                    }
+                    }*/
+                    let dontmatch=false;
                     if(match) {// should be
                         // match is the value matched so access matched slot data as rows[index] or cursor.resModel[match] 
                         //                ex  you got  qq.cursor.resModel[match].prompt_d+prompt_time
+
+
+                        // check there is not a new desidered date different from current selected day  :
+ 
+                        if(desDtatTime&&qs.desidere_asked&&qs.desidere_asked=='asked'){// a new desidered datetime is got but if more then 2 integer number or a week day 
+                            let mydate=desDtatTime.substring(0,10),
+
+                            // is there the data alredy in rows ?
+
+                             selDayId=qq.ctl.selDayId;// "2021-03-12"
+                             if(mydate != selDayId)dontmatch=true;
+                            
+                        }
+
+                        if(!dontmatch){
 
                     console.log(' simplybook: selstat=2 got slot match : ',match,' , meetDes = 100, selected Datetime slot date ',qq.rows[index].date,' time ',qq.rows[index].time);                 
 
@@ -1870,15 +1973,113 @@ simplybooking
                         qq.group.sel = groupsel;
                         sc = 1;// just not to return null;
                         qq.group.ctx.th_book_geit.meetDes=100;//
+                    }
+                    } 
+                    if(!match||dontmatch) {// dont match 
 
-                    } else {
-                        if(false){
+                            qq.match =qq.instance =qq.matched = null;
+                            if (qs.day_pref){
+                                prefDay = parseInt(qs.day_pref);// if a model , must be reset before last user speeches
+                                // ..... rebuild the day assuming same month as desDtatTime
+                                // desDtatTime=...
+                            }
+                            
+                            
+                            if(desDtatTime){
+                                let mydate=desDtatTime.substring(0,10);
 
-                        console.log(' simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different day proposal   : ',match,' , error');
+                                // is there the data alredy in rows ?
+                                
+
+                                // TODO that can be put in common f !!! find if a date is bookable and its the relday or row index
+
+
+                                //let selDayId=ctl.selDayId,// "2021-03-12"
+                                let relDayInd=qq.ctl.slotMat.relDayInd;//relDayInd = [],     [101,210,310],   contains  the rows index,  of first slot of ix esimo bookable day after fromdate
+                                let dayInd=-1,ij;
+                                //ij=9;
+                                
+                                for(ij=0;ij<relDayInd.length;ij++){
+                                    if(qq.rows[relDayInd[ij]].date==desDtatTime.substring(0,10)){dayInd=relDayInd[ij];break;}
+                                    
+
+                                }
+                                
+
+                                if(dayInd>=0){
+
+                                    console.log('  simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , but found the new desidered day bookable : ',desDtatTime);
+                                    qq.group.ctx.th_book_geit.meetDes='55';//context flag that  explain response to user : we change hour on 
+        
+                                    //ctl=Object.assign({},qq.ctl,func_ctl) ;//// query model qq must be a multi turn slot matrix query : inject session ctl data on ctl_ with helper function working on metadata :  
+                                    func_ctl_=Object.assign({rows:qq.rows,ctl:qq.ctl},func_ctl);// make rows and ctl available to func
+                                    ctl=Object.assign(qq.ctl,{f:func_ctl_});// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
+
+                                    ctl.selDayId =qq.rows[dayInd].date;// the selected day  Id/key/name selected . store as status property  at first level , used to select hour on selected day
+                                    ctl.vselDayId =qq.cursor.resModel[qq.rows[dayInd].value].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
+
+                                    setHourSel(dayInd,null, prefHour);// will set   chroot = 'th_3daySel_2'; and selStat =2
+
+
+
+
+                                }else{
+
+                        console.error(' todo , simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different day proposal   : ',mydate);
+
+                        // ...................... fin 3day to select in present rows like in firstReq()  or start a new download 
+
+                             return ;}
                         }else{
-                            console.log(' simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different hour proposal in same day  : ',match,' , error');
+
+
+                            if (prefHour||selAction == 2||selAction == 3){// hour_pref : change hour, selAction  2 if want to chse pom , selAction  3 if want to chse mat
+
+                                // this match is a user intent about hour that not matches the hour selector 
+                                // es selector matches   alle 4 , per le 5, il pomeriggio , dopo le 5 .... ()
+                                // prefHour is a model/ai agent that map intent to reset the new hour into a hour value
+    
+                            if(selAction == 2)prefHour=8;
+                            else if(selAction == 3)prefHour=14;
+                            //else if(qs.hour_pref)prefHour = parseInt(qs.hour_pref);// if a model , must be reset before last user speeches
+                            // match=prefHour;// can be ?
+                            // or reset hour selector , ex 'vorrei il pomeriggio' o 'a partire dalle 14'
+
+                            console.log(' simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , and a different hour proposal in same day  : ',match,' ,prefHour: ',prefHour);
+        
+                                    qq.group.ctx.th_book_geit.meetDes='5';//context flag that  explain response to user : we change hour on 
+        
+                                    //ctl=Object.assign({},qq.ctl,func_ctl) ;//// query model qq must be a multi turn slot matrix query : inject session ctl data on ctl_ with helper function working on metadata :  
+                                    func_ctl_=Object.assign({rows:qq.rows,ctl:qq.ctl},func_ctl);// make rows and ctl available to func
+                                    ctl=Object.assign(qq.ctl,{f:func_ctl_});// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
+
+
+                                // easyer:
+                               let dayInd=ctl.selDayIndex;// when moved to hour selection state we register the day and the row index of the day on which we do 3 hour selection . so continue using it !
+                                // .....................
+
+                                if(dayInd>=0){
+                                    setHourSel(dayInd,null, prefHour);// will set   chroot = 'th_3daySel_2'; and selStat =2
+                                    // what to o if cant find a hour? ..... propose next day ? ....
+                                }else{
+                                    // cant be 
+                                    console.error(' simplybook: selstat= 2 error ,match: ',match,' ,prefHour: ',prefHour);
+        
+                                   return;// setHourSel(0,null, prefHour);// temporaly
+
+                                }
+                       }else {
+
+                        // no proposed selector matched, no new hour no new day , so check if some other action set by th_change_quality 
+                            
+                                            // ...............................
+
+                       // error it will loop ! .....      chroot = 'repeat';// error TODO
+
+                        return;// temporarely
+
+                       }
                         }
-                        chroot = 'repeat';// error TODO
                     }
 
                 } else if (selStat == 3) {// matched slot 
@@ -1912,11 +2113,12 @@ simplybooking
                 //let slotMatSt = qq.ctl.slotMat;// this event handler works on slot matrix selection , its status is on ctl.slotMat
 
 
-                ctl.selStat = 2;// selecting hour in matched day status
-                let ind = index_,//qq.index;// the rows matching index  :  qq.instance=rows[qq.index],qq.match=instance.value  , so is the current relative desidered index
-                indVal;if(!isNaN(ind))indVal=qq.rows[ind].value;
-                console.log(' simplybook: setHourSel,  meetDes = 10, desDtatTime: ',desDtatTime,' prefHour: ',prefHour,', setting selStat:', ctl.selStat,' pointing slot : ',indVal,);
 
+                let ind = index_,//qq.index;// the rows matching index  :  qq.instance=rows[qq.index],qq.match=instance.value  , so is the current relative desidered index
+                indVal,indDay;if(!isNaN(ind)){indVal=qq.rows[ind].value;indDay=qq.rows[ind].date;}
+                console.log(' simplybook: setHourSel,  meetDes = 10, desDtatTime: ',desDtatTime,' prefHour: ',prefHour,', setting selStat:', ctl.selStat,' pointing slot : ',indVal,' date: ',indDay);
+                ctl.selStat = 2;// selecting hour in matched day status
+                let chechday=ctl.selDayId == indDay;// "2021-03-12"
 
                 //todo:
                 /* this was tested ok : use as reference 
@@ -2064,7 +2266,7 @@ simplybooking
             // sel,caseprompt,gotdate: see calling sets at SWY
 
 
-            async function firstReq(fromDate,desDtatTime,gotdate){// new // us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
+            async function firstReq(fromDate,desDtatTime,prefDay,prefHour,prefHM,gotdate){// new // us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
                                                                     // fromDate depends also on firstDay but if instead will be on desDtatTime day will take also its hour so :desDfromDate=desDtatTime if they are on same day (cant be different hours)
                                                                     // main purpose of param is :
                                                                     // set select hours  selector ( so complete redirect )
@@ -2083,7 +2285,7 @@ simplybooking
                 else { }
             }*/
 
-            if (gotdate) inter = 2;// preferred desDtatTime is a date bookable , so get matrix  from that   then filter matrix proposing a selection possibly in some hours of that day , 
+            if (gotdate) inter = 4;// was 2 , preferred desDtatTime is a date bookable , so get matrix  from that   then filter matrix proposing a selection possibly in some hours of that day , 
             else {//  desDtatTime can be known or not , anyway we respond to user with first bookable days starting from desDtatTime or firstavailable slot (consider desDtatTime today or tomorrow if null)
 
 
@@ -2120,7 +2322,7 @@ simplybooking
             // then refine again the schedule to select the hour in the preselected day
             // find the day to put in the filtered to preselect
 
-            if (!gotdate) {
+            if (qq&&!gotdate) {
                 if (qq.ctl.slotMat.bookDays < 3) {
                     inter = 10;// integer
                     qq = await start(FromDate, inter,ctl);// really we should complete the alredy downloaded (where ?) matrix !
@@ -2168,7 +2370,11 @@ simplybooking
 
             // check if is null matrix 
 
-            if(qq.ctl.slotMat.bookDays==0)return null;
+            if(!qq||qq.ctl.slotMat.bookDays==0)return null;
+
+            // record pref date time in build the rows 
+
+            qq.cursor.time={prefDay,prefHour,prefHM,fromDate,desDtatTime};// the time when rows/cursor were built. prefDay,prefHour are from desDtatTimeprefDay unless set by qs 
 
                             // store def arrays :
                 //qq.query.cursor.medSync_=Object.assign({},qq.query.cursor.medSync);
@@ -2176,14 +2382,14 @@ simplybooking
                 qq.cursor.medSync_ = qq.cursor.medSync;
                 qq.cursor.medSyntL_ = qq.cursor.medSyntL;
 
-                let hind,prefHour;
 
-                let hou;// target hour
-                if (qs.hour_pref) prefHour = parseInt(qs.hour_pref);// rettifica il preferred hour se c'e entity specifica piu aggiornata .hour_pref , se disponibile
-                else if((desDtatTime&&(hou=desDtatTime.substring(11,13))!='00')){// altrimenti se ora diversa 00  predi il desiered hour 
-                    //  hour is >0 !
-                    prefHour = parseInt(hou);
-                }
+
+
+
+
+
+
+
             if (gotdate||// surely fromday=des day (fromDate == desDtatTime)
                 // as  fromDate(>=desDtatTime)  , appears  that desDtatTime has day bookable ( so we can select hour) if :
                 // -  fromDate == desDtatTime and is bookable dayspan[0] ( first bookable is 0 relative from fromDate) 
@@ -2204,12 +2410,12 @@ simplybooking
                 let dayIndex=qq.ctl.slotMat.relDayInd[0];// row index, a pointer to first slot of the selected day that is the first bookable , so must be 0?
                 qq.ctl.selDayId =qq.rows[dayIndex].date;// the selected day  Id/key/name selected . store as status property  at first level , used to select hour on selected day
                 qq.ctl.vselDayId =qq.cursor.resModel[qq.rows[dayIndex].value].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
-
+                    let hind;
                 if(prefHour)hind=qq.ctl.f.findSlotAfterHourH(dayIndex,prefHour);// in first relative day find if there are slot with hour >= prefHour. so ca
 
                     // now 2 case or we have hind (hind) in des day or we must select 3days
            // }if(hind>=0){// so we are her because the preferred day is a bookable day , now we know  the available hour is >= to pref hour , so check the hind slot hour
-                if(hind&&!isNaN(hind)&&parseInt(qq.rows[hind].time.substring(0,2))==prefHour){// '23:59:59' > '23' il best nearer hour must be = prefHour, so we got match
+                if(!isNaN(hind)&&parseInt(qq.rows[hind].time.substring(0,2))==prefHour){// '23:59:59' > '23' il best nearer hour must be = prefHour, so we got match
                     //qq.group.ctx=qq.group.ctx||{};
                     qq.group.ctx.th_book_geit.meetDes=1;//context flag that  explain response to user : we meet desidered day and hour
                                                     // but the th to redirect can be different (the slot match confirm th ! )
@@ -2243,7 +2449,8 @@ simplybooking
                            
                 console.log(' so firstReq= desidered day is  matched as bookable , there are ',qq.ctl.slotMat.daysc[0],' slot but pref hour dont match (if exists is  < or >, otherwise is 0(def, no prefhour).  so  start starting setHourSel , meetDes = 0, desDtatTime: ',desDtatTime,' prefHour: ',prefHour,' start slot ind: ',hind);
                     let also_minor=true;
-                    if(!hind){
+                    //if(!hind){// 0 not matches !?
+                    if(isNaN(hind)){// ok ?
                         // no slot after prefhour, so (TODO) temporely set the first slot in day
                         // >>>>>>>>>>>>>>>>  (TODO) should be the first of 3 hour before deshours
                         hind=dayIndex;//=qq.ctl.slotMat.relDayInd[0] that is 0 !!!

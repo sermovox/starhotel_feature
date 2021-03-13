@@ -1175,10 +1175,11 @@ console.log('duckling : date on ustime: ',dateUsLoc);
     const lochour= new Date().getHours();
     console.log('duckling : local hour: ',lochour);
   const nev=false;
-  if(nev){//if(lochour<9){
+  //if(nev){//if(lochour<9){
+  if(lochour<9){
 	let date= new Date(dateUsLoc);
 
-        const offsetMs = 24*3600000;// 1min=60000 seconds, 1day =60*24*60000
+        const offsetMs = 24*3600000;// 1min=60000 milliseconds, 1day =60*24*60000
         const msLocal = date.getTime() + offsetMs;
 
         const dateLocal = new Date(msLocal);
