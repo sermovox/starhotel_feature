@@ -86,7 +86,7 @@ httpserver=servs.httpserver;webserver=servs.webserver;// must add dependency int
 
 const adapter = new WebAdapter({});// calling createSocketServer(http,optn, logic=controller.handleTurn.bind(botkit)); will build ws on http server , attach ws to controller 
 
-
+const webhook_uri='/api/messages';
 
 const controller = new Botkit({// controller will have 1 ds filled by cms instance . ds provide a dialogcontext to (spaw()) bot to operate on it :
                                 //       dialogcontext= new DialogContext(this, context, state=dialogState.get(context, { dialogStack: [] }));
@@ -96,7 +96,7 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
                              //1 ctl foreach client group
     debug: true,
     port:wsPort,
-    webhook_uri: '/api/messages',
+    webhook_uri,
     webserver,// take webserver alredy config , if not provided the controller will create internally a http and webserver 
     adapter: adapter,// in configureWebhookEndpoint() will tie post webserver endpoint ( webhook_uri) handler  to adapter that will use bot to process req then use res to sent response
                     //      webserver.post(webhook_uri, (req, res) => {...        this.adapter.processActivity(req, res, logic=this.handleTurn.bind(this))   ; nb  this=controller
@@ -108,7 +108,7 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
 let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 
 let rootDef=require('./nat/cfgWebPost.js');
-rootDef(controller.webserver);
+rootDef(controller.webserver,controller,webhook_uri);
 
 if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');

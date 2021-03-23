@@ -1,4 +1,4 @@
-let fwCb,dynJs;
+let fwCb,dynJs,// was ; !!!!!!!!!!!!!!
 qs=require("qs"),
 querystring=require('querystring');
 module.exports =
@@ -2938,7 +2938,7 @@ function getHost(url, matches) {// return host , qs . new good also for any prot
         r = url_.substring(0, cstop); qs = url_.substring(cstop);
         let qm = qs.indexOf('?');
         if (qm >= 0) {
-            qs = qs.substring(qm + 1);
+            qs = qs.substring(qm + 1);// leave all before ?
             qs_=querystring.parse(qs);// qs='pippo=ok&$caio=x&city=rome' qs_={pippo:'ok',,,,}
 
             for(let amod in qs_){// amodelmatch=$amodel  >  {amodelmatch:vars.matches.amodel.match,,,,,}
@@ -2959,6 +2959,9 @@ function getHost(url, matches) {// return host , qs . new good also for any prot
     }
     else r = url_;
     return { url, host: r, qs ,qs_};
+    /* 
+    url='someservice://host/po/bo?pippo=ok&amodelmatch=$amodel'  host='host'  r='someservice://host' qs='pippo=ok&amodelmatch=vars.matches.amodel.match' qs_={pippo:'ok',amodelmatch:vars.matches.amodel.match} matches={vars:{}}
+    */
 }
 
 

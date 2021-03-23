@@ -1,9 +1,17 @@
+let querystring=require('querystring');
 let mustacheF={ };
 const enumer=false,congi=' oppure ';// da le liste numerate o usa congi
+//const regexp = /(.*)<<(([a-z]+)\s*([^>]*))>>(.*)/;// gets pre,tailwithspace on : some<pre  tailwithspace>other leave text =someother
+const regexp = /(.*)<<(([a-z]+)\s*([^>]*))>>([\s\S]*)/;// gets pre,tailwithspace on : some<pre  tailwithspace>other leave text =someother
+
+
+mustacheF.nmListFact=function (mapname,nmp,firstname,retAFunc){// useless
+    return function (mapname,nmp,firstname,retAFunc){}
+}
 
 // global helper to be run in context of ......  
 //mustacheF.nmList=function (map,step,clVars){// map can be the notmatching model list item =[{name:modelx},{}] on ask condition 
-mustacheF.nmList=function (mapname,nmp,firstname,retAFunc){
+mustacheF.nmList=function (mapname,nmp,firstname,retAFunc,opns){// mapname is the item to render , firstname the item position, opns the directive to render 
 
     //can be :
     // firstname= fn  so first call fn='.', following  fn='-'
@@ -14,6 +22,8 @@ mustacheF.nmList=function (mapname,nmp,firstname,retAFunc){
 
     let count,fnisN= !isNaN(firstname);
     if(fnisN)count=firstname;
+    let congi_;
+    if(opns&&opns.end)congi_=opns.end;else congi_=congi;
 
     /*cases 
 
@@ -86,12 +96,12 @@ params :
    //  let excel_=step.values.excel;
    let ret;// error 
    let morecompl=retAFunc;// can render a funcion template
-    if(mapname){// a notmatched model , look in excel if the model is descibed and get the notMatched prompt if there is 
+    if(mapname){// ? a notmatched model , look in excel if the model is described and get the notMatched prompt if there is 
 
         let retur;
         if(nmp){// the model notmatched name 
             ret= '  '+nmp;
-        }else{
+        }else{// the item
             ret= ' '+mapname;
         }
         // if(clVars.notmatlist[0]==map.name)return ret;// first item
@@ -104,7 +114,7 @@ params :
 
             // firstname is a string  fn , so first call fn='.', following  fn='-'
             if(firstname=='.'||(firstname!='-')&&firstname==mapname)retur= '';// first item
-            else retur= congi ;
+            else retur= congi_ ;
         }
 
         if(!morecompl){// return the value rendered by function using  context (the calling f context)
@@ -112,9 +122,10 @@ params :
 
         }else{// return function(text,render) to be called with text to render 
 
-            return function(text,render) {
+            return function(text,render) {// text is the corpus of function {{#mustacheF.rendQuery}} text {{/mustacheF.rendQuery}}  , usually text contain $, the item 
 
                 if(text) {// a {{function}} 
+
 
                     return retur+render(text).replace('$',mapname);
                 }
@@ -157,8 +168,43 @@ mustacheF.qeA=function(qstring){
 
         let param,param2,param3,param4,template=text,itr1;// the $$xxx& first part of text 
         // text=text.substring(after&);
-        let oplength=0;
+        let oplength=0,opns;
         if (text.substring(0, 2) == '$$') { // $$param&param2&template
+
+                // 032021 : idea add here a code to modify the item list rendering , for example £congi  can substitute default congi
+                //let str = 'anche <option value> però',str1 = 'pistola  uu<ff  uu>', str1 = 'pistola  uu';
+
+               //  let regexp = /(.*)<(([a-z]+)\s*([^>]*))>(.*)/;// gets pre,tailwithspace on : some<pre  tailwithspace>other leave text =someother
+                
+               let scri = text.match(regexp);
+                
+               /*
+                let sum0 = result[0]+'<br>'+result[1]+'<br>'+ result[2]+'<br>'+ result[3]+'<br>'+ result[4]+'<br>'+ result[5]+'<br>';
+                let sum='';
+                sum =sum+'text=/'+text+'/<br>';
+                sum =sum+'option='+option+'<br>';
+                 sum=sum+'value=/'+value+'/<br>';*/
+                  if(scri){
+                      let option= scri[3],value=scri[4],text_=scri[1]+scri[5];
+                      text=text_;
+                      
+                      if(value&&option=='and'){opns={end:value};}
+                      else  if(value&&option=='qs'){// treat value as a querystring
+                          // querystring=require('querystring');
+                          opns=querystring.parse(value.replace(/-/g,'&'));
+                          /*if(opns){
+                              
+                              if(opns.end)retur=opns.end;
+                              if(opns.start)start=opns.start;
+                              if(opns.length)length=opns.length;
+
+                          }*/
+
+                      }
+
+              }
+
+
             template=text.substring( 2) ;
             itr1=template.split('&');// 
             oplenght=itr1.length;
@@ -183,6 +229,12 @@ mustacheF.qeA=function(qstring){
                 param=itr1[0];template=itr1[1];
             }
             // template inizia con \n !!???
+
+
+
+
+
+
         }
     if(param){// so found $$ and not null param 
 
@@ -199,8 +251,10 @@ mustacheF.qeA=function(qstring){
 
         let value_,vs={vars:stepp.values};
         // can use jVar as in conversation or must chech for eval error (cant find property of undefined !)
+        let vars=stepp.values;
         try{
-        eval( "value_ = vs." + param2 );// calc value_ using eval, or use the parser in conversation.js, that means jVar ?
+        //eval( "value_ = vs." + param2 );// calc value_ using eval, or use the parser in conversation.js, that means jVar ?
+        value_=eval(param2 );// 032021 calc value_ using eval,as last calculated var 
         } catch(e){value_=null;}
         if(value_){// nb value_ is the value of a variable, param4 is a string , so treat the integer parsing if string is numeric
         if(param3=='=='){if(value_!=param4)template=null;
@@ -297,7 +351,7 @@ mustacheF.qeA=function(qstring){
                 col=param2;
                 }
             // now i can use a function factory or just to set a closure param of a static function , start with the factory : 
-                mustacheF.rendQuery=listAitem1(firstit,col);// firstit is now useless, param3 is the col , remember to use queryL as context array inside 
+                mustacheF.rendQuery=listAitem1(firstit,col,opns);// firstit is now useless, param3 is the col , remember to use queryL as context array inside 
         }else if(param=='miss') {// render list of a jet not matched model used in dyn ask dyn_rest, 1,2 param 
 
 
@@ -660,7 +714,9 @@ if(count++<max)return mustacheF.nmList(this.name,npm,fn)}// call an external fun
 return null;
 
 }
-function listAitem1(firstname,col){// case out list , col is the row column index to display 
+
+
+function listAitem1(firstname,col,opns){// case out list , col is the row column index to display 
     // if inside a string matrix  context :
     //          a function factory, to render the item[col] of a father context   vars.askmatches.dyn_rest.param.itemS =the querred subarray of
     //          dyn_ask  data (rows query cursor)=[ [ '','',''],,,,]
@@ -683,6 +739,11 @@ if(firstname==null)firstname='.';// first
 
 // 29042020 :
 let count=0;
+let start=1,length=5,aa;
+if(opns){if(opns.start){aa=parseInt(opns.start);if(!isNaN(aa))start=aa;}
+    if(opns.length){aa=parseInt(opns.length);if(!isNaN(aa))length=aa;}// now a string ?
+    //if(opns.end)length=opns.length;
+}
 
 
 // other myBoundF vars
@@ -694,7 +755,7 @@ return function (){ // nb no text/template to work on , if had a template to wor
 //      render(filter(template));
 let fn,el;
 // **** usually rendernotmatch is called inside a mustache template of array notMatchL previously prepared, so this is a  notMatchL item 
-console.log('  ***** we are in out list a col of a matrix ({{#mustacheF.out}}$$list&5&...}})  and this is : ' ,this);
+console.log('  ***** we are in out list .so rendering the item (or a col of a matrix) ({{#mustacheF.out}}$$list&5&...}})  and item=this is : ' ,this);
 // usually  this is a  notMatchL item ,={name:thenotmatchedname},clVars={notmatlist:['po','pi'],notMatchL:[{name:'po'},{name:'pi'}]}; 
 //return mustacheF.nmList(this,step,clVars)}// call an external function ( can be put in the same excel obj ? !)
 
@@ -708,12 +769,13 @@ if(Array.isArray(this)){el=this[col];
                         if(Array.isArray(el)&&el.length==1&&Array.isArray(el[0]))el=el[0];// 3 dim array is cursor.items case only
                     }
                     else el=this;
-
+if(count>=start&&count<start+length){
 if(!enumer)
-return mustacheF.nmList(el,null,fn,true);// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+return mustacheF.nmList(el,null,fn,true,opns);// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
 
 // 29042020 :
-else return mustacheF.nmList(el,null,count,true)// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+else return mustacheF.nmList(el,null,count,true,opns)// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)
+}else return '';
 }
 
 }
