@@ -4,6 +4,15 @@ let manager;
 const aiRestInt=false,//
 debug=false;
 let rest,qea;
+const oneduckInstOnly=true;// duck can have 1 time or one time interval each turn
+//const isodate=true;
+const isodate=false;
+let isoRegEx;
+if(isodate)
+  // see https://www.regextester.com/112232
+  // const isoRegEx=/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(((-|\+)(\d{2}):(\d{2})|Z)?)/i
+ /// isoRegEx=/\s(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\s/i; // just date time in ec , no timezone
+  isoRegEx=/\s((\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}))?)\s/i;// 'ciao pippo oo 2012-01-01T17:52:27 ok' or 'ciao pippo oo 2012-01-01 ok '
 
 // interface 
 // cfg agents to know what end point will use , ???
@@ -13,7 +22,7 @@ agents={duck:'duckling',
 },
 
 
-services={};
+services={};// see ARESTJJ
 
 /* MNG SUMMARY 
 when using matchers we set  url=service://plugins.witai?v=20201025, or =service://plugins.nlpai.datematch, in condition macro   
@@ -96,9 +105,9 @@ module.exports=// copy of db part of  refImplementation
 
 // init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'}})
 
-    return {
+    return {// ARESTJJ: returns a obj with only a field init:  {init:function(){}}= {init(){}}  init will return services configured obj
       init(active) {//init(active={nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse',qea:{url:extqea} })// interfaces : nlpai,duck.witai(all intent resolver services),qea(all qea services)
-        // returns services so i can register plugin  regplugin('ai',services) 
+        // returns services[][] so i can register services as service plugin (see bot.js :  service.addPluginExtension('ai', nlpai); )
         // so in macro  can call url=service://plugins.ai.datetime.run , sn='datetime' is one service name that this masterfactory   provided according factory associated/registered to  config name ep1=duck (facrory can be provided by caller of a config obj)
         //  passed in active (with its params x the factory)
         //  this factory will set x each config (duck,,,) some service (datetme )that we configure here according to the factory for the config   ep1=duck   endpoint interface named ep1='duck',,,, to what is here config using param passed in active={}
@@ -174,7 +183,7 @@ module.exports=// copy of db part of  refImplementation
                                                                                               // form.qs.book_res_child.curStatus=matches.entity.param instead to use cooky to get the multi turn query status/session
                                   // now manage the reject call
                                 .catch((err) => { console.error(' the simplybook ctl rejected with error: ',err); });//   or  .catch(console.error);
-
+                         if(qs.curStatus&&qs.curStatus.ctl&&qs.curStatus.ctl.f)       console.error(' debug: the simplybook ctl leave ctl.f '); 
 
                       if (answ == null) {
                           console.log('no answer found ');
@@ -598,9 +607,132 @@ let duck=function(params){// a func factory, after a test get the func by a inte
   return   datematch2(params);// returns the result of datematch2 factory that configure my endpoints with with param=params
   }
 
+  datematch3= // duplicate , just as code reminder . 
+              // this is the factory of a async function , so returning a Promise and do  use await  . so async function  OR function ? 
+
+  function(params){
+    let mf=
+  async function (form){
+    // dynMatch interface : calls this.run_jrest(url,form,isGET); with form=let form={entity,term,wheres,meta,whMmeta};
+                  // that, because of url set as matcher param url="url":"service://plugins.nlpai.datematch"
+                  // calls let form = formObj || querystring.parse(qs); , so as form is not null tage just it , and
+                  // so this func will be called with  form={entity,term,wheres,meta,whMmeta}={entity,term,null,null,null}
+    // returns : {reason:'runned'/'err',rows:result.entities[0].resolution.value==new Entity()=.....................};
 
 
-    datematch2= // this is the factory of a async function , so returning a Promise and do  use await  . so async function  OR function ? 
+      let {entity,term}=form;
+
+      // curl -XPOST http://192.168.1.15:8000/parse --data 'locale=it_IT&text=14 pezzi per domani'
+/* in firefox see json : 
+[{"body":"domani dalle 7 di pomeriggio alle 9","start":12,"value":{"values":[{"to":{"value":"2020-10-31T10:00:00.000-07:00","grain":"hour"},"from":{"value":"2020-10-31T00:00:00.000-07:00","grain":"hour"},"type":"interval"},{"value":"2020-10-31T19:00:00.000-07:00","grain":"hour","type":"value"}],"to":{"value":"2020-10-31T10:00:00.000-07:00","grain":"hour"},"from":{"value":"2020-10-31T00:00:00.000-07:00","grain":"hour"},"type":"interval"},"end":47,"dim":"time","latent":false},
+{"body":"2","start":12,"value":{"value":2,"type":"value"},"end":13,"dim":"number","latent":false},{"body":"domani alle 7 e trenta di pomeriggio","start":20,"value":{"values":[{"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"}],"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"},"end":56,"dim":"time","latent":false},
+{"body":"14","start":0,"value":{"value":14,"type":"value"},"end":2,"dim":"number","latent":false},{"body":"domani alle 18","start":13,"value":{"values":[{"value":"2020-10-31T18:00:00.000-07:00","grain":"hour","type":"value"}],"value":"2020-10-31T18:00:00.000-07:00","grain":"hour","type":"value"},"end":27,"dim":"time","latent":false}]
+
+also :
+
+     DGTG  : 
+
+[
+{"body":"domani pomeriggio","start":0,"value":{
+                                              // not used:
+                                            "values":[{ "to":{"value":"2020-12-28T19:00:00.000-08:00","grain":"hour"},
+                                                        "from":{"value":"2020-12-28T12:00:00.000-08:00","grain":"hour"},
+                                                        "type":"interval"}
+                                                      ],
+                                            "to":{"value":"2020-12-28T19:00:00.000-08:00","grain":"hour"},
+                                            "from":{"value":"2020-12-28T12:00:00.000-08:00","grain":"hour"},
+                                            "type":"interval"
+                                            },
+                
+                "end":17,"dim":"time","latent":false}
+,
+{"body":"domani alle 8 e 32","start":0,"value":{
+                                              // not used :
+                                            "values":[{"value":"2020-12-28T08:32:00.000-08:00","grain":"minute","type":"value"}
+                                                      ],
+                                              
+                                            "value":"2020-12-28T08:32:00.000-08:00",
+                                            "grain":"minute",
+                                            "type":"value"
+                                            },
+                "end":18,"dim":"time","latent":false}
+]
+
+so main json result template is :
+
+datetime="2020-10-31T19:30:00.000-07:00"
+
+result =[// conf=  ????
+{start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+{start:3,end:8,dim:"number",value:{type:"value",value:2}},                                                  >> so row:{value:13,dim:'number',type:'value'}
+]
+*/
+    
+     //let url=http://192.168.1.15:8000/parse
+      let result ;
+     if(!debug) // debug
+     result= await  rest(params.url,'POST',{locale:'it_IT',text:term},null, true,null) // no extra header,true:send urlencoded (calc from map obj data {locale:'it_IT',text:term}, no qs)
+      .catch((err) => { console.error(' REST got ERROR : ',err,',  so set test datetime');
+     // dont work , too late :  result= JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-14T09:00:00.000+00:00'}}]);
+      //'[{"body":"2","start":12,"value":{"value":2,"type":"value"},"end":13,"dim":"number","latent":false},{"body":"domani alle 7 e trenta di pomeriggio","start":20,"value":{"values":[{"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"}],"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"},"end":56,"dim":"time","latent":false},
+
+    }); 
+    result= result||JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-18T09:00:00.000+00:00',values:{},type:'value'}}]);
+
+
+      console.log('duck service , on text: ',term,' datematch got :',result,', json: ',JSON.stringify(result, null, 2));// see DGTG for expected format 
+
+        let o,res;
+        if (result&&typeof result === 'string') {
+        // ........parse       "resolution": {            "value": "2019-12-12T09:00:00.000+00:00",
+        try {
+          o = JSON.parse(result);
+
+      }
+      catch (e) { o=null;}// works ?
+
+      console.log('duck service , on text: ',term,' datematch got: ',o);// see DGTG for expected format 
+
+      // return {reason:'runned',rows:res}; with res set by Entity constructor basing from : 
+      //      get the result o={item1,,,} , look at itemx with dim='time' so res={value:itemx.value.value} 
+       if(o) o.forEach(el => {// from duck extract only time info (TODO in case needed also numbers info .....)
+          if(el.dim=='time'&&el.value
+          // &&el.value.value  also el.value.values
+          &&el.value.values// = "2021-02-25T11:00:00.000-08:00"
+          ){    // can be many ? no should find interval
+            let mainEnt={value:
+              null// el.value.value
+            };// main row
+
+            res=new Entity(entity,el.dim,mainEnt,el.value);// main ent : the date time ent , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
+            // but this is a multi entity ( a intent quasi )so treat like complex entity : a main ent + bl of other entity 
+
+                          // 122020 >>>>>  this value is the entity obj but is more complete then std VAL expected format see Matcher_AdapterInterface.txt
+                          // done  got entity for type value ( see above DGTG )
+                          // to do   : define the entity found : Time or/e Interval
+                          
+            //  ????? keep localtime schift ??????????????????????????
+            
+            let t=res.rows.value.indexOf('T'),date,time;// res.rows.value= "2021-02-25T11:00:00.000-08:00"
+            if(t>0){res.rows.date=res.rows.value.substring(0,t);res.rows.time=res.rows.value.substring(t+1,t+6);}
+          }
+        });
+      // if ()
+      // if(result&&result.entities&&result.entities[0]&&result.entities[0].resolution&&result.entities[0].resolution.value)
+      if(res)
+      {
+        // res is better then std format ( see Matcher_AdapterInterface.txt ), so set objMod
+        res.objMod=true;// better then std form expected by entity matcher type Ent
+       return {reason:'runned',rows:res};//{reason:'runned',rows:result.entities[0].resolution.value==new Entity()=.....................};
+      }
+      else return {reason:'runned',rows:null};
+      // other nlp func ....
+  }else return {reason:'err',rows:null};
+}
+return mf;}
+
+  datematch2= // this is the factory of a async function , so returning a Promise and do  use await  . so async function  OR function ? 
 
     function(params){
       let mf=
@@ -662,8 +794,43 @@ result =[// conf=  ????
 */
       
        //let url=http://192.168.1.15:8000/parse
-        let result ;
-       if(!debug) // debug
+        let result,res ;
+
+  const ti='time';
+//  
+        if(isodate){
+
+          // regex match of single datetime 
+          // see https://www.regextester.com/112232
+          // const isoRegEx=/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)(((-|\+)(\d{2}):(\d{2})|Z)?)/i
+
+          // const isoRegEx=/\s(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\s/i // just date time in ec , no timezone , discover a single datetime 
+
+          let isTim;// ' ciao  per il "2012-02-01T18:21:06" o il 2012-02-07 vorrei ....'
+          try{
+            let matres= tomatch.match(isoRegEx);// test='stay*\w*\s(\w*)' will return rematch=[],  in rematch[1] is the word after stay*
+          }catch{
+              console.error(' nlpai duck service interface: isoRegEx error ');}
+
+          if(matres&&matres.length>2)isTim=matres[1].substring(0,19);// no fuse, local
+          if(isTim){
+
+            if(isTim.length==10)res=res.substring(0,10)+'T00:00:00';
+            console.log('res with ',res);
+            
+            let val_={type:"value",grain:"minute",value:isTim};// 'value' means single datetime
+            res=new Entity(entity,'time',{value:null},val_,Ltime);// main ent : the date time ent , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
+            // but this is a multi entity ( a intent quasi )so treat like complex entity : a main ent + bl of other entity 
+
+            console.log('duck service , on text: ',term,' find a iso datetime string: ');// see DGTG for expected format 
+          }else{
+
+          }
+
+        }
+
+        if(!res){// didnt find a inline datetime , so run datetime server
+          if(!debug) // debug
        result= await  rest(params.url,'POST',{locale:'it_IT',text:term},null, true,null) // no extra header,true:send urlencoded (calc from map obj data {locale:'it_IT',text:term}, no qs)
         .catch((err) => { console.error(' REST got ERROR : ',err,',  so set test datetime');
        // dont work , too late :  result= JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-14T09:00:00.000+00:00'}}]);
@@ -675,7 +842,7 @@ result =[// conf=  ????
 
         console.log('duck service , on text: ',term,' datematch got :',result,', json: ',JSON.stringify(result, null, 2));// see DGTG for expected format 
 
-          let o,res;
+          let o;
           if (result&&typeof result === 'string') {
           // ........parse       "resolution": {            "value": "2019-12-12T09:00:00.000+00:00",
           try {
@@ -688,39 +855,43 @@ result =[// conf=  ????
 
         // return {reason:'runned',rows:res}; with res set by Entity constructor basing from : 
         //      get the result o={item1,,,} , look at itemx with dim='time' so res={value:itemx.value.value} 
+        let tcount=0;
          if(o) o.forEach(el => {// from duck extract only time info (TODO in case needed also numbers info .....)
-            if(el.dim=='time'&&el.value
+            if(el.dim==ti// ti='time'
+              &&el.value
             // &&el.value.value  also el.value.values
             &&el.value.values// = "2021-02-25T11:00:00.000-08:00"
             ){    // can be many ? no should find interval
               let mainEnt={value:
                 null// el.value.value
               };// main row
-
-              res=new Entity(entity,el.dim,mainEnt,el.value);// main ent : the date time ent , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
+              res=new Entity(entity,ti,mainEnt,el.value,changeLtime);// main ent : the date time entity , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
               // but this is a multi entity ( a intent quasi )so treat like complex entity : a main ent + bl of other entity 
 
                             // 122020 >>>>>  this value is the entity obj but is more complete then std VAL expected format see Matcher_AdapterInterface.txt
                             // done  got entity for type value ( see above DGTG )
                             // to do   : define the entity found : Time or/e Interval
-                            
               //  ????? keep localtime schift ??????????????????????????
-              
-              let t=res.rows.value.indexOf('T'),date,time;// res.rows.value= "2021-02-25T11:00:00.000-08:00"
-              if(t>0){res.rows.date=res.rows.value.substring(0,t);res.rows.time=res.rows.value.substring(t+1,t+6);}
+              tcount++;
             }
           });
         // if ()
         // if(result&&result.entities&&result.entities[0]&&result.entities[0].resolution&&result.entities[0].resolution.value)
+          if(oneduckInstOnly&&tcount>1)res=null;//
+          
+        }else return {reason:'err',rows:null};}
         if(res)
         {
+          let t=res.rows.value.indexOf('T'),date,time;// res.rows.value= "2021-02-25T11:00:00.000-08:00"
+          if(t>0){res.rows.date=res.rows.value.substring(0,t);res.rows.time=res.rows.value.substring(t+1,t+6);}
           // res is better then std format ( see Matcher_AdapterInterface.txt ), so set objMod
           res.objMod=true;// better then std form expected by entity matcher type Ent
          return {reason:'runned',rows:res};//{reason:'runned',rows:result.entities[0].resolution.value==new Entity()=.....................};
         }
         else return {reason:'runned',rows:null};
         // other nlp func ....
-    }else return {reason:'err',rows:null};
+        
+
   }
   return mf;}
 
@@ -1089,12 +1260,21 @@ if(res.intent)resu=1;else{
 
 }
 
-function Entity(name, dim, row_, value) {// only datetime info , add interval , get only the from 
+function Entity(name, dim, row_, value,changeLtime) {// only datetime info , add interval , get only the from . changeLtime is fuso corrector
+  /*used value fields : value={type:'value',
+                              value:'isotime'
+                              }
+                            
+                        value={type:'interval',
+                              to:{value:'isotime'},
+                              from:{value:'isotime'}
+                              }
+*/
 
   /* see    DGTG  : 
   x=
-    {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
-    {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalie,todate,totime:}
+    {start:3,end:8,dim:"time",value:{type='interval',to:{value:datetime,grain},from:{value:datetime,grain}}},   >> so row:{value:datetime,dim:'time',type:'interval',date:datefromvaue,time:timefromvalue,tovalue,todate,totime:}
+    {start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:datetime}},                               >> so row:{value:datetime,dim:'time',type:'value',date:datefromvaue,time:timefromvalue,tovalue,todate,totime:}
     {start:3,end:8,dim:"number",value:{type:"value",value:2}},                                                  >> so row:{value:13,dim:'number',type:'value'}
 
     value=x.value
@@ -1111,7 +1291,7 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
   // to do   : define the entity found : Time or/e Interval 
 
   /*
-      constructor , returs obj :
+      constructor , returns obj :
         {// like ....
           matched:'match' or null 
           match:   itemname=row.value  (???or {ent:itemname}) 
@@ -1126,7 +1306,8 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
                                         //    named date : {value=descr='31122020'} and time : {value=descr='23:59'}
   
   
-            },
+            },// OR in model(vars.matches.model={....})=entity  we can copy the row as instance
+            instance
   
           // witai like : 
           type: 	// witai dim + ...  es : type=number,datetime-val/interval,location,customentitynameAssigned( the name referas to a entity described on staticmodel or a db schema)
@@ -1136,13 +1317,17 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
   
   
   */
+
+// fuso, non usato in simplybook
+const fuso='+01:00';// or :   =''
+
   // let value; match = null; 
   this.matched = null;
   this.type = dim;
   this.name = name;
   if (value.type == 'value') {// its a time 
     if (row_&&value.value) {
-      row_.value=changeLtime(value.value);// value.value= "2021-02-25T11:00:00.000-08:00", port in rome local time (same hour but day can change as losaneles-rome shift is 9 hours)
+      row_.value=changeLtime(value.value)+fuso;// value.value= "2021-02-25T11:00:00.000-08:00", port in rome local time (same hour but day can change as losaneles-rome shift is 9 hours)
       row_.type='time-value';
       // row_.descr=.......
 
@@ -1153,8 +1338,8 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
     } else this.row = null;
   } else if (value.type == 'interval') {// its a time interval : take from 
     if (row_ && value.from&&value.from.value) {
-      row_.value=changeLtime(value.from.value);
-      if(value.to)row_.to=changeLtime(value.to.value);
+      row_.value=changeLtime(value.from.value)+fuso;
+      if(value.to)row_.to=changeLtime(value.to.value)+fuso;
 
       row_.type='time-interval';
       // row_.descr=.......
@@ -1168,15 +1353,24 @@ function Entity(name, dim, row_, value) {// only datetime info , add interval , 
 
 }
 
-function changeLtime(dateUsLoc) {// dateUsLoc="2021-02-28T08:00:00.000-08:00", hoursShift=9 so if local hour is 8 , return ="2021-03-01T08:00:00.000+01:00"
+
+
+
+
+
+function changeLtime(dateUsLoc) {// relative time fuso corrector .see today example
+                                //dateUsLoc="2021-02-28T08:00:00.000-08:00", hoursShift=9 so if local hour is 8 , return ="2021-03-01T08:00:00.000+01:00"
                                 // so if local hour is 10 , return ="2021-02-28T08:00:00.000+01:00"
+                                // so if local hour is 10 , return ="2021-02-28T08:00:00.000" local hour 
 let nd;
 console.log('duckling : date on ustime: ',dateUsLoc);
     const lochour= new Date().getHours();
     console.log('duckling : local hour: ',lochour);
   const nev=false;
   //if(nev){//if(lochour<9){
-  if(lochour<9){
+    let todo_=true;
+  if(lochour<9&&!todo_){// todo debug error : do shift only if match  today,tomorrow,..... not venerdi 23
+                        // example today: today is the date now in -08 fuso, that can be not the date in local fuso !!!!!!
 	let date= new Date(dateUsLoc);
 
         const offsetMs = 24*3600000;// 1min=60000 milliseconds, 1day =60*24*60000
@@ -1194,16 +1388,16 @@ console.log('duckling : date on ustime: ',dateUsLoc);
 
         let cal=iso.substring(0,10);// next day 
 
-	nd=cal+dateUsLoc.substring(10,23)+'+01:00';
+	nd=cal+dateUsLoc.substring(10,23);//+'+01:00';
 	console.log('duckling, changeLtime : changed date on localtime: ',nd);
 	}else{
 
-	nd=dateUsLoc.substring(0,23)+'+01:00';
+	nd=dateUsLoc.substring(0,23);//+'+01:00';
 	console.log('duckling,changeLtime : same date on localtime: ',nd);
 
 }
 return nd;
-
-
-
+}
+function Ltime(dateUsLoc) {
+      return dateUsLoc.substring(10,23);
     }

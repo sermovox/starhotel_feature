@@ -55,7 +55,7 @@ let fwHelpers={};// base service function provided by framework. usually used in
 
 let init=function(){// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
 
- // NB NB all ask using framework ( $$ , useronchange ) must be registered with initCmd() , otherwire we get error askmatches not found in conversation.js// db=db_,http_=http;// or better use them in services ??
+ // NB NB all ask using framework ( $$ , useronchange ) must be registered with initCmd() , otherwise we get error askmatches not found in conversation.js// db=db_,http_=http;// or better use them in services ??
  /*   require('./fwHelpers')(fwHelpers,fwCb,db,rest) returns
     fwHelp=refImplementation={
     onChange_dynField(entSchema,text_,wheres,idspace,isDb_Aiax) interface to db manager engine to query entities with join relatations (in entSchemas ) and id/keys 

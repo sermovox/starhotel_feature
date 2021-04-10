@@ -10,14 +10,16 @@ let
 dynJs=require('./models.js');// db and http init by bot.js
 // ?? d;
 
-// luigi 032020
-const logger=function(message,ch,send){//logger({user,text},ch,'')
+// luigi 032020 + 032021
+let cfg,logs='app.log';
+const vFw={// voice fw helper func . available from this plugins as controller.plugins.vCtl.vFw
+logger:function(message,ch,send){//logger({user,text},ch,'')
     if(!message.text)return;
     let x,mylog;
         if(send){x=' send ';}else x=' receive from '+message.user;
     mylog='\n'+new Date().toUTCString()+'app server,ch: '+ch+x+', log :\n      >>  '+message.text;
     mylog+=' ..';
-    let fn='app.log';
+    let fn=logs;
     if(ch=='book'){fn='public/booking.html';mylog='<br><h2> a new reservation was confirmed on : '+new Date().toUTCString()+' at: '+message.text+'</h2><h4> user : '+message.user+'</h4>  waiting for a new schedule ...<br>__________________________________<br>'}
     fs.appendFile(fn, mylog, function (err) {
         if (err) return console.log(err);
@@ -25,6 +27,33 @@ const logger=function(message,ch,send){//logger({user,text},ch,'')
      });
 
 }
+
+,logs:function(text){
+    if(!text)return;
+    let x='\n\n'+new Date().toUTCString()+'\n'+text,
+    fn=logs;
+    fs.appendFile(fn, x, function (err) {
+        if (err) return console.log(err);
+      //console.log('Appended!');
+     });
+
+}
+
+
+,a_logger:function(message,ch,send){// should got from webadapter  as vcontroller plugins vCtl.vFw.a_logger . or as a factory ?
+    if(!message.text)return;
+    let x,mylog;
+        if(send){x=' send ';}else x=' receive from '+message.user;
+    mylog='\n'+new Date().toUTCString()+'web adapter channel '+ch+x+', text : '+message.text.replace(/(\r\n|\n|\r|\s+)/gm," ").substring(0,100);;
+    mylog+=' ..';
+    fs.appendFile('bot.log', mylog, function (err) {
+        if (err) return console.log(err);
+      //console.log('Appended!');
+     });
+
+}
+};
+const logger=vFw.logger;// convenience rename
 
 
 
@@ -631,6 +660,10 @@ let vfwF = {// framework functions module used in convo obj
                             } else {
                                 row=EntMod.rows[0];
                             }
+
+
+                            console.log('  addMatcRes is setting a Entitymodel.match that represent the entity (Entitymodel.instance/Entitymodel.row(s)).match) match. a matching of complex entity name: ',entity,', of type: ', storemat.type,',entity.rows: ',EntMod.rows);
+
                             
                                                             // better use an alredy set match at entity level ? 
                                 if (EntMod.match) {
@@ -640,14 +673,14 @@ let vfwF = {// framework functions module used in convo obj
                                 }
                                 else {// set match here 
                                     let stdval=false;// the first item row
-                                setSt.instance =row;// x convenience ,  a instance result independent from model type 
+                                setSt.instance =row;// x convenience ,  a instance result independent from model type . nb can be null (the entity matcher run well ( matched) but return a null row . alternative to have a entity matcher not matched (not run) )
 
                                 
 
                             
                                 let ival,mapval;
                                 //   extract main entity matching ,mapval, from fields described in model  pattArray = step.values.excel[entity].modelpattArray={value-mapval&itemb-regexb&.......}  > get value mapval
-                                if (pattArray) {// pattArray={value-mapval&itemb-regexb&.......}  > get value mapval
+                                if (pattArray) {// pattArray={value-mapval&itemb-regexb&.......}  > get value mapval . means : set as matched value the field mapval  match=row.mapval
                                     // error pattarray is a string !!
                                     // so 
                                     
@@ -659,7 +692,7 @@ let vfwF = {// framework functions module used in convo obj
 
 
                                                                 
-                                if(mapval){// complex ent : in row is not present value field . there are more entity (each with  only its key/name)
+                                if(mapval){// complex ent : in row is not present value field . there are more entity (each with  only its key/name). so set match=row.mapval
                                 EntMod.type = 'Ent-Vector';//  the row contains also bl fields .  mark complex ent type='Ent-Multi' , ex row={color,size:}
 
 
@@ -697,7 +730,7 @@ let vfwF = {// framework functions module used in convo obj
                                     // temp :suppose  just a string as the property of EntMod:
                                     // if pattArray.value is string :
                                     // ex $%amod:value-pippo&descr-caio  will set matchers.match=row.pippo and matchers.vmatch=row.caio
-                                    EntMod.match = row[mapval];
+                                    if(row)EntMod.match = row[mapval];else {EntMod.match =EntMod.matched =null;}
 
                                     // future use 
                                     // if (pattArray.descr) EntMod.vmatch = EntMod.row[pattArray.descr]; else EntMod.vmatch = EntMod.match;
@@ -712,12 +745,15 @@ let vfwF = {// framework functions module used in convo obj
    
                             }
 
-                            if(stdval){// set the value field as bl match 
+                            if(stdval){// set the value field as bl match : match=row.value
+                                if(row){
                                 setSt.match = row.value;
                                 if (row.descr) setSt.vmatch = row.descr; else setSt.vmatch = setSt.match;
                                 // bl fields can be recovered by vars.matches[].someblfiled
                                 // the event binary result , alredy filled ?
-
+                                }else{
+                                    setSt.match= setSt.vmatch= setSt.matched=null;
+                                }
                             }
 
                         }
@@ -1387,7 +1423,7 @@ nb
 
 
 
-function init(db_,rest_,appcfg,session){// appCfg :  init default application ctl
+function init(db_,rest_,appcfg,session,env){// appCfg :  init default application ctl
 
 // can we build fwAskOnChange automatically from models.js ???
 
@@ -1398,6 +1434,8 @@ function init(db_,rest_,appcfg,session){// appCfg :  init default application ct
     //  ( that in service obj , that is the same as startup in .net, , or using some registration call to (service.js).register(servicename,func), 
     // than called in user cb ( onchange()) by name service.somaregisterd injected service)
     // ALL will be in context/scope of user onchange convo cbs !
+    cfg=env;
+    if(cfg.logs)logs=cfg.logs;
 }
 
 function buildF(ask,ftext){/* now done in fwbase 
@@ -1420,7 +1458,8 @@ function buildF(ask,ftext){/* now done in fwbase
 */
 onChange=require('./onChangeFunc.js');
 // that's the voice controller :  todo ad service and directives obj ( )
-module.exports ={init,onChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
+// vcontroller=
+module.exports ={init,onChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,vFw,injService};// onChange:will overwrite directive onchange,getappWrap will now mng session recovery
 // service injection : 
 // this onchange export seems  the equivalent to csharp dialog obj called by handler .
 // so as it is  init with all the injection staff that will be on scope of user onchange, and do not need those obj added to vars status to be available !!  . like service !!

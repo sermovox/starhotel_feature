@@ -2235,7 +2235,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                             }
 
 
-
+                        // 042021: code seems to review , just in anycase seems to return:
                         return { reason: 'runned', rows: JSON.parse(response) };
                     }
                 } else {
@@ -2356,7 +2356,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             // if returns false the intent was not matched
             // askmatches or matches structure will store the results as the return rows represent a object property nin expected format . see caller and addMatchRes()
 
-            // dialog flow consideration and difference between intent and q&a
+            // dialog flow consideration and difference between intent and q&a 
             // - in dialog we build the navigation to desire entity/action/intent matching many subintent that refine the possible desire action to the one intended by the user
             // - so we can match many entity to refine possible/available actions via indicators o medium intent and navigate to desire intent, or less mini intent to getthe main/desire 
             // - qea can be seen as a tentative to go to one desire action that can be just a info , so we can came back or just goon with the desire as next major transaction/action to goon 
@@ -2421,14 +2421,14 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                 
                 // so we have some interface to call ,  for example these 2 case :
                 // - a) direct call to endpoint :when url=https://....    like :   'https://api.wit.ai/message?' 
-                //      we  implementat here the specific interface a ext rest to ep: https://api.wit.ai/message?qs completing the qs with fw info (token) 
+                //      we  implementat here the specific interface a ext rest to endpoint: https://api.wit.ai/message?qs completing the qs with fw wit.ai info (token) 
                 //              returns to matcher must be the response the matcher require, 
                 //              input data gathered in implementation ( see x example url=https://api.wit.ai/message?... )
 
                 // - b) via interface provided in plugins : when url=service://....    like :   "url":"service://plugins.ai.duck.datematch?... 
-                //      we  implementat in plugin a general interface (service://plugins.ai)to all ep of a class , so add all implementation ('duck,witai,nlpjs,,,)there  with provided service (datetime,,,)
+                //      we  implementat in plugin a general interface (service://plugins.ai)to all endpoint of a class , so add all implementation ('duck,witai,nlpjs,,,)there  with provided service (datetime,,,)
 
-                //              the general interface will return here a result in specific format (intMatch will require Entity obj) so here we can returns to matcher must be the response the matcher require, 
+                //              the general interface will return here a result in specific format (intMatch will require Entity obj) so here we can returns the response the matcher require, 
                 //              the call params to all plugins.ai...?qs services will be all the same , as taken in charge by run_jrest , service:// case,  : 
                 //                  params=form = formObj || querystring.parse(qs);
 
@@ -2443,7 +2443,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
                     if (url.substring(0, 8) == 'https://') {// a) : direct interface ,
 
-                    if (this.ai) {// a) : direct interface , 
+                    if (this.ai) {// a) : direct interface , some end point implementation  (https://api.wit.....)
 
                         // get specific agent connection info from this.ai for each possible endpoint:
                         //      this.ai conn info  was set in bot.js :     ai.witai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 

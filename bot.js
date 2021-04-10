@@ -37,9 +37,7 @@ let ai ={};// ai agent
 if (process.env.WITAI) {// remote ai service auth token passe direcly on service because there in intmatch hepler func x intent matcher
                         // we call a rest http direcly 
                         // in future will better do a interface to call all ai intent service , usually as plugin, so pass these params there !!!!!!!!
-
     ai.witai={url:'https://api.wit.ai/message?',agents:witAiAg(process.env.WITAI)};// nb url can be ovewrite in .dir or excel 
-
 }
 
 // let ws=ws like core.
@@ -108,7 +106,8 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
 let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 
 let rootDef=require('./nat/cfgWebPost.js');
-rootDef(controller.webserver,controller,webhook_uri);
+let ngingurl=null;// ext post relay
+rootDef(controller.webserver,controller,ngingurl,webhook_uri);
 
 if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');
@@ -127,8 +126,8 @@ console.log('*** instantiating Botkit CMS');
 ///*
 // xmpp : put in a module !
 const  { XmppAdapter } =require('./nat/xmpp_adapter.js');
-  const xmpp_on=true;
-// const xmpp_on=false;
+ // const xmpp_on=true;
+const xmpp_on=false;
 const  xmpp2adapter=require('./nat/xmpp2adapter.js');
 let xmpp_adapter
 // activate xmpp:
@@ -244,6 +243,7 @@ if (process.env.DB_URI) {
 let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
 
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
+controller.logs=vctl.vFw.logs;// inject the vctl logger (mainly logs convo staff, logs gogs into a file set in voice controller (onChange.js)(production debug))
 
 jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;
 let qea;// the local qea engine
@@ -275,7 +275,7 @@ if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to 
 }
 
 // now db connection wont be used any more !
-vctl.init(db,jrest,null,null);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
+vctl.init(db,jrest,null,null,process.env);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
 let app=require('./nat/app.js');// must set the cms endpoint port that gives the cms set of app, and the wellcome msg prompt 
 
 // Once the bot has booted up its internal services, you can use them to do stuff.
@@ -399,7 +399,9 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
  
                 // should cfg only the def dialogset ?: 
                 let service=require('./nat/fwbase.js')(controller,db,Schema,ai,jrest,app);// register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
-                                                                 // will propagate vct.db and vctl.rest on service and fwhelpers
+                                                                 // will propagate vct.db and vctl.rest on service=require('./service') and fwhelpers==require('./fwHelpers')
+                                                                // ai ( witai rest conn  info) will be passed to fwhelpers to be used on 
+                                                                 
                 // controller.usePlugin(fwCtl);
          
                 // extend services :
@@ -457,17 +459,12 @@ function witAiAg (string) {// extract  a:b c:d   >    {a:b,c:d}   a is agent uri
     if (!string) {
         string = '';
     }
-
     var creds = string.split(/\s+/);
-
     var users = {};
     creds.forEach(function(u) {
         var bits = u.split(/\:/);
         users[bits[0]+''] = bits[1];
     });
    // let rr='20201025',a=users[rr];
-
     return users;
-
 }
-

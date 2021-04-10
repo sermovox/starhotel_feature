@@ -256,8 +256,9 @@ mustacheF.qeA=function(qstring){
         //eval( "value_ = vs." + param2 );// calc value_ using eval, or use the parser in conversation.js, that means jVar ?
         value_=eval(param2 );// 032021 calc value_ using eval,as last calculated var 
         } catch(e){value_=null;}
-        if(value_){// nb value_ is the value of a variable, param4 is a string , so treat the integer parsing if string is numeric
-        if(param3=='=='){if(value_!=param4)template=null;
+        if(value_!=null){// nb value_ is the value of a variable, param4 is a string , so treat the integer parsing if string is numeric, nb 0 is satisfied 
+        if(param3=='=='){
+            if(value_!=param4)template=null;
         }else if(param3=='!='){if(value_==param4)template=null;
         }else if(param3.charAt(0)=='>'){if(value_<=param4)template=null;
         }else if(param3.charAt(0)=='<'){if(value_>=param4)template=null;

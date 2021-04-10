@@ -2097,7 +2097,13 @@ let OnCh_Register={// minimum  must be :          acmd:{ excel:{}},
             loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
         
                 goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
-            }
+            }},
+            mod_cont:{
+        
+                loopDir:{// vars of a dyn that can replay a thread  , can be also loop status var filled by the replay dyn when matched 
+            
+                    goon2:false // use this, will do not do testing a goon message from previous thread ,normally  display step0 msg and wait for user answere
+                }
         //, autoReg=true
         //
         }   
