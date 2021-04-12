@@ -5,6 +5,7 @@ let application,service,fwCb;
 
 
 const fs = require('fs');
+const wlog = require('./helpers/logs').logger;
 
 let 
 dynJs=require('./models.js');// db and http init by bot.js
@@ -38,6 +39,7 @@ logger:function(message,ch,send){//logger({user,text},ch,'')
      });
 
 }
+,winston:wlog
 
 
 ,a_logger:function(message,ch,send){// should got from webadapter  as vcontroller plugins vCtl.vFw.a_logger . or as a factory ?
