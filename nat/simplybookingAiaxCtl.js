@@ -70,8 +70,9 @@ EnLoc=false;// enhable location filtering in find performers. todo debug now is 
 
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
-const nearpol=0;// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
-
+const nearpol=// 0 is tested 
+0;// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
+// 1;// testing to do 
 const SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
 const orReg = /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
 // see simplyinfoingAiaxCtl.js the global field approach . here prefers to work with rest passed as param in simplybooking(vars, form_whInst,form_wheres, qs, rest)
@@ -1541,7 +1542,7 @@ simplybooking
         prefHM,// '23:33'
         prefDay,// old , dont use it ! 31   ???? 
         prefRelDay,// rel preferred day  asked by user in current turn 
-        prefHour, prefHour_,// integer calendar
+        prefHour, prefHour_,// integer calendar 
         hou;// target hour ??
 
         // extrack preferred datetime Duck
@@ -1591,10 +1592,23 @@ simplybooking
     */
 let func_ctl_,
 ctl; // NB NB ctl extension , should be called ctlExt  extended with f in which there is  a ctl clone 
-if(qq){
+if(qq){// 042021
+    if (qq.ctl.selStat == -7) {
+        // clone so we can restart at selStat=-7 !
+        let qq_cl=Object.assign({},qq);// soft clone !!!efficient ???
+        qq=qq_cl;
+        let qq_ctl=Object.assign({},qq.ctl);// soft clone !!! efficient ???
+        qq.ctl=qq_ctl;
+
+    }
+
+
+
+
+
   let 
  // myctl=Object.assign({},qq.ctl);// a clone , so avoid circular obj but f  cant see updated ctl values !!! 
-  myctl=qq.ctl;// circular 
+  myctl=qq.ctl;// circular . warning very dangerous !!!
   // concept error   extend ctl with f and just call qq.ctl.f.relDay(desDtatTime.substring(0, 10) but reference using ctl.x=this.ctl there f.init(ctl) will
    func_ctl_=Object.assign({},{rows:qq.rows,ctl:myctl},func_ctl);// make rows and ctl available to func, rows will be added as query is created in firstReq{...start();...}
    ctl=Object.assign(qq.ctl,{f:func_ctl_});// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
@@ -1768,6 +1782,10 @@ if(qq){
             // qq.match = qq.matched = null;// >>>>  ONLY in case of matched result MUST be reset to match  
             // qq.group.sel = qq.instance = null; // also the copied in group (needs ?)
             let next;
+
+            // clone so we can restart at selStat=-7 !
+            //let qq_cl=Object.assign({},qq);
+            // qq=qq_cl;
 
             if (match && selAction != 1) {
 
@@ -2066,7 +2084,7 @@ if(qq){
                            // if (qs.hour_pref) prefHour = parseInt(qs.hour_pref);// querystring
 
                             // todo TODO : check if in this day we have got prefHour like in firstReq(). . in this case goto selStat == 2 !!!!
-                            qq.group.ctx.th_book_geit.meetDes='0';//context flag that  explain response to user : we meet desidered day but not des hour
+                            qq.group.ctx.th_book_geit.meetDes='0';// here selStat == 1 so ??????? context flag that  explain response to user : we meet desidered day but not des hour
                             if(qq.ctl&&!qq.ctl.f){console.error('f not alredy set , ctl is null :',ctl==null);
                             //ctl=Object.assign({},qq.ctl,func_ctl) ;//// query model qq must be a multi turn slot matrix query : inject session ctl data on ctl_ with helper function working on metadata :  
                             func_ctl_=Object.assign({rows:qq.rows,ctl:qq.ctl},func_ctl);// make rows and ctl available to func
@@ -2504,7 +2522,10 @@ function dontMHelper() {// dont match
                         ctl.vselDayId = qq.cursor.resModel[qq.rows[row_].value].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
                         setHourSel(row_, null, prefHour);// will set sc,   chroot = 'th_3daySel_2'; and selStat =2
                     } else {
-                        if (dayAftInd >= 0) {// des day not bookable and have after bookable and previous bookable
+                        if (dayAftInd >= 0) {// des day not bookable and have after bookable (and perhaps a previous bookable)
+                            console.log('  simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , the new desidered date  ', desDtatTime,'  is not  found in downloaded slot matrix but found a after date of relative index  ',dayAftInd ,' so start 3 days sel from this date');
+                            if(dayAftInd==0 ) console.log('     >> as first after date is rel index 0 ( so matrix fromDate is > new desidered date )the downloaded slot matrix dont have info about bookability of new desidered date ( matrix fromDate is: ',qq.ctl.slotMat.fromDate,' we can  DO DYnamic refilling, still TODO, or redo a search with a right fromDate');
+                  
                             ctl.selStat = 1;// 1: 3 day/preferredhour selector set , waiting for match on some day (selStat=2) or match on a specific day (selStat=3)
         
                            // let curRel = ctl.slotMat.relDayInd[dayAftInd];// curRel bad name   , >>>> current/new desidered rel day   , ex dayAftInd=2  the third bookable day in rows after startday
@@ -2540,10 +2561,23 @@ function dontMHelper() {// dont match
                             // todo dayBefInd=   case 
         
                             qq.group.ctx.th_book_geit.meetDes = '-10';
-                            console.error(' todo , simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match ,th_book_geit.meetDes=-10, and no bookable day in current slot matrix, matching desidered day    : ', desDtatTime);
+                            console.error(' todo , simplybook: selstat= 2 (try match a proposed 3 hour selector) )got null slot match , dayBefind: ',dayBefInd,' th_book_geit.meetDes=-10, and no bookable day in current slot matrix, matching desidered day    : ', desDtatTime);
         
                             // ...................... fin 3day to select in present rows like in firstReq()  or start a new download 
-                            sc = 0;// so return error 
+                            if(dayBefInd<0) sc = 0;// so return error 
+                            else{ /*
+                                sc = sel3day(dayBefInd , qq, ctl,tests_3D,setSelectItem);
+                                chroot = 'th_3daySel';// complete
+                                // get rid of not persistent helper funcs :
+                                ctl.f = null;
+                            */
+                           let row_=relDayInd[dayBefInd];
+                           ctl.selDayId = qq.rows[row_].date;// the selected day  Id/key/name selected . store as status property  at first level , used to select hour on selected day
+                           ctl.selDayIndex = row_;// 032021
+                           ctl.vselDayId = qq.cursor.resModel[qq.rows[row_].value].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
+                           setHourSel(row_, null, prefHour);// will set sc,   chroot = 'th_3daySel_2'; and selStat =2
+    
+                            }
                         }
         
                     }
@@ -3038,7 +3072,7 @@ function dontMHelper() {// dont match
 
         console.log(' simplybook: firstReq starting , fromDate: ', fromDate, ' desDtatTime: ', desDtatTime, ' gotdate: ', gotdate);
 
-        selStat = 0;// initial status on the fsm recover a sched matrix 
+        let selStat = 0;// initial status on the fsm recover a sched matrix 
         // 012021 : really we need to choose the service and provider , then will propone a def slot or ask user to give desidered dataetime so can get the sched matrix on which select a slot
         //  so before get a slot matrix we start at status -10 that recover the service/provider list , then after selected service and provider enter in status 0 to start getting the sched matrix ! 
 
@@ -3175,10 +3209,12 @@ function dontMHelper() {// dont match
             qq.ctl.selDayId = qq.rows[dayIndex].date;// the selected day  Id/key/name selected . store as status property  at first level , used to select hour on selected day
             qq.ctl.selDayIndex = dayIndex;// 032021
             qq.ctl.vselDayId = qq.cursor.resModel[qq.rows[dayIndex].value].prompt_d;// the selected day  vname . store as status property  at first level , used to select hour
-            let hind;
+            let hind;// slot row index 
             if(nearpol==0)
-            if (prefHour) hind = qq.ctl.f.findSlotAfterHourH(dayIndex, prefHour);// in first relative day find if there are slot with hour >= prefHour. or there are not (return null)
-            else if (prefHour) hind = qq.ctl.f.findSlotNearHourH(dayIndex, prefHour);// to implement , will return not null 
+            {if (prefHour) hind = qq.ctl.f.findSlotAfterHourH(dayIndex, prefHour);// in first relative day find if there are slot with hour >= prefHour. or there are not (return null)
+            }else //if (prefHour) 
+            {hind = qq.ctl.f.findSlotNearHourH(dayIndex, prefHour);// to implement , will return not null 
+            }
             // now 2 case or we have hind (hind) in des day or we must select 3days
             // }if(hind>=0){// so we are her because the preferred day is a bookable day , now we know  the available hour is >= to pref hour , so check the hind slot hour
             if (hind != null && !isNaN(hind) && parseInt(qq.rows[hind].time.substring(0, 2)) == prefHour) {// '23:59:59' > '23' il best nearer hour must be = prefHour, so we got HOUR MATCH on a prefHour asked by user 
@@ -3489,14 +3525,18 @@ function dontMHelper() {// dont match
 
         // } else return null;
 
-        function setSelectItem(cursor, ri, cp_day = true, prmode = 0) {// ri is the index in full matrix , patt_d > patt if cp_day, pmode 1 series of hours in a day prompt 
+        function setSelectItem(cursor, ri, cp_day = true, prmode = 0,sc) {// ri is the index in full matrix , patt_d > patt if cp_day, pmode 1 series of hours in a day prompt 
             // fills 1 item in filtered selection obj :  medSyn,resModel,medSyntL
             let kkey = cursor.medSync[ri] = cursor.medSync_[ri];// the key , itemname, corresponding to index ri, rebuild the sync/ filter array 
            // if (cp_day) cursor.resModel[kkey].patt = cursor.resModel[kkey].patt_d;// calendar day number in pattern
             if (cp_day) cursor.resModel[kkey].patt = '\\b'+cursor.resModel[kkey].patt_d+'(?:\\s+|$)';// calendar day number in pattern // \b1(?:\s+|$) to match 1
             // refLunedi.push(cursor.resModel[kkey].patt_i);// name of day , register x deiscrminating test
-            if (prmode == 1) cursor.medSyntL.push(cursor.resModel[kkey].prompt_time);
-            else cursor.medSyntL.push(cursor.medSyntL_[ri]);// rebuild itemlist with just the slot to test
+            if (prmode == 1) cursor.medSyntL.push(cursor.resModel[kkey].prompt_time);//  alle ore 17:45, used in 3 hours 
+            else {
+                let ins;
+                if(sc==1)ins=cursor.medSyntL_[ri];else{ins=cursor.medSyntL_[ri].substring(0,cursor.medSyntL_[ri].indexOf(' alle'));}
+                cursor.medSyntL.push(ins);// rebuild itemlist with just the slot to test
+            }
             // console.log(' a testing rel day(', dayspan[ll], ') correspond to rows index : ', ri, ' item/slot name (stddatetime): ', kkey);
             console.log(' > symplybookingAiaxCtl setSelectItem : added a selection item , value/datetime: ', kkey, ' patt: ', cursor.resModel[kkey].patt, ' dayname : ', cursor.resModel[kkey].patt_i, ' to add if discriminant ');
             return {kkey,patt:cursor.resModel[kkey].patt_i};// name of day , register x deiscrminating test
@@ -4011,7 +4051,7 @@ for (l = curRelInd; l < dl; l++) {//  from last relative days index (?)  on , be
     if (dayspan[l] >= curRel) {// is last rel days examined dayspan[l]  < of wanted rel day curRel ? , is so skip , try the next index l
         // at this index the rel day is the first to be >= at the wanted / desidered rel day 
         let curRelInd_ = l;// this is the index so dayspan[x]>=curRelInd are good x selection , take the first tests so 
-        console.log('  simplybook: firstReq, setting 3days selector  , meetDes = 10 : as client (new) desidere book day or first possible bookable day is  rel day ', curRel, ' at des hour ', ctl.slotMat.fromHour, '\n we got the first relative ( vs startday)  bookable day(', dayspan[curRelInd_],
+        console.log('  simplybook: firstReq, setting 3days selector  , meetDes = xx : as client (new) desidere book day or first possible bookable day is  rel day ', curRel, ' at des hour ', ctl.slotMat.fromHour, '\n we got the first relative ( vs startday)  bookable day(', dayspan[curRelInd_],
             ') >= desidered/first rel day (', curRel, ') , in a slot of index : ', curRelInd)
 
         // now check if is > or = to desidered relative 
@@ -4021,7 +4061,7 @@ for (l = curRelInd; l < dl; l++) {//  from last relative days index (?)  on , be
             newDesidDaygot = true;
             // .... do like previous if in case we got a desidered day in case of a new    desDtatTime reset 
             console.error('  simplybook: firstReq,future use new    desDtatTime reset . desidered calendar day ', qq.ctl.slotMat.dayBookable[curRelInd_], ' is bookable so do hours selection on it (');
-
+            // eventually fills just with the got day ! .....
 
 
             // fills new filtered selection medSync,medSyntL,resModel obj : insert 3 datetime of days, following desidered day , with slot hour near to desidered hour  
@@ -4036,7 +4076,8 @@ for (l = curRelInd; l < dl; l++) {//  from last relative days index (?)  on , be
 
 
                 refLunedi.push(// name of day , register x discrminating test
-                    setSelectItem(qq.cursor, ri)// // insert item ri in new (filtered) selection model cursor.medSync/medSyntL/resModel objs
+                    //setSelectItem(qq.cursor, ri)// // insert item ri in new (filtered) selection model cursor.medSync/medSyntL/resModel objs
+                    setSelectItem(qq.cursor, ri,true,0,sc)// // insert item ri in new (filtered) selection model cursor.medSync/medSyntL/resModel objs
                 );
                 console.log('  simplybook: firstReq, adding a selecting rel day(', dayspan[ll], ') correspond to rows index : ', ri, ' item/slot name (stddatetime): ', qq.rows[ri].value);
                 //console.log(' > added a selection item , value/datetime: ', kkey, ' patt: ', qq.query.cursor.resModel[kkey].patt, ' dayname : ', qq.query.cursor.resModel[kkey].patt_i, ' to add if discriminant ');

@@ -14,6 +14,10 @@ if(isodate)
  /// isoRegEx=/\s(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\s/i; // just date time in ec , no timezone
   isoRegEx=/\s((\d{4})-(\d{2})-(\d{2})(T(\d{2}):(\d{2}):(\d{2}))?)\s/i;// 'ciao pippo oo 2012-01-01T17:52:27 ok' or 'ciao pippo oo 2012-01-01 ok '
 
+let 
+relTime=/oggi|domani|ieri/i,//  /today|tomorrow|yesterday/i,
+tshift=8;// if relTime satisfied on text , shift one day more if hour current localtime is <= a tshift + 1
+
 // interface 
 // cfg agents to know what end point will use , ???
 agents={duck:'duckling',
@@ -607,7 +611,7 @@ let duck=function(params){// a func factory, after a test get the func by a inte
   return   datematch2(params);// returns the result of datematch2 factory that configure my endpoints with with param=params
   }
 
-  datematch3= // duplicate , just as code reminder . 
+  datematch3= // delete duplicate , just as code reminder . 
               // this is the factory of a async function , so returning a Promise and do  use await  . so async function  OR function ? 
 
   function(params){
@@ -798,7 +802,7 @@ result =[// conf=  ????
 
   const ti='time';
 //  
-        if(isodate){
+        if(isodate){// the datetime is coded in text as iso format , dont run duc !
 
           // regex match of single datetime 
           // see https://www.regextester.com/112232
@@ -829,7 +833,7 @@ result =[// conf=  ????
 
         }
 
-        if(!res){// didnt find a inline datetime , so run datetime server
+        if(!res){// didnt find a inline datetime , so run datetime duck server
           if(!debug) // debug
        result= await  rest(params.url,'POST',{locale:'it_IT',text:term},null, true,null) // no extra header,true:send urlencoded (calc from map obj data {locale:'it_IT',text:term}, no qs)
         .catch((err) => { console.error(' REST got ERROR : ',err,',  so set test datetime');
@@ -837,7 +841,9 @@ result =[// conf=  ????
         //'[{"body":"2","start":12,"value":{"value":2,"type":"value"},"end":13,"dim":"number","latent":false},{"body":"domani alle 7 e trenta di pomeriggio","start":20,"value":{"values":[{"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"}],"value":"2020-10-31T19:30:00.000-07:00","grain":"minute","type":"value"},"end":56,"dim":"time","latent":false},
 
       }); 
-      result= result||JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-18T09:00:00.000+00:00',values:{},type:'value'}}]);
+
+      // debug only : 
+      // result= result||JSON.stringify([{start:3,end:8,dim:"time",value:{type:"value",grain:"minute",value:'2021-01-18T09:00:00.000+00:00',values:{},type:'value'}}]);
   
 
         console.log('duck service , on text: ',term,' datematch got :',result,', json: ',JSON.stringify(result, null, 2));// see DGTG for expected format 
@@ -865,7 +871,10 @@ result =[// conf=  ????
               let mainEnt={value:
                 null// el.value.value
               };// main row
-              res=new Entity(entity,ti,mainEnt,el.value,changeLtime);// main ent : the date time entity , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
+
+              let chfuso=false;
+              if(term.match(relTime))chfuso=true;
+              res=new Entity(entity,ti,mainEnt,el.value,changeLtime,chfuso);// main ent : the date time entity , e.dim='time'  ,  mainEnt : see DGTG . no number or other dmension .
               // but this is a multi entity ( a intent quasi )so treat like complex entity : a main ent + bl of other entity 
 
                             // 122020 >>>>>  this value is the entity obj but is more complete then std VAL expected format see Matcher_AdapterInterface.txt
@@ -1260,7 +1269,7 @@ if(res.intent)resu=1;else{
 
 }
 
-function Entity(name, dim, row_, value,changeLtime) {// only datetime info , add interval , get only the from . changeLtime is fuso corrector
+function Entity(name, dim, row_, value,changeLtime,change=true) {// only datetime info , add interval , get only the from . changeLtime is fuso corrector
   /*used value fields : value={type:'value',
                               value:'isotime'
                               }
@@ -1327,7 +1336,7 @@ const fuso='+01:00';// or :   =''
   this.name = name;
   if (value.type == 'value') {// its a time 
     if (row_&&value.value) {
-      row_.value=changeLtime(value.value)+fuso;// value.value= "2021-02-25T11:00:00.000-08:00", port in rome local time (same hour but day can change as losaneles-rome shift is 9 hours)
+      row_.value=changeLtime(value.value,change)+fuso;// value.value= "2021-02-25T11:00:00.000-08:00", port in rome local time (same hour but day can change as losaneles-rome shift is 9 hours)
       row_.type='time-value';
       // row_.descr=.......
 
@@ -1338,8 +1347,8 @@ const fuso='+01:00';// or :   =''
     } else this.row = null;
   } else if (value.type == 'interval') {// its a time interval : take from 
     if (row_ && value.from&&value.from.value) {
-      row_.value=changeLtime(value.from.value)+fuso;
-      if(value.to)row_.to=changeLtime(value.to.value)+fuso;
+      row_.value=changeLtime(value.from.value,change)+fuso;
+      if(value.to)row_.to=changeLtime(value.to.value,change)+fuso;
 
       row_.type='time-interval';
       // row_.descr=.......
@@ -1358,7 +1367,7 @@ const fuso='+01:00';// or :   =''
 
 
 
-function changeLtime(dateUsLoc) {// relative time fuso corrector .see today example
+function changeLtime(dateUsLoc,change=true) {// relative time fuso corrector .see today example
                                 //dateUsLoc="2021-02-28T08:00:00.000-08:00", hoursShift=9 so if local hour is 8 , return ="2021-03-01T08:00:00.000+01:00"
                                 // so if local hour is 10 , return ="2021-02-28T08:00:00.000+01:00"
                                 // so if local hour is 10 , return ="2021-02-28T08:00:00.000" local hour 
@@ -1368,8 +1377,8 @@ console.log('duckling : date on ustime: ',dateUsLoc);
     console.log('duckling : local hour: ',lochour);
   const nev=false;
   //if(nev){//if(lochour<9){
-    let todo_=true;
-  if(lochour<9&&!todo_){// todo debug error : do shift only if match  today,tomorrow,..... not venerdi 23
+    let todo_=false;// debug , set false to run shift if change=true
+  if(lochour<=tshift&&!todo_&&change){// todo debug error : do shift only if match  today,tomorrow,..... not venerdi 23
                         // example today: today is the date now in -08 fuso, that can be not the date in local fuso !!!!!!
 	let date= new Date(dateUsLoc);
 
@@ -1389,11 +1398,11 @@ console.log('duckling : date on ustime: ',dateUsLoc);
         let cal=iso.substring(0,10);// next day 
 
 	nd=cal+dateUsLoc.substring(10,23);//+'+01:00';
-	console.log('duckling, changeLtime : changed date on localtime: ',nd);
+	console.log('duckling, changeLtime : changed duck date on localtime: ',nd);
 	}else{
 
 	nd=dateUsLoc.substring(0,23);//+'+01:00';
-	console.log('duckling,changeLtime : same date on localtime: ',nd);
+	console.log('duckling,changeLtime : same date from duck but on localtime (without time shift +01:00): ',nd);
 
 }
 return nd;

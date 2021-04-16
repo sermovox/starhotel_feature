@@ -113,6 +113,7 @@ else {// df1
     // Allow the Botbuilder middleware to fire.
     // this middleware is responsible for turning the incoming payload into a BotBuilder Activity
     // which we can then use to turn into a BotkitMessage
+    const  turns='turns',askoperator='askoperator';
     console.log('cfgWebPost receved .../df1 req.body : ', req.body);
 /*
 main logic :
@@ -186,7 +187,8 @@ session:"projects/need2buy-rpoggf/agent/sessions/3aa9a743-2edb-c206-6fdd-2736bea
 */
 
       let ictx=0;
-   let ctx=[],ctxName=[],turnsC;// turnsC in case we have to add
+   let ctx=[],ctxName=[],turnsC,askoperatorC,// ctx: context set x continuing bot, turnsC in case we have to add
+   ctx_out=[];// context set to end bot 
    let usranswerPar={};// ex: param={transferred:'acquisti'} %%transferred-acquisti; use condition: $$%mod_sys:{£&}§1^%%(\w+(?=-))\W(\w+)§tr£^transferred&wait£^transfertwait&miss£^miss
       let contexts,intent,session;
       if(req.body.queryResult&&req.body.queryResult.intent)intent=req.body.queryResult.intent.displayName;
@@ -195,13 +197,14 @@ session:"projects/need2buy-rpoggf/agent/sessions/3aa9a743-2edb-c206-6fdd-2736bea
                    if(contexts[0]){ictx=contexts[0].name.indexOf("/contexts/")+10;
                     session=req.body.session.substring(req.body.session.indexOf("/sessions/")+10);}
 
-if(intent=='turnscontinue'||intent=='bookparam'||'book'||intent=='Default Welcome Intent'){// AA intents.  manage  fulfillmants for covid dialogue,
+if(intent=='turnscontinue'||intent=='bookparam'||intent=='book'||intent=='Default Welcome Intent'){// AA intents.  manage  fulfillmants for covid dialogue,
 
 
   if(intent=='bookparam'&&ictx&&session){// from context get the context in ctx and local param (usranswerPar.datetime andvusranswerPar.location) to init a bot dialogue
-    let isTurns=false;// has turns context ?
-    const  turns='turns'
+    let isTurns=false,isAsk=false;// has turns context ?
+    
       contexts.forEach(el=> {
+      let el_out=el;
        let mnam=el.name.substring(ictx);// context name
        if(mnam=='usranswer'){
         // array.forEach(element => {  });
@@ -215,25 +218,82 @@ if(intent=='turnscontinue'||intent=='bookparam'||'book'||intent=='Default Welcom
        
         let nam=el.name.substring(0,ictx)+turns;
         turnsC=new Ctx(nam);// generated copyng 
+        nam=el.name.substring(0,ictx)+askoperator;
+        askoperatorC=new Ctx(nam);// generated copyng 
         //ctxName.push(turns);
         // ctx.push(turnsC);
+        el_out=Object.assign({},el);el_out.lifespanCount=1;// el_out=new Ctx(nam,1,el.parameters);
        }else  if(mnam==turns){
          isTurns=true;
         el.lifespanCount=1;// keep present but set 1
-       }else {
+        el_out=Object.assign({},el);el_out.lifespanCount=0;// el_out=new Ctx(nam,1,el.parameters);
+      }else  if(mnam==askoperator){
+        isAsk=true;
+       el.lifespanCount=0;// keep present but set 1
+       el_out=Object.assign({},el);el_out.lifespanCount=1;// el_out=new Ctx(nam,1,el.parameters);
+      }else {
         if(mnam.substring(0,2)!='__')el.lifespanCount=0;// dont change sys param
        }
 
       ctxName.push(mnam);
       ctx.push(el);
+      ctx_out.push(el_out);
       
      });
      if(!isTurns&&turnsC){
        turnsC.parameters.acc="accetto";
       ctxName.push(turns);
       ctx.push(turnsC);
+      let el_out=Object.assign({},turnsC);el_out.lifespanCount=0;
+      ctx_out.push(el_out);
      }
-      }else{
+     if(!isAsk&&askoperatorC){
+     // turnsC.parameters.acc="accetto";
+     ctxName.push(askoperator);
+     ctx_out.push(askoperatorC);
+     let el_out=Object.assign({},askoperatorC);el_out.lifespanCount=0;
+      ctx.push(el_out);
+    }
+      }else  if(intent=='turnscontinue'&&ictx&&session){// from context get the context in ctx and local param (usranswerPar.datetime andvusranswerPar.location) to init a bot dialogue
+        let isTurns=false,isAsk=false;// has turns context ?
+        
+          contexts.forEach(el=> {
+          let el_out=el;
+           let mnam=el.name.substring(ictx);// context name
+           if(mnam==turns){
+            // array.forEach(element => {  });
+
+            el.lifespanCount=1;
+           
+            let 
+            nam=el.name.substring(0,ictx)+askoperator;
+            askoperatorC=new Ctx(nam);// generated copyng 
+            //ctxName.push(turns);
+            // ctx.push(turnsC);
+            el_out=Object.assign({},el);el_out.lifespanCount=0;// el_out=new Ctx(nam,1,el.parameters);
+
+          }else  if(mnam==askoperator){
+            isAsk=true;
+           el.lifespanCount=0;// keep present but set 1
+           el_out=Object.assign({},el);el_out.lifespanCount=1;// el_out=new Ctx(nam,1,el.parameters);
+          }else {
+            if(mnam.substring(0,2)!='__')el.lifespanCount=0;// dont change sys param
+           }
+    
+          ctxName.push(mnam);
+          ctx.push(el);
+          ctx_out.push(el_out);
+          
+         });
+
+         if(!isAsk&&askoperatorC){
+         // turnsC.parameters.acc="accetto";
+         ctxName.push(askoperator);
+         ctx_out.push(askoperatorC);
+         let el_out=Object.assign({},askoperatorC);el_out.lifespanCount=0;
+          ctx.push(el_out);
+        }
+          }else{
         // manage other intents if needed 
       }
 
@@ -241,7 +301,7 @@ if(intent=='turnscontinue'||intent=='bookparam'||'book'||intent=='Default Welcom
    console.log('webhook got a request with intent: ',intent,', contexts: ',ctxName);
    //console.log('webhook debug request body: ',req.body);
     
-
+    // req.body : see df_trace_request_json.txt
     req.body=requDF1(req.body,usranswerPar,session,intent);// reset req body with bot request x the intents AA
 
   
@@ -269,7 +329,7 @@ if(intent=='turnscontinue'||intent=='bookparam'||'book'||intent=='Default Welcom
 
 
         // local functions:
-        function res_json_(jt){
+        function res_json_(jt){// see requDF1()
           //res_json(resp1);
           if(intent=='Default Welcome Intent'){
             // discard echo
@@ -278,9 +338,20 @@ if(intent=='turnscontinue'||intent=='bookparam'||'book'||intent=='Default Welcom
           else{// insert ctx only in bookparam intent response
             let ctx_; 
             if(intent=='bookparam'){ctx_=ctx;}
-            //else{}
+            else  if(intent=='turnscontinue'){
+              // if bot text contains %exit o telefono o è stata confermata e si ciede di riconfermare si passa al context useranswer ( in comune con l proposta locale)   
+              // .......
+              let text=jt[0].text;
+              if(text.indexOf('è stata confermata')>=0){// better set %%exit-conf;   
+                // set context useranswer instead of turns
+                ctx_=ctx_out;
+             //   if(ctx_)console.log(' bot webhook : activate context askoperator: ', JSON.stringify(ctx_, null, 4) );
+              }
+              //else ctx_=ctx;// ?? ricopoiare ctx al return ????
+            }
+            else{}
             let resp1=respDF(jt,ctx_);
-          console.log(' bot webhook : bot called res.json (',jt,') so call res.json( ',resp1,')')
+        //  console.log(' bot webhook : intent= ',intent,' ctx= ',ctx,' ctx_out= ',ctx_out,'\n bot called res.json (',jt,') so call res.json( ',resp1,')');
           res.json=res_json;
           res.json(resp1);
           }
@@ -393,14 +464,15 @@ function resp(x,ctx0,ctx1){
    // - if we got the bookparam intent : start a dialog simplybook going itho right ask at once 
    // - if got intent turnscontinue just pass the text transarently
 
-   // returning from bot :
+   // returning from bot will be managed in res_json_ :
    //  - pass bot response text + add params (use qs format ?) to pass some context param (xml to operators) to continue dialog 
-   //  - set the context turns so df can match next intent:
+   //  - set the return context ( turns context to continue pass to bot or other context to let df to route (match)  next intent):
    //       the df can trigger the fallback intent turnscontinue or 
    //       trigger turnsoff if we want df to 
    //           exit from the turns context (confirm or esci)  (build the answer to confirm )
   //            confirm or   (build the answer to confirm )
-   //  nb split turns into more context to better expone the right intent
+   //  nb split turns into more context to better expone the user response to the right intent  
+   const start=' centro servizi prenota servizio controllo ';
   console.log('requDF1 , intent: ',intent,' run with: ',x,param,convoId);
   let text,keys=Object.keys(param),res=null;
   text=x.queryResult.queryText;
@@ -408,14 +480,14 @@ function resp(x,ctx0,ctx1){
   //let intent;  intent=x.queryResult.intent.displayName;
   if(intent=='Default Welcome Intent'){
     text='';
-    if(textFwCmd)text+='%%resetDial-xx; fammi echo';
+    if(textFwCmd)text+='%%resetDial-xx;'+start;//text+='%%resetDial-xx; fammi echo';
 
   }
   else if(intent=='bookparam'){
     // probably chech the session is in esci state, then restart session matching rigth convo ask giving all info in text to get the ask in one turn only using collected param
     text='';
    // if(textFwCmd)text+='%%resetDial-xx; ';// reset stack if we use a previous same session , start clean  // TODO move to welcome intent !!!!!!!!!!!!!!!!!!!
-    text+='centro servizi prenota servizio controllo ';  
+    // text+=start;  
   keys.forEach(item => {// first call to bot 
     if(item=='datetime'&&param[item]){let mya=param[item];
                    // text+=' '+ mya.substring(0,19);
@@ -431,8 +503,9 @@ else return;// exit
   return res;
 }
     
-/* df template :
-   let request=
+/* from ........
+ df template :
+let request=
 {
   "responseId": "response-id",
   "session": "projects/project-id/agent/sessions/session-id",
@@ -473,7 +546,10 @@ else return;// exit
 }
 
 '
-{  "responseId": "response-id",  "session": "projects/project-id/agent/sessions/session-id",  "queryResult": {    "queryText": "End-user expression",    "parameters": {      "param-name": "param-value"    },    "allRequiredParamsPresent": true,    "fulfillmentText": "Response configured for matched intent",   
+{  "responseId": "response-id",
+  "session": "projects/project-id/agent/sessions/session-id",
+    "queryResult": {    "queryText": "End-user expression", 
+     "parameters": {      "param-name": "param-value"    },    "allRequiredParamsPresent": true,    "fulfillmentText": "Response configured for matched intent",   
    "fulfillmentMessages": [      
                             {        "text": {          "text": [            "Response configured for matched intent"          ]       
                                              }      
@@ -485,7 +561,7 @@ else return;// exit
 */
 
 function jresponse(text){return '{"fulfillmentMessages": [{"text": {"text":['+text+'] }}]}'}
-function response_test(mytext,ctx0,ctx1){
+function response_test(mytext,ctx0,ctx1){// not used
    return {fulfillmentMessages: [
       {
         text: {

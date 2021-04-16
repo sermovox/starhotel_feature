@@ -27,6 +27,8 @@ else
 	cp ./node_modules/botkit/lib/botworker.js $MD
 	cp ./node_modules/botkit/lib/dialogWrapper.js $MD
 	cp ./node_modules/botkit/lib/conversation.js $MD
+#	in production before leave console.log and comments copy here :
+	cp ./node_modules/botkit/lib/conversation_master.js $MD
 
 #	file added to be tracked git add ....
 #  	really we do not use ./node_modules/botkit/lib/cms.js , sure? so why we inserted change2child() in mybot_v1 ./node_modules/botkit/lib/cms.js ?
