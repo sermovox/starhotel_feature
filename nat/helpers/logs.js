@@ -4,12 +4,12 @@ const fs = require('fs');
 
 // luigi 032020 + 032021
 // see https://stackoverflow.com/questions/8393636/node-log-in-a-file-instead-of-the-console
-let cfg,logs='app.log';
-logs=function(text){
+let cfg,logsF='app.log',CATEGORY='DEF';
+logs=function(text){// unused ??
     if(!text)return;
-    let x='\n\n'+new Date().toUTCString()+'\n'+text,
-    fn=logs;
-    fs.appendFile(fn, x, function (err) {
+    let x='\n\n'+new Date().toUTCString()+'\n'+text
+    ;//,fn=logs;
+    fs.appendFile(logsF, x, function (err) {
         if (err) return console.log(err);
       //console.log('Appended!');
      });
@@ -26,7 +26,9 @@ const { combine, timestamp, label, printf } = format;
 
 
 
-
+// see also 
+//    https://coralogix.com/log-analytics-blog/complete-winston-logger-guide-with-hands-on-examples/
+//    https://developer.ibm.com/tutorials/learn-nodejs-winston/  (section)
 
 /* // see https://stackoverflow.com/questions/8393636/node-log-in-a-file-instead-of-the-console
 
@@ -71,8 +73,32 @@ const successlog = require('../util/logger').successlog;
 
 
 // https://www.npmjs.com/package/winston
+/*
+const logger1 = winston.createLogger({
+    level: 'info',
+    //format: winston.format.json(),
+    defaultMeta: { service: 'user-service' },
+    transports: [
+      //
+      // - Write all logs with level `error` and below to `error.log`
+      // - Write all logs with level `info` and below to `combined.log`
+      //
+      new winston.transports.File({ filename: 'error.log', level: 'error' })
+     //  new winston.transports.File({ filename: 'combined.log' }),
+    ]
+    ,
+  format: format.combine(// see https://stackoverflow.com/questions/55387738/how-to-make-winston-logging-library-work-like-console-log
+    format.timestamp({format: 'YYYY-MM-DD HH:mm:ss.SSS'}),
+    utilFormatter(),     // <-- this is what changed
+    format.colorize(),
+    format.printf(({level, message, label, timestamp}) => `${timestamp} ${label || '-'} ${level}: ${message}`),
+  ),
+  });*/
 
-const logger = winston.createLogger({
+  
+
+
+  const logger = winston.createLogger({
     level: 'info',
     //format: winston.format.json(),
     defaultMeta: { service: 'user-service' },
@@ -91,32 +117,46 @@ const logger = winston.createLogger({
     ,
   format: format.combine(// see https://stackoverflow.com/questions/55387738/how-to-make-winston-logging-library-work-like-console-log
     format.timestamp({format: 'YYYY-MM-DD HH:mm:ss.SSS'}),
-    utilFormatter(),     // <-- this is what changed
-    format.colorize(),
+    format.label({
+                   label: CATEGORY
+               }),
+  // utilFormatter(),     // <-- this is what changed
+   // format.colorize(),
     format.printf(({level, message, label, timestamp}) => `${timestamp} ${label || '-'} ${level}: ${message}`),
   ),
   });
+
+
+
+  
   logger.add( new winston.transports.File({ filename: 'combined.log' }));
+  logger.add( new winston.transports.File({ 
+    format:format.printf(({level, message, label, pgm,timestamp}) => `${timestamp} ${label || '-'} ${pgm || 'pgm?'} ${level}: ${message}`),
+    filename: 'combFormat.log' }));
+
 
   let mode='debug';//process.env.NODE_ENV
-  if (mode !== 'production') {
+  if (mode !== 'production') {// https://github.com/winstonjs/winston
+    console.log(' logs: activated winston console ');
     logger.add(new winston.transports.Console({
-      format: winston.format.simple(),
+      format: winston.format.simple()
     }));
   }
 
   const util = require('util');
 
-function transform(info, opts) {
+function transform(info, opts) {// returns transformed info 
   const args = info[Symbol.for('splat')];
   if (args) { info.message = util.format(info.message, ...args); }
   return info;
 }
 
-function utilFormatter() { return {transform}; }
+function utilFormatter() { return {transform}; }// return  {transform:function (info,optn){}}// see 
 
 module.exports = {
-  logger
+  logger:function(env_){cfg=env_;if(cfg.CATEGORY){CATEGORY=cfg.CATEGORY;};
+  console.log('logs: returning logger: ',logger)
+  return logger;}
 };
 
 /* use 

@@ -74,7 +74,8 @@ const nearpol=// 0 is tested
 0;// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
 // 1;// testing to do 
 const SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
-const orReg = /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
+const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
+
 // see simplyinfoingAiaxCtl.js the global field approach . here prefers to work with rest passed as param in simplybooking(vars, form_whInst,form_wheres, qs, rest)
 // let rest;// got from nlpai.js :
 // nb  rest_ is the (rest.js).jrest  , so     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
@@ -120,11 +121,20 @@ var hwSession = {};// a persistant map with integer index : the time stamp {time
 // used in :  firstxUid= await hwSession[ctl.curKeyList.first3date]].Uid ='20211231' in local time 
 
 // config behaviour 
-const canwait = true;// when unit selected i wait for matrix then do alternatives 
+const canwait = true,// when unit selected i wait for matrix then do alternatives 
 
 // cfg page : https://sermovox.secure.simplybook.it/v2/management/#plugins/api/
 
-const simplyBook = new SimplyBook(
+registered={// simplybook registered endpoint api connection data
+sermovox:['sermovox',
+'58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
+'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
+'admin',
+'luigiDOluigi']
+//,,,,,,
+};
+
+let simplyBook = new SimplyBook(// simplybook std app : sermovox entry
     'sermovox',
     '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
     'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
@@ -143,8 +153,9 @@ now split start in :
 - start()that get the slot matrix  
 
 */
-async function getPerfs(form_wheres, ctl) {
-
+async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_wheres.location ctl.serviceId
+                                            // nb form_wheres where filled because in excel.dependeemodel.mod_wh_Of=thedependent_model_launchingthismatcher and the dependeemodel matched
+                                            // ex : excel.mod_location.mod_wh_Of='mod_aiax_prest' and mod_location matche the value : form_wheres.mod_location
 
     let chservice = ctl.serviceId,// the service choosen
     location;
@@ -156,6 +167,30 @@ async function getPerfs(form_wheres, ctl) {
     console.log(' simplybook getPerfs request unit x serviceid: ', chservice, ' with where clause location: ', location, ' and a preferred date: ', pdate, ' that we can add as keyword in selector so when the selector run afterwords we alredy knows in its keyword ',
         ' \n if the unit has the date available matching because when selecting we use this download data that can be provided in advance if we know in advance the date preferred so if fortuna we dont need to ask date downloading or we can do with more precision ');
     if (!token) return 'na';
+
+
+
+    /* FIRST PART 
+        unit.data = provider list download,   // full unitlist,really not depending from session state, could be stored in init ad here just do a query selection 
+
+        using selected service and location select the unit list as wanted by user :
+            - provxServiceL = [],// unit_map array x sel service [{id:'1',,,,,},,,,,]
+            - provxServiceObj // unit list with attributes to let user query selection 
+
+
+        SECOND PART : build selectors structure 
+
+            // get a structured data :
+            { names,prompt_, vname,patt, pattt,outlist,strategy, disambJ, disambiguate1, disambiguate2, discrJ}
+                = getNameDiscr1(ctl.eventObj[chservice].name, provxServiceL, keyname, prompti, gets, 4);
+
+            ctl.curKeyList = { provxServiceL, outlist, first3date: null }    // add current unit search params on status to do refinement on next match aiax call 
+
+            sess_firstdate[uId] = publicService.getFirstWorkingDay(uId);// lauch async request for first bookable for some unit on selected set . to be recovered as user confirm the unit he wants
+
+            row = ... / build the query model to select the unit the user wants
+    */
+
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
     console.log(token.data)
 
@@ -416,12 +451,25 @@ async function getPerfs(form_wheres, ctl) {
 
 }
 
-async function getEvents() {//
-    console.log(' simplybook getEvents');
+async function getEvents(sbEPoint) {//
+
+    if(sbEPoint&&registered[sbEPoint]){
+        // rebuild app conn 
+        simplyBook = new SimplyBook(...registered[sbEPoint]);
+        let auth = simplyBook.createAuthService();
+
+    }else sbEPoint='sermovox';
+
+    console.log(' simplybook getEvents, application end point: ',sbEPoint);
 
     token = await auth.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future insert the tokent into .ctl !!!
-        (err) => { console.error(' simplybook  got ERROR : ', err); });
+        (err) => { console.error(' simplybook  on getEvents got ERROR : ', err); });
 
+
+    
+        let event,
+        eventList;// toarray
+if(token){    // goon, no ERROR
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
     console.log(token.data);
 
@@ -429,8 +477,8 @@ async function getEvents() {//
     let publicService = simplyBook.createPublicService(token.data);// also store as a  singlethon as the token ???
 
     // /* // 取得Event List
-    let event = await publicService.getEventList();
-    let eventList = Object.values(event.data);// toarray
+    event = await publicService.getEventList();
+    eventList = Object.values(event.data);// toarray
     console.log('simplybook event list', eventList, ' json obj: ', JSON.stringify(event));
     // */
     // build the service query model 
@@ -449,25 +497,28 @@ async function getEvents() {//
       }
       */
 
+    }
     let result = eventList;
     if (result) {
         let query = new QueryM();
 
-        for (let ij = 0; ij < result.length; ij++) {// a copy with SSAA
+        for (let ij = 0; ij < result.length; ij++) {// build the best match on event.name
+                                                    // a copy with SSAA
             // if(ctl.eventSt[ctl.serviceId].providers.contains(result[ada].id))
             {
                 let sname = result[ij].name.toLowerCase();
                 // let prompt=sname;
                 // const orReg = /\?*,*\.*\s+,*\s*/ig;
-                let patt = sname.replace(orReg, '|');
+                let patt = sname.replace(orReg, '|');//patt = sname.replace(orReg, '|');  
 
                 if (ij == 0)
                     patt = '@' + patt;// @ :  ahocorasick
                 let row = {//query.rows.push({
                     value: sname,// std datetime duck is "2021-01-04T13:00:00.000-08:00"  so take as our def : "2021-01-04T13:00:00"
                     patt: patt,// 
-                    id: result[ij].id//a char , bl fields/ alt key
+                    id: result[ij].id,//a char , bl fields/ alt key
                     // filtering will get all day representative after the preferred datetime !! 
+                    descr:result[ij].description // futu use (show description x service)
                 };
 
 
@@ -1431,11 +1482,55 @@ async function initCovid(vars, form_whInst, form_wheres, qs, rest) {// consider 
 async function fixedbooking(vars, form_whInst, form_wheres, qs, rest) {// consider only rest_,appcfg .
 
 }
+async function simplyDF(vars, form_whInst, form_wheres, qs, rest) {// consider only rest_,appcfg 
 
-async function simplybooking(vars, form_whInst, form_wheres, qs, rest) {// consider only rest_,appcfg .
+    // similar to getPerf select 1/2 unit id basing on user params and launch query for first bookable slot 
+
+    /* FIRST PART 
+        unit.data = provider list download,   // full unitlist,really not depending from session state, could be stored in init ad here just do a query selection 
+
+        using selected service and location select the unit list as wanted by user (form_wheres):
+            - provxServiceL = [],// unit_map array x sel service [{id:'1',,,,,},,,,,]
+            - provxServiceObj // unit list with attributes to let user query selection 
+
+
+        SECOND PART : build selectors structure 
+
+ 
+            sess_firstdate[uId] = publicService.getFirstWorkingDay(uId);// lauch async request for first bookable for some unit on selected set . to be recovered as user confirm the unit he wants
+
+            row = ... / build the selected alternative to propose: unit description , first slot available 
+    */
+   let loc=qs.location,isodatetime=qs.isodatetime;
+
+
+let chroot='ok',
+qq={};//{ffillparm1,ffillparm2}=    [{name,loc,date,hour},] 2 provider  or {name,loc,[{date,hour},]} 2 datetime or simply 
+qq.name='usl 17',qq.loc='fiera udine, via ferriere 4',datetime='2021-05-01T18:40';
+let sc=0;
+    if (sc > 0) {
+        // alredy set in ctl : qq.selStat=1;// 1: day/preferredhour selector set , waiting for match on some day (selStat=2) or match on a specific day (selStat=3)
+        //let cchh=chroot;
+        return {
+            chroot, // the relay/redirection  to the managing thread , both in case of match and in case to refine/reset selection filters 
+            query: qq
+
+        };// returns the complex query with selection definition prepared and the redirect th/child that will perform the selection  
+    } else if (sc == 0) {
+        /*if(mach){
+            return { chroot, query: qq.query };// as match we redo addMatchRes(true,,,)  but as the matcher find the .param.matched=' match' , should refill the same matching .param, 
+            
+        }
+        else */
+        return { chroot: 'th_nosel', query: null };
+    }
+
+}
+
+async function simplybooking(vars, form_whInst, form_wheres, qs, rest) {// consider only rest_,appcfg .. rest useless ???
     /* general logic
      this multi turn multi query selector ctl 
-     - according to state,selStat,  
+     - according to state,selStat=qq.ctl.selStat, (session state related to this ctl as multiturn)
      - check the pending selection,match,  and accordins to action proposed ,selAction, will do 
      - a action (bl) and sets a new status and 
      - response (prompts,groupvars(context x next templates) ,complete/redirect/routings) 
@@ -1443,6 +1538,9 @@ async function simplybooking(vars, form_whInst, form_wheres, qs, rest) {// consi
     selStat, // the status of the matching (selecting ) process managed by this aiax ctl 
             match, groupsel, inst,// rindondant copy ?
             selAction;
+
+    NB  this ctl should be in app controllers . temporarely here as a rest endpoint (but it is multiturn so should be a ctl on app)
+        anyway general status can be found in vars.session !  
     
     
 
@@ -1535,7 +1633,13 @@ simplybooking
     // so form_whInst={value,date,time}  ?????
     // calc start(dateFrom,dateTo )
 
+    let session=vars.session;
+
     let qq = qs.curStatus,// the passed last query obj request to this controller , at init is null
+                        // if null it will be load using   qq=getEvent(session)
+                        //  session.simplybook_endpoint is the name of registered simplybook endpoint api connection data (registered:{'session.simplybook_endpoint':[apiconndataarray],,,,})
+
+
         desDtatTime,// isodate '2021-11-31'
         chroot,// the complete directives : will be used as redirection url in ask relay 
         sc = 0,// the number of (filtered) item to select set in  medSync,medSyntL,resModel obj
@@ -1776,7 +1880,7 @@ if(qq){// 042021
 
 
         } else if (selStat == -7) {// the ctl has alredy set the even/service structure and unit list ctl   now can request action to :
-            // - selAction 0 (def) :  register a selection ( match ) so we can goon on choose the datetime slot 
+            // - selAction 0 (def) :  register a unit selection ( match ) so we can goon on choose the datetime slot for that unit
             // - selAction 1 (def) : update unit list ... can also be matched ?
 
             // qq.match = qq.matched = null;// >>>>  ONLY in case of matched result MUST be reset to match  
@@ -2419,7 +2523,7 @@ if(qq){// 042021
                 //  - select service > simple static list  to select 
                 //  and 
                 //  - performer  >  select after a query to make more restricted he selection 
-                await getEvent(form_wheres, qs, rest);
+                await getEvent(session,form_wheres, qs, rest);
             }
 function dontMHelper() {// dont match 
 
@@ -3021,11 +3125,11 @@ function dontMHelper() {// dont match
         */
 
 
-        async function getEvent() {// start here the ctl session if no ctl status structure in qq=qs.curStatus. wil build the structure to manare selection of service and performer 
+        async function getEvent(session) {// start here the ctl session if no ctl status structure in qq=qs.curStatus. wil build the structure to manare selection of service and performer 
             selStat = -10;// initial status on the fsm recover a event (service/performer)  structure 
 
             // so as done x query model book_res_child , filled by a matcher with url refearring to this ctl  
-            qq = await getEvents();// build ctl structure , fill simple query model 
+            qq = await getEvents(session.simplybook_endpoint);// build ctl structure , fill simple query model . simplybook_endpoint the not std (sermovox) simplybook endpoint 
             const qc = qq.ctl;// the ctl status injected on query model 
             qc.selStat = -9;// -9 .ctl.event filled , service query model filled for seletion 
             sc =qq.rows.length;qq.group.ctx.th_book_geit.start=1; 

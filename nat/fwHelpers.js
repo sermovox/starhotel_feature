@@ -2822,6 +2822,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             }else {// no custom so use run_jrest() api that MUST returns {reason,rows}, where rows meet ASWQ entity matcher interface  
 
             let head=null;
+            
+// TODO   double await ?????  ????????????????????????????????????????????????????
            let  mr=await await this.run_jrest(hostqs,form,isGET,head,step,isQuery);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                 //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                 if(!mr||mr.reason!='runned'||!mr.rows)return false;

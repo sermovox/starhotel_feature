@@ -106,6 +106,7 @@ module.exports=// copy of db part of  refImplementation
 
     rest = rest_;qea=qea_;// rest and qea module are  injected 
     postRinfo= require('./simplyinfoingAiaxCtl.js')(rest);// inject rest in it
+    const postR= require('./simplybookingAiaxCtl.js');// dont need rest !
 
 // init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'}})
 
@@ -152,7 +153,7 @@ module.exports=// copy of db part of  refImplementation
                     let res;
                     // uri coming from qs ( emulate a post/aiax controller selection ):
                     //   url='service://plugins.ai.bookApp.aiaxpost?uri='simplybooking';
-                  let {entity,term,wheres,wheresInst,vars,qs}=form; // temporary : here a controller (post) function to be put in app. so as exception use here status ( vars and session )
+                  let {entity,term,wheres,wheresInst,vars,qs}=form; // temporary : here code a controller (post) function . should be better to be put in app. so as exception use here status ( vars and session ) that sould be better managed in app
                   let uri=qs.uri;
                   //natural internal end point is qea
           
@@ -166,7 +167,7 @@ module.exports=// copy of db part of  refImplementation
 
 
 
-             let postR= require('./simplybookingAiaxCtl.js');
+            // moved above  let postR= require('./simplybookingAiaxCtl.js');// question why do not inject rest now and dont need to pass it in after call? answere : simplybook dont need external rest !
           ///*    
                    // let wheres=null;
 
@@ -238,7 +239,36 @@ module.exports=// copy of db part of  refImplementation
                   
                               }
 
-                    }else return {reason:'ctlnotfound',rows:null};
+                    }else if(uri=='dfEp')                    {
+                      //  var answ = bookctl.post(text, vars,wheres);// the post controller of uri serving a complex medel rows query 
+                      // pass rest in param or bind as context 
+                       let answ ;//        
+                       answ= await postR.simplyDF(vars,wheresInst,wheres,qs,rest)// df end point 
+                                 .catch((err) => { console.error(' the dfEp ctl rejected with error: ',err); });//   or  .catch(console.error);
+                          if(qs.curStatus&&qs.curStatus.ctl&&qs.curStatus.ctl.f)       console.error(' debug: dfEp ctl leave ctl.f '); 
+ 
+                       if (answ == null) {
+                           console.log('no answer found ');
+                         //  bot.say('Sorry, I\'m not sure what you mean');
+                         return {reason:'runned',rows:null};
+                       }
+                       else {
+                         // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
+                           console.log('answer found ', answ);
+ 
+                         // ????? 
+                         //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
+                         // old :let qmodel={rows:answ.query,objMod:true};
+                         let qmodel=answ.query;
+                        if(qmodel){ qmodel.complete=answ.chroot;// child param to navigate the query, 2 type of query : intradays slots and in day slot 
+                         // NBNBNB  this is intented as query ctl aiax response so a complexx transaction not only a simle query , so each transaction has its navigation result child dialog and model with group context !!!!
+                        // so the aiax ctl get the user preference , then depending on situation of query result wereturn a result indicating in the context (group) also the page/child that can diaplay the query result 
+                        // , intraday slot 
+                        // days slots 
+                         return {reason:'runned',rows:qmodel};// qmodel={par1,par2}
+                        }else  return {reason:'runned',rows:null};
+                       }
+                     }else return {reason:'ctlnotfound',rows:null};
           
               }
               return mf;})(params);

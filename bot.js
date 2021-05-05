@@ -105,9 +105,33 @@ const controller = new Botkit({// controller will have 1 ds filled by cms instan
 });
 let logic=controller.handleTurn.bind(controller);// bot entry point bind, so call logic is the same of controller.logic !. any connction method will call this entry point 
 
-let rootDef=require('./nat/cfgWebPost.js');
+/* moved here from below , rigth?? no so come back !
+let nlpai;
+if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to inject: some endpoint x each interface nlpjs,duck,qea . following the factory initiated with nlpjs,duck,qea config obj 
+                        // ex  : qea engine is injected 
+                        // usually all end point (also called adapter ) serves a same matcher type , so implements its interface mr={reason,rows}
+    // nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'},qea:{url:null}
+    nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:process.env.NLPAI_DUCK},duck:{url:process.env.NLPAI_DUCK},qea:{url:null}
+    
+    
+    ,bookApp:{url:null}// {url:null} is the init param x a set of some matcher type (query) endpoint build process defined in builder (builder=require('./nat/nlpai')(jrest,qea) )
+                    // usually the set is a obj containing endpoint/adapters connecting a rest server of some related data to make available in fw as complex model 
+                    // the endpoint returns mr obj containing the val data x the matcher mr={}reason,rows=val}
+                    // so the endpoint is a 'adapter' use some rest interface to simulate a post controller returning a complex model  
+                    // assuming registering this services as 'ai' plugin,  the adapter can be called in a condition macro using directive:  
+                    //        "url":"service://plugins.ai.book.....anAvailableAdapter
+                    // nb book is better port to app controller 
+                    ,infoApp:{url:null}
+}
+    
+    );// in matcher macro url= service://plugins.ai.duck.datetime?qs
+    // NO  :    ai.nlpai={url:'service://data',agents:[{data:manager.process}]};// nb url can be ovewrite in .dir or excel 
+    // because like witai the api is in a http end point or we must set a local interface , usually as plugin , so create a plugin 
+}*/
+
+let rootDef=require('./nat/cfgWebPost.js');// the endpoint definition 
 let ngingurl=null;// ext post relay
-rootDef(controller.webserver,controller,ngingurl,webhook_uri);
+// do below : rootDef(controller.webserver,controller,ngingurl,webhook_uri,nlpai);
 
 if (process.env.uri) {
 console.log('*** instantiating Botkit CMS');
@@ -245,13 +269,13 @@ let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChang
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
 controller.logs=vctl.vFw.logs;// inject the vctl logger (mainly logs convo staff, logs gogs into a file set in voice controller (onChange.js)(production debug))
 
-jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;
+jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;//  che fa ?
 let qea;// the local qea engine
 if(process.env.QeATrain)qea=require('./nat/qea.js') // a function (interface) = require('./natural/intClass').create(testwd)
 (process.env.QeATrain);// the train classes
 
+// /* moded above , rigth??
 let nlpai;
-
 if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to inject: some endpoint x each interface nlpjs,duck,qea . following the factory initiated with nlpjs,duck,qea config obj 
                         // ex  : qea engine is injected 
                         // usually all end point (also called adapter ) serves a same matcher type , so implements its interface mr={reason,rows}
@@ -273,6 +297,8 @@ if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to 
     // NO  :    ai.nlpai={url:'service://data',agents:[{data:manager.process}]};// nb url can be ovewrite in .dir or excel 
     // because like witai the api is in a http end point or we must set a local interface , usually as plugin , so create a plugin 
 }
+rootDef(controller.webserver,controller,ngingurl,webhook_uri,nlpai);// moved here (now nlpai is defined !!)
+//*/
 
 // now db connection wont be used any more !
 vctl.init(db,jrest,null,null,process.env);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....

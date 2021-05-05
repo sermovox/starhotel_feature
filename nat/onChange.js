@@ -1,3 +1,4 @@
+// the vCtl/vcontroller   !!!
 var db,rest;// services
 
 let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw functions
@@ -5,7 +6,7 @@ let application,service,fwCb;
 
 
 const fs = require('fs');
-const wlog = require('./helpers/logs').logger;
+let wlog ;//= require('./helpers/logs').logger;// todo   seems useless receive env in exported function so get env and build wlog immediately .so vFw will be build immediately and not need to be reset at .init !!
 
 let 
 dynJs=require('./models.js');// db and http init by bot.js
@@ -13,7 +14,14 @@ dynJs=require('./models.js');// db and http init by bot.js
 
 // luigi 032020 + 032021
 let cfg,logs='app.log';
-const vFw={// voice fw helper func . available from this plugins as controller.plugins.vCtl.vFw
+/* vFw={
+        logger, // function(message,ch,send) into file public/booking.html , used in ...... 
+        logs,// function(text)  logs into file logs
+        winston,//  = require('./helpers/logs').logger
+        a_logger:function(message,ch,send),// log into file bot.log  , used in web adapter channel to log in and out !!!
+}
+*/
+const vFw={// voice fw helper func . available from this plugins (vCtl) as controller.plugins.vCtl.vFw
 logger:function(message,ch,send){//logger({user,text},ch,'')
     if(!message.text)return;
     let x,mylog;
@@ -39,7 +47,7 @@ logger:function(message,ch,send){//logger({user,text},ch,'')
      });
 
 }
-,winston:wlog
+,winston:wlog// warning see wlog def. will be updated on .init()   !!!!!!!!!!!1
 
 
 ,a_logger:function(message,ch,send){// should got from webadapter  as vcontroller plugins vCtl.vFw.a_logger . or as a factory ?
@@ -1438,6 +1446,8 @@ function init(db_,rest_,appcfg,session,env){// appCfg :  init default applicatio
     // ALL will be in context/scope of user onchange convo cbs !
     cfg=env;
     if(cfg.logs)logs=cfg.logs;
+    wlog= require('./helpers/logs').logger(env);
+    vFw.winston=wlog;// update winson definition 
 }
 
 function buildF(ask,ftext){/* now done in fwbase 

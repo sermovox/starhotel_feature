@@ -174,7 +174,7 @@ mustacheF.qeA=function(qstring){
                 // 032021 : idea add here a code to modify the item list rendering , for example £congi  can substitute default congi
                 //let str = 'anche <option value> però',str1 = 'pistola  uu<ff  uu>', str1 = 'pistola  uu';
 
-               //  let regexp = /(.*)<(([a-z]+)\s*([^>]*))>(.*)/;// gets pre,tailwithspace on : some<pre  tailwithspace>other leave text =someother
+               //  let regexp = /(.*)<(([a-z]+)\s*([^>]*))>(.*)/;// gets pre,tailwithspace on : some<pre  tailwithspace>other lasciera testo = someother
                 
                let scri = text.match(regexp);
                 
@@ -188,10 +188,10 @@ mustacheF.qeA=function(qstring){
                       let option= scri[3],value=scri[4],text_=scri[1]+scri[5];
                       text=text_;
                       
-                      if(value&&option=='and'){opns={end:value};}
+                      if(value&&option=='and'){opns={end:value};}   // forse si confonde end con and ??????
                       else  if(value&&option=='qs'){// treat value as a querystring
                           // querystring=require('querystring');
-                          opns=querystring.parse(value.replace(/-/g,'&'));
+                          opns=querystring.parse(value.replace(/-/g,'&'));// usa & come separatore in querystring 
                           /*if(opns){
                               
                               if(opns.end)retur=opns.end;
