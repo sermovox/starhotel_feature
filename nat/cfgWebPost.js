@@ -42,6 +42,8 @@ function(wserv,ctl,ngingurl,webhook_uri,nlpai){// ctl: if we want to connect dir
   let df_ctl;// set after , call simplybook without fw ctl. use df_ctl()  returns {,rows}
 if(wserv){
 
+  // webhook_uri='api/messages'
+
   wserv.post(webhook_uri+'/vilogs', (req, res) => {
     // Allow the Botbuilder middleware to fire.
     // this middleware is responsible for turning the incoming payload into a BotBuilder Activity
@@ -57,6 +59,208 @@ wserv.get('/someuri', (req, res) => {
     // which we can then use to turn into a BotkitMessage
     res.send('someuri wellcome');
 });
+
+//https://stackoverflow.com/questions/52054436/how-to-pass-multiple-get-parameters-to-express
+// https://softwareengineering.stackexchange.com/questions/300995/are-colons-ok-in-a-rest-api
+ // wserv.get(webhook_uri + '/phone/projects/:project_id/sessions/:session_id::detectIntent', async (req, res) => {// dev.bot.sermovox.com/phone/projects/:project_id/sessions/:session_id::detectIntent ???
+ wserv.post(webhook_uri + '/phone/projects/:project_id/sessions/:session_id::action', async (req, res) => {// dev.bot.sermovox.com/phone/projects/:project_id/sessions/:session_id::detectIntent ???
+  // project_id should be alredy used by nginx to get this ip:port, in future here can be 1 endpoint more bot controllers
+  // action : constant, future use 
+
+    const urlparams=req.params;
+    let myjson=JSON.stringify(req.body);
+    console.log('cfgWebPost phone receved .../phone req.body : ',myjson,' with params: ',urlparams);
+    let event,contexts,text='',customParams;
+    if (req.body.queryInput && req.body.queryInput.text) text=req.body.queryInput.text.text;// usually null if !event
+    if (req.body.queryInput && req.body.queryInput.event) event=req.body.queryInput.event;// {name,parameters={}}
+  
+    if (req.body.contexts) contexts=req.body.contexts;//['a','c']
+    // if (req.body.customParams) customParams=req.body.customParams;// a map, future use 
+
+
+    const res_json = res.json, res_end = res.end;// store original express res cb 
+
+    res.json = res_json_; res.end = res_end_;// set response cb to get and control  bot answer with res_json and res.end = res_end_
+
+  const embedEvent=true;// embed in %%event-valueofthesigleparameter;  if false in condition will use $$$$ and check for channelData.event 
+
+    // manages event/text x processing 
+    if(event){
+      switch (event.name){
+        case 'WELCOME':
+        text+='portineria';// will trigger the bot 
+        event=null;
+        break;
+        case 'CLOSE':
+          break;
+          case 'ROUTEOK':
+            break;
+          case 'ROUTEKO':
+            break;
+          case 'TRANSFEROK':
+            break;
+          case 'TRANSFERKO':
+            break;
+        //default:          res.end();
+        let npar=0,theparam;
+
+        if(event&&embedEvent){
+          if(event.parameters)for(ev in event.parameters){npar++;theparam=event.parameters.ev;}
+          if(npar==1)
+          text+=' %%'+event.name+'-'+theparam;// embed the pbx cmd in text : %%eventname-val1;
+          
+        }
+      }
+      }else{// have text 
+
+
+      }
+
+
+
+    
+
+
+
+
+
+
+
+    console.log('webhook cfgWebPost got a request with event: ', event,' text: ',text, ', so managed contexts: ', contexts);
+    // res.end();    return;// debug
+    //console.log('webhook debug request body: ',req.body);
+    // req.body : see df_trace_request_json.txt
+    // >>>> HAVING PREPARED THE context to use (ctx and ctx_out) now SET REQ  to start/continue bot turns(processActivity), then according with bot response returns fulfillment with the right ctx 
+    req.body = requDF1();//text,event,contexts,customParams);// reset req body with bot request x the intents AA
+    // >>> now SEND REQ To Bot AND RETURN FULFILLMENT (usualy send to bot then send fulfillment but not in welcome intent can be done)
+    console.log('wekhook send to bot :', req.body.text);
+    // >>> now here manage the prestart of bot for Welcome intent (respond fulfillmet without wait for bot returns for timeout problems) 
+
+    if(!req.body){res.end();return;}// returns anyway if dont have to call bot or ctl .  any res.json must be called before
+
+
+
+
+
+
+
+
+
+        ctl.adapter.processActivity(req, res, ctl.handleTurn.bind(ctl)).catch((err) => {// a promise.catch()
+        // bot will call res(jt), 
+        /* jt=
+        [{"type":"message","text":"ciao sono l'assistente del favoloso hotel cinque stelle <br> oggi grande festa della amicizia alle 20 tutti in piscina! <br> Puoi fare domande su dove come quando  u
+        sufruire dei nostri molti servizi interni ed esterni.\n <br> ad esempio puoi domandare dove e quando fare  colazione , andare al ristorante,  come contattare la portineria  o usufruire della l
+        avanderia , puoi anche chiedere l'elenco dei servizi e chiedere poi cosa desideri sapere o prenotare","urgenza_f":"testato","thread":"default","key":"urgenza","outCtx":["mod_Serv/th_serv_relay
+        "],"matches":[],"askmatches":[]}]
+          */
+        console.error('Experienced an error inside the turn handler', err);
+        throw err;
+      });
+
+
+
+
+    // local functions:
+
+
+   function requDF1(){// reset req body with bot request x the intents AA
+    let res;
+    if (event){if(event=='interrupt')res= {user: urlparams.session_id, text, type: "interrupt"};// use .on trigger x this independent/unrelated  by dialogs handler 
+    else  res= {user: urlparams.session_id, text, type: "message",event};// usual event , dialog related, event available in convo using {{channelData.event}} or in js ev=channelData.event
+   }else res= {user: urlparams.session_id, text, type: "message",customParams};
+    return res;
+  }
+
+
+          function res_json_(jt) {// see requDF1()
+            // the bot calls 
+        /* jt=
+            [{"type":"message","text":"ciao sono l'assistente del favoloso hotel cinque stelle <br> oggi grande festa della amicizia alle 20 tutti in piscina! <br> Puoi fare domande su dove come quando  u
+            sufruire dei nostri molti servizi interni ed esterni.\n <br> ad esempio puoi domandare dove e quando fare  colazione , andare al ristorante,  come contattare la portineria  o usufruire della l
+            avanderia , puoi anche chiedere l'elenco dei servizi e chiedere poi cosa desideri sapere o prenotare","urgenza_f":"testato","thread":"default","key":"urgenza","outCtx":["mod_Serv/th_serv_relay
+            "],"matches":[],"askmatches":[]
+          
+                                  ++++  fields set on js scripts using channelData.field1=.....    
+                                  usually :
+                                    channelData.parameters={book:'fail'};
+                                    channelData.action='BYE';
+          
+          
+          
+          }]
+          */
+              if(!(jt&&jt[0]))return;
+                let text = jt[0].text,iu,ii,qs,resp1,parameters,
+                channelData=jt[0].channelData;
+                if((iu=text.indexOf('%%phone_exit-')) >= 0){
+                  ii=text.substring(iu+13).indexOf(';');
+                  if(ii>0)qs=text.substring(iu+13,iu+13+ii);
+                
+
+                // TODO add all exit end point !!!!!!!!!
+                if (
+                  // (exit_=text.match(exitregex))// too time consuming
+                  qs// qs='action=BYE&par1=val1&par2=val2'   but put £ instead of & . usually   %%phone_exit-action=BYE£book=fail; > qs='action=BYE£book=fail'
+                  ) {
+
+                  let pars=querystring.parse(qs.replace(/£/g,'&'));// use & as separator 
+                  if(pars){
+                    for (x in pars) {
+                      let attr=pars[x];
+                      
+                      if(x=='action'){// rooting info , extract other context or event to trigger 
+                        resp1={action:attr};
+                    }else {parameters=parameters||{};
+                        parameters[x]=attr;
+                    }
+                  }
+                if(resp1)resp1.parameters=parameters;// add params to event   
+                }
+
+                }}
+                if(!resp1&&channelData){// if cant set response from embedded in text %%phone_exit-.....
+                          // try using channelData
+                  if(channelData.action){
+
+                    resp1={action:channelData.action};
+                    
+                    if(channelData.parameters)resp1.parameters=channelData.parameters;
+                    }
+                  }
+
+
+                
+
+                if(!text){if(resp1)text='';else return;}
+                resp1=resp1||{};// resp1={action:'BYE,parameters:{book:'fail'}}
+                resp1.fulfillmantText=text;resp1.languageCode='it-IT';
+
+                
+                  console.log(' bot reply to phone: ', resp1);
+              
+              //  console.log(' bot webhook : intent= ',intent,' ctx= ',ctx,' ctx_out= ',ctx_out,'\n bot called res.json (',jt,') so call res.json( ',resp1,')');
+              res.json = res_json;
+              res.json(resp1);
+            }
+          
+          function res_end_(x) {
+            if ('intent' == 'Default Welcome Intent') {
+              // discard bot answer
+            }
+            else {
+              //console.log(' bot webhook : res.end called ',res.text)
+              console.log(' bot webhook : res.end called ', x);
+
+              // res_end(x);
+              res.end = res_end;
+              res.end(x);
+            }
+          }
+
+
+  });
+
 const df=1;// 2 way
 if(df==0){wserv.post(webhook_uri+'/df', (req, res,next) => {
     //.... change body json obj
@@ -113,6 +317,9 @@ this.webserver.post(this._config.webhook_uri+'/*', (req, res) => {
         throw err;
     });
 });*/
+
+
+
 else {// df1
   wserv.post(webhook_uri + '/df1', async (req, res) => {// df fullfillment endpoint: http://host/ .WARNING  async to use await in case of direct call to nlpai ctl 
     // see https://samxsmith.medium.com/promises-in-express-js-apis-testing-dd0243163d57
@@ -642,7 +849,7 @@ else {// df1
                // const exitregex=/(?:^|\s)%%exit-((\w|=|-)+)/i   ;// ex: text='... %%exit-qs;...'  will recover qs='city=pordenone-colore=giallo'   and obj is recovered with querystring.parse(qs.replace(/-/g,'&'))
                 // .......
                 let text = jt[0].text,iu,ii,qs;
-                if((iu=text.indexOf('%%exit-')) >= 0){
+                if((iu=text.indexOf('%%df_exit-')) >= 0){
                   ii=text.substring(iu+7).indexOf(';');
                   if(ii>0)qs=text.substring(iu+7,iu+7+ii);
                 }
@@ -671,7 +878,8 @@ else {// df1
 
                   //if(exit_&&exit_[1]){
                     if(qs){
-                  let pars=querystring.parse(qs.replace(/-/g,'&'));// use & as separator 
+                  //let pars=querystring.parse(qs.replace(/-/g,'&'));// use & as separator 
+                  let pars=querystring.parse(qs.replace(/£/g,'&'));// use & as separator 
                   if(pars){
                     for (x in pars) {
                       let attr;

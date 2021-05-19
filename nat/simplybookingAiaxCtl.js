@@ -66,14 +66,17 @@ const debugL=true,
 tests_3D=3,tests_3H=3,// def number of items in selectors
 EnLoc=false;// enhable location filtering in find performers. todo debug now is in error
 
-
-
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
 const nearpol=// 0 is tested 
-0;// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
+0,// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
 // 1;// testing to do 
-const SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
+sbServer=true;// use simplybook library to connect registered simplybook site
+let SimplyBook;
+
+if(sbServer) SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
+else SimplyBook = require("./simplybook");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
+
 const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
 
 // see simplyinfoingAiaxCtl.js the global field approach . here prefers to work with rest passed as param in simplybooking(vars, form_whInst,form_wheres, qs, rest)
@@ -192,7 +195,7 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     */
 
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
-    console.log(token.data)
+    console.log('token is: ',token.data)
 
     // 建立Public Service
     let publicService = simplyBook.createPublicService(token.data);
@@ -209,7 +212,7 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
   
       */
     // put in ctl like ctl.eventObj ( map with integer index )
-    ctl.unitObj = unit.data;// {1:{id:'1',,,,,},,,,,}// 1 or '1' ?   ST3
+    ctl.unitObj = unit.data;// {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3
     ctl.unitL = unitList;//[{id:'1',,,,,},,,,,]
     let result = unitList;//[{id:'1',,,,,},,,,,]
 
@@ -393,10 +396,13 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
                 let sname = names[outlist[index]];// the where al posto di servizio  taglio capelli   >>> check unique
                 // let prompt=sname;
                 // const orReg = /\?*,*\.*\s+,*\s*/ig;
-                let patt_ = patt[outlist[index]].toLowerCase(),
+                let patt_ = patt[outlist[index]].toLowerCase(),// pattt_  con attributes
                     pattt_ = pattt[outlist[index]].toLowerCase();
-                if (index == 0)
-                    patt_ = '@' + patt_;// @ :  ahocorasick
+                //if (index == 0)
+                    //patt_ = '@ '+patt_.replaceAll('|','| ');// @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
+                    // const orReg = /\?*,*\.*\s+,*\s*/ig;
+                    patt_ = '@ '+patt_.replace(/\|/g,'| ');// @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
+                    //else patt_=' '+patt_;
                 let row = {//query.rows.push({
                     value: sname,// std datetime duck is "2021-01-04T13:00:00.000-08:00"  so take as our def : "2021-01-04T13:00:00"
                     patt: pattt_,// 
@@ -425,7 +431,7 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
                     id:provxServiceL[outlist[index]].id // >>>>>>>>>>>>>>>>>>>>>>>  CHECKit 
                 };
 
-                // set selector:
+                // set selector data to use in selector (put in query.cursor.resModel):
                 // - sname  
                 let selItem = {// the value in rows
                     vname: prompt_[outlist[index]],// row.vname,// the v name prompt== medSyntL ?
@@ -471,14 +477,14 @@ async function getEvents(sbEPoint) {//
         eventList;// toarray
 if(token){    // goon, no ERROR
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
-    console.log(token.data);
+    console.log('token is: ',token.data);
 
     // 建立Public Service
     let publicService = simplyBook.createPublicService(token.data);// also store as a  singlethon as the token ???
 
     // /* // 取得Event List
     event = await publicService.getEventList();
-    eventList = Object.values(event.data);// toarray
+    if(event)eventList = Object.values(event.data);// toarray
     console.log('simplybook event list', eventList, ' json obj: ', JSON.stringify(event));
     // */
     // build the service query model 
@@ -497,7 +503,7 @@ if(token){    // goon, no ERROR
       }
       */
 
-    }
+    
     let result = eventList;
     if (result) {
         let query = new QueryM();
@@ -509,10 +515,11 @@ if(token){    // goon, no ERROR
                 let sname = result[ij].name.toLowerCase();
                 // let prompt=sname;
                 // const orReg = /\?*,*\.*\s+,*\s*/ig;
-                let patt = sname.replace(orReg, '|');//patt = sname.replace(orReg, '|');  
+                let patt = sname.replace(orReg, '| ');//patt = sname.replace(orReg, '|');  // @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
 
-                if (ij == 0)
-                    patt = '@' + patt;// @ :  ahocorasick
+                //if (ij == 0)   patt = '@' + patt;// @ :  ahocorasick
+                    patt = '@ ' +patt;// @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
+ 
                 let row = {//query.rows.push({
                     value: sname,// std datetime duck is "2021-01-04T13:00:00.000-08:00"  so take as our def : "2021-01-04T13:00:00"
                     patt: patt,// 
@@ -593,6 +600,7 @@ if(token){    // goon, no ERROR
     } else {
         return null;// server cant return data 
     }
+}
 
 }// end getEvents() 
 
@@ -714,7 +722,7 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
 
     if (!token) return 'na';
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
-    console.log(token.data)
+    console.log('token is: ',token.data)
     // 建立Public Service
     let publicService = simplyBook.createPublicService(token.data)
 
@@ -1423,7 +1431,7 @@ async function book(vars, form_whInst, form_wheres, qs, rest) {//
     if (token) {
         sc = 1;
         // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
-        console.log(token.data)
+        console.log('token is: ',token.data)
         // 建立Public Service
         let publicService = simplyBook.createPublicService(token.data)
         let additionalFields = null;//{'6740d3bce747107ddb9a789cbb78abf3':'value1',b0657bafaec7a2c9800b923f959f8163:'value2' }; 
@@ -3130,11 +3138,14 @@ function dontMHelper() {// dont match
 
             // so as done x query model book_res_child , filled by a matcher with url refearring to this ctl  
             qq = await getEvents(session.simplybook_endpoint);// build ctl structure , fill simple query model . simplybook_endpoint the not std (sermovox) simplybook endpoint 
-            const qc = qq.ctl;// the ctl status injected on query model 
+
+            if(qq){
+            let qc = qq.ctl;// the ctl status injected on query model 
             qc.selStat = -9;// -9 .ctl.event filled , service query model filled for seletion 
             sc =qq.rows.length;qq.group.ctx.th_book_geit.start=1; 
-            chroot = 'th_ServiceSel';// the th/ask to select the service
-        }
+            chroot = 'th_ServiceSel';// the th/ask to select the servic}
+            }
+            }
         async function setPerformerSel(form_wheres, qs, rest) {// after coming back with a selected service , build the performer selector with the same status  query.ctl.eventSt
             selStat = -8;// initial status on the fsm recover a event (service/performer)  structure 
 
@@ -3594,7 +3605,7 @@ function dontMHelper() {// dont match
         // finally 
 
 
-
+if(qq){
     // as we forget to reset do another time here :
     if(qq.ctl)qq.ctl.f = null;
 
@@ -3608,7 +3619,7 @@ function dontMHelper() {// dont match
         console.log('\n  simplybook: Return .  sc: ',sc,' ,routing template to prompt selector(.complete) chroot: ',chroot,'  selStat:', qq.ctl.selStat,' selector prompts: ',qq.cursor.medSyntL,' template reason flags (meetDes: why we are asking this selector): ',templ,
         ' current 3days startfrom ',cri);
 
-
+}
 
         if (sc > 0) {
             // alredy set in ctl : qq.selStat=1;// 1: day/preferredhour selector set , waiting for match on some day (selStat=2) or match on a specific day (selStat=3)

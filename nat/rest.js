@@ -155,12 +155,15 @@ myRequest.end()
 */
 //const URL = require('url');
 let http,https,request;
- module.exports ={
+ module.exports ={// returns Promise
      init:function(http_,https_,request_){http=http_;https=https_;request=request_},
      jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
-                                                      //  post :
+                                                      //  POST :
                                                       //        qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
                                                       //        if urlenc=false: send json from  data . data must be a plain js obj or its json string . anyway will be sent as json ( header is built)
+
+                                                      //  GET :  json case :
+                                                      // obj=JSON.parse(await jrest(myurl,method='GET',{user:null},{"Content-Type": "application/json"}, true,null) ) 
          // use :
          // response = await jrest("http://postman-echo.com/integers/?num=1&min=1&max=10&col=1&base=10&format=plain&rnd=new",GET,null)
          // response = await jrest("http://postman-echo.com/integers",GET,{num:1,min:1,max:10,col:1,base:10,format:'plain',rnd:'new'})

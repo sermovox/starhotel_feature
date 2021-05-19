@@ -2069,6 +2069,29 @@ row :
 
 /// Preferred registration method : fillOnCh_Register :
 let OnCh_Register={// minimum  must be :          acmd:{ excel:{}},
+
+
+ccai1:{// starting with _ means that a goto cmd will fire a child !!
+    
+    excel:{
+    mod_esci:{vmatches:{esci:'esco',msg:'lascia messaggio'},// model specification , item voice name 
+    vlist:['esco','lascia messaggio'],//temporaneo , è duplicato di vmatches con different format ! 
+     model:'{>&}esco>\\besc|\\busci|\\bciao|\\bsalut&msg>\\bmessag',
+
+         notMatPr:' il servizio desiderato  '//  model entity name used in nmList not matched list 
+     // vname:=notMatPr
+     },
+
+
+    
+    },
+    
+    direc:{
+  
+    }},// ends  cca1
+
+
+
     
     simple_help_desk:{// starting with _ means that a goto cmd will fire a child !!
     

@@ -126,8 +126,8 @@ params :
 
                 if(text) {// a {{function}} 
 
-
-                    return retur+render(text).replace('$',mapname);
+                let rend=render(text).replace('$',mapname);
+                    return retur+rend;
                 }
                 else{
                     return retur+ret;
@@ -769,7 +769,9 @@ if(firstname=='.'){firstname='-';fn='.';count=1;}else {fn=firstname;count++;}// 
 if(Array.isArray(this)){el=this[col];
                         if(Array.isArray(el)&&el.length==1&&Array.isArray(el[0]))el=el[0];// 3 dim array is cursor.items case only
                     }
-                    else el=this;
+                    else if(typeof this === "string"||this instanceof String){el=this;}
+                    else if(typeof this === "object"){el=this[col];}
+                    else el=this;// is  number 
 if(count>=start&&count<start+length){
 if(!enumer)
 return mustacheF.nmList(el,null,fn,true,opns);// will add e anche  dopo il primo el . call an external function ( can be put in the same excel obj ? !)

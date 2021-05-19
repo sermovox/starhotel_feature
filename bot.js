@@ -270,6 +270,9 @@ controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as 
 controller.logs=vctl.vFw.logs;// inject the vctl logger (mainly logs convo staff, logs gogs into a file set in voice controller (onChange.js)(production debug))
 
 jrest_=require('./nat/rest.js');jrest_.init(http,https);jrest=jrest_.jrest;//  che fa ?
+// question : why dont get jrest from inside modules that need to work with rest provided app helper (ex nlpai)  calling for a config singlethon directly in jrest_   ????
+// instead of inject it when init their modules ??? try this way in simplybookingAiaxCtl , sub module of nlpai ..........
+
 let qea;// the local qea engine
 if(process.env.QeATrain)qea=require('./nat/qea.js') // a function (interface) = require('./natural/intClass').create(testwd)
 (process.env.QeATrain);// the train classes
@@ -280,7 +283,9 @@ if (process.env.NLPAI) {// calls a builder to init local ai services (nlpai) to 
                         // ex  : qea engine is injected 
                         // usually all end point (also called adapter ) serves a same matcher type , so implements its interface mr={reason,rows}
     // nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:'http://192.168.1.15:8000/parse'},duck:{url:'http://192.168.1.15:8000/parse'},qea:{url:null}
-    nlpai=require('./nat/nlpai')(jrest,qea).init({nlpjs:{url:process.env.NLPAI_DUCK},duck:{url:process.env.NLPAI_DUCK},qea:{url:null}
+
+    nlpai=require('./nat/nlpai')(jrest,qea)
+    .init({nlpjs:{url:process.env.NLPAI_DUCK},duck:{url:process.env.NLPAI_DUCK},qea:{url:null}
     
     
     ,bookApp:{url:null}// {url:null} is the init param x a set of some matcher type (query) endpoint build process defined in builder (builder=require('./nat/nlpai')(jrest,qea) )
@@ -393,6 +398,24 @@ controller.ready(() => {// Plugin staff: all dependencies usually registered by 
             await bot.cancelAllDialogs() ;
            
            });
+
+           // now here manage the dialog that dont go to current dialog stack . usually all pbx command that are to respond indipendently by the current dialog
+           // otherwise the pbx command will be managed inside the current dialog stack
+           /* question :
+            in interrupts we can start dialog as done in hears : controller.hears(['hello'], 'message', async(bot, message) => {
+                                                                                             bot.beginDialog('onboarding');});
+
+                    this way :
+                                                                controller.interrupts('help', 'message', async(bot, message) => {
+                                                                    // start a help dialog, then eventually resume any ongoing dialog  
+                                                                            >>>>>>  ?? so after help dialog finish we pass the turn to a waiting hears dialog ?? and the reply in HELP_DIALOG ???
+                                                                                    see core.js , seems only if interrupts returns true :
+                                                                                                if (interrupt_results === false) {
+                                                                    await bot.beginDialog(HELP_DIALOG);
+                                                                    });
+
+                qustion : seemd interrupts dialog cant store its stack to continue dialog as hears dialog do . right ?
+            */
            controller.interrupts('\b%%exit-ok','message', async(bot, message) => {// the pbx puo' rispondere al bot confermando che chiuderà  , ma il bot oramai ha chius tutto cosi non si tiene conto del input 
             // when the bot ends the dialog send %%exit-.... the voip sys answer %%exit-ok but the convo alredy died so this interrupt will cancel nothing   
            /// verificare che non serve rispondere  await bot.reply(message,'%%exit-ok; ok chiudiamo la conversazione arrivederci ');// ma invece sembra che faccia un eco !?
