@@ -606,7 +606,7 @@ let vfwF = {// framework functions module used in convo obj
                 {if (storemat.type == 'Ent') rT = 1;
                 else if (storemat.type == 'Int') rT = 2;
                 else if (storemat.type == 'Query') rT = 3;// Cur or param or query 
-                console.log('  addMatcRes is set a matching of complex entity: ',entity,', of type: ', storemat.type);
+                console.log('  addMatcRes is set a matching of complex entity: ',entity,', of type: ', storemat.type,' , filling case rT=',rT);
                 }
                // console.log(' result should be a string :', isStatic && rT == 1);
 
@@ -672,11 +672,11 @@ let vfwF = {// framework functions module used in convo obj
                             }
 
 
-                            console.log('  addMatcRes is setting a Entitymodel.match that represent the entity (Entitymodel.instance/Entitymodel.row(s)).match) match. a matching of complex entity name: ',entity,', of type: ', storemat.type,',entity.rows: ',EntMod.rows);
+                            console.log('  addMatcRes is setting a Entitymodel.match that represent the entity (Entitymodel.instance/Entitymodel.row(s)).match) match. rT case =1, a matching of complex entity name: ',entity,', of type: ', storemat.type,',entity.rows: ',EntMod.rows);
 
                             
                                                             // better use an alredy set match at entity level ? 
-                                if (EntMod.match) {
+                                if (EntMod.match) {// match is alredy set by entity.match
                                 setSt.match = EntMod.match;
                                 setSt.instance =EntMod.instance;// must be set 
 
@@ -694,15 +694,15 @@ let vfwF = {// framework functions module used in convo obj
                                     // error pattarray is a string !!
                                     // so 
                                     
-                                    if((ival=pattArray.indexOf('value'))>=0){
+                                    if((ival=pattArray.indexOf('value'))>=0){// :value-herethefieldtousetosetmatch&......
                                             mapval=pattArray.substring(ival+6);
                                             if((ival=mapval.indexOf('&'))>=0)mapval=mapval.substring(0,ival);
                                         
                                     }
-
+                                    //   .... code other matcher.mod.blfield1/2/..  oltre a mod.match
 
                                                                 
-                                if(mapval){// complex ent : in row is not present value field . there are more entity (each with  only its key/name). so set match=row.mapval
+                                if(mapval){// complex ent : in row can not be present value field . there are more entity (each with  only its key/name). so set match=row.mapval
                                 EntMod.type = 'Ent-Vector';//  the row contains also bl fields .  mark complex ent type='Ent-Multi' , ex row={color,size:}
 
 
@@ -739,9 +739,12 @@ let vfwF = {// framework functions module used in convo obj
 
                                     // temp :suppose  just a string as the property of EntMod:
                                     // if pattArray.value is string :
-                                    // ex $%amod:value-pippo&descr-caio  will set matchers.match=row.pippo and matchers.vmatch=row.caio
-                                    if(row)EntMod.match = row[mapval];else {EntMod.match =EntMod.matched =null;}
-
+                                    // ex $%amod:value-pippo&descr-caio  will set matchers.amod.match=row.pippo and matchers.amod.vmatch=row.caio
+                                   // if(row)EntMod.match = row[mapval];else {EntMod.match =EntMod.matched =null;}
+                                    if(row){setSt.match= row[mapval];// else lascia il valore in essere.  corrected 20062021
+                                        console.log('  addMatcRes is setting a Entitymodel.match  rT case =1 ($$modname:value-arowfield&....), use row.',mapval,' to set model match, instead of entity.match');
+                                    }
+                                    else  stdval=true;// use row.value to overwrite entity.match ???
                                     // future use 
                                     // if (pattArray.descr) EntMod.vmatch = EntMod.row[pattArray.descr]; else EntMod.vmatch = EntMod.match;
 

@@ -151,7 +151,7 @@ mustacheF.qeA=function(qstring){
 
 
 
-    myBoundF=function (text, render,stepp_) {// {{#vars.excel.out}} staff !
+    myBoundF=function (text, render,stepp_,channelData) {// {{#vars.excel.out}} staff !
 // is clear what is the context ??? mustache will overwrite what we did ?
         // >> to be bound to this=step before returning !
         // calle with : {{#vars.excel.out}}$$xxx&usualhandlebar {{/vars.excel.out}}  
@@ -785,7 +785,7 @@ else return mustacheF.nmList(el,null,count,true,opns)// will add e anche  dopo i
     
     }// end myBoundF=
 
-    mustacheF.out__= function (mystep) {// this=step , bound in conversation.parseTemplatesRecursive() BUT reset by mustache to its context 
+    mustacheF.out__= function (mystep,channelData) {// this=step , bound in conversation.parseTemplatesRecursive() BUT reset by mustache to its context 
         // this function (returning) register a handler function called by mustache when finds {{#out}}ttt{{/out}} 
         //  then moustache call immediately the handler passing (ttt,render) whre render is a cb that will render a template that 
         //  is built filtering ttt 
@@ -808,7 +808,7 @@ else return mustacheF.nmList(el,null,count,true,opns)// will add e anche  dopo i
 
 
             // can use some obj in scope 
-           return  myBoundF.call(this,templ,render,mystep);//.bind(step_);// probably don work and useless so delete it 
+           return  myBoundF.call(this,templ,render,mystep,channelData);//.bind(step_);// probably don work and useless so delete it 
         }   }
     
     }

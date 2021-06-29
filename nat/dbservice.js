@@ -1801,7 +1801,7 @@ restAdapter2Mongodb_:async function(form){// ONE SHOT , put in a sort of interfa
     // FUTURE USE   : isQuery means it is a query , many rows expected, some one must build cursor and group context > to start prefer do in run_jrest ! !!
 
     // THAT internal REST Data Service  is EQUIVALENT to a external EXPRESS AUTOCOMPLETE CONTROLLER x AIAX BROWSER REST EXPRESS SERVER 
-    // ITS a DATA SERVICE END POINT :WILL prepare the query for the local db engine to 
+    // ITS a DATA SERVICE END POINT :WILL prepare the query for the local db engine 
     // to find resources need to map entity into a managed db resource so need  meta , that for semplicity is passed by bot model in model  
 
     // returns  entity rows : res={rows,reason} reason  'err' or 'runned'

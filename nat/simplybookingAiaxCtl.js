@@ -64,17 +64,28 @@ main def :
 let inter = 7;//4;// interval reset to 6 if gotdate
 const debugL=true,
 tests_3D=3,tests_3H=3,// def number of items in selectors
-EnLoc=false;// enhable location filtering in find performers. todo debug now is in error
+EnLoc=false;// enhable location filtering ( a where in a selection )  in find performers. todo debug now is in error
 
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
 const nearpol=// 0 is tested 
 0,// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
 // 1;// testing to do 
-sbServer=true;// use simplybook library to connect registered simplybook site
+//sbServer=true;// use simplybook library to connect registered simplybook endpoint site
+sbServer=false;// use simplybook proxy to connect registered simplybook endpoint site
 let SimplyBook;
+// WARNING ****************************
+// do not call this ctl with different session.simplybook_endpoint if use sbServer=true . the reset of simplybook library will destroy connection info set by previous session
+// in future, to connect different site of simplybook library,  build a mapping to right associated simplybook instance using ctl.token as session id
+// till now we can use simplybook library x one session.simplybook_endpoint  or simplybook proxy for many session.simplybook_endpoint , not both
+// WARNING ****************************
 
 if(sbServer) SimplyBook = require("simplybook-js-api");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
+
+
+// simplybook proyx  app site: news: GTT :  every session will mantain its end point data using  token in .ctl 
+                                // so every instance of SimplyBook proxy  con  connected  different site using data stored in ctl.token indipendentemente dal construction params that will be used just to create the token
+                                // so create a new instance of SimplyBook proxy just to create the token . after that from token in .ctl , every SimplyBook proxy instance can obtain the connector : simplyBook.createPublicService(token.data);
 else SimplyBook = require("./simplybook");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
 
 const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
@@ -83,8 +94,9 @@ const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\
 // let rest;// got from nlpai.js :
 // nb  rest_ is the (rest.js).jrest  , so     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
 //                                                                                            //  qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
-// units discriminators :
-const prompti = [], gets = [], keyname = [];// mask=[];will not insert as discriminator the these keys because already whered in the query that give the rows 
+// DEFAULT units discriminators ( used if not found in unitObj.unitpardescr(={keyname1:prompti1,,,,), in this case use gets=()=>):
+const // all array has a index i  mapping those attributes
+prompti = [], gets = [], keyname = [];// mask=[];will not insert as discriminator the these keys because already whered in the query that give the rows 
 // now list all the keys used to discriminate the query performers rows to build a selection model ( discriminator will add a OR entry  in the pattern to match )
 // after selected the service we query the performers table to get a performer query model and build a selector
 // il query si puo fare con 
@@ -94,10 +106,10 @@ const prompti = [], gets = [], keyname = [];// mask=[];will not insert as discri
 // una volta ottenuta il result/cursor/rows[] si costruisce il pattern usando i key discriminator ( che non sono stati usati come where nel query , so using mask[])
 // definiti qui di seguito :
 //  > in pratica si cerca (usando la funzione gets() ) nei item/row mapobj/arrayindiciati  se  sono  presenti i key qui definiti  e se effettivamente sono discriminator vengono poi aggiunti nel pattern del selector 
-prompti.push(' con sede presso '); keyname.push('location');// the words user to present the discriminator key/var 
+prompti.push(' con sede presso '); keyname.push('location');// index i=0, the words user to present the discriminator key/var 
 prompti.push(' provincia di '); keyname.push('provincia');
 prompti.push(' tipo di servizio '); keyname.push('tipologia');// pubblico/ privato 
-gets.push(function (i, query) {// a function used to extract the key value from the entity(row) of the cursor/rows
+gets.push(function (i, query) {// index i . a function used to extract the key value from the entity(row) of the cursor/rows
     //query[i].name.split
     if (query[i].feature) return query[i].feature.location;
 });
@@ -128,8 +140,20 @@ const canwait = true,// when unit selected i wait for matrix then do alternative
 
 // cfg page : https://sermovox.secure.simplybook.it/v2/management/#plugins/api/
 
-registered={// simplybook registered endpoint api connection data
-sermovox:['sermovox',
+registered={// simplybook registered endpoint api connection data. simplybook library from this info can obtain a token to connect to a simpybook server end point
+            // token1 and token2  here means the registration is done on auth servers so now we ask access to api and get a token
+'sermovox_centro-servizi-speciali':['sermovox_centro servizi speciali',
+'58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
+'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
+'admin',
+'luigiDOluigi']
+,
+'sermovox_centro servizi speciali':['sermovox_centro servizi speciali',
+'58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
+'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
+'admin',
+'luigiDOluigi']
+,sermovox:['sermovox',
 '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
 'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
 'admin',
@@ -137,7 +161,8 @@ sermovox:['sermovox',
 //,,,,,,
 };
 
-let simplyBook = new SimplyBook(// simplybook std app : sermovox entry
+let simplyBook = new SimplyBook(// simplybook std app site: sermovox entry. news: GTT : in future every session will have its instance tied using a map by token in .ctl , temporarely  use 1 simplyBook x simplybookingAiaxCtl
+                                // so only 1 site con be connected in this ctl if we use SimplyBook library, till we map simplyBook instaces by ctl.token 
     'sermovox',
     '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
     'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
@@ -145,8 +170,8 @@ let simplyBook = new SimplyBook(// simplybook std app : sermovox entry
     'luigiDOluigi');
 
 // 建立Auth Service
-let auth = simplyBook.createAuthService();
-let token;
+let auth = simplyBook.createAuthService();// std auth
+let token;// std token , GTT: better use the token put in .ctl !
 
 /*  27012021
 
@@ -159,15 +184,38 @@ now split start in :
 async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_wheres.location ctl.serviceId
                                             // nb form_wheres where filled because in excel.dependeemodel.mod_wh_Of=thedependent_model_launchingthismatcher and the dependeemodel matched
                                             // ex : excel.mod_location.mod_wh_Of='mod_aiax_prest' and mod_location matche the value : form_wheres.mod_location
+                                            // in pratica il model mod_location e' un where del selection sulla entity mod_aiax_prest che ha come property un field mod_location !!!
 
     let chservice = ctl.serviceId,// the service choosen
-    location;
 
-        if(EnLoc) location= form_wheres.mod_location;// where location is requested and its location 
+    token=ctl.token,// GTT
+
+    /* >>>>  Search/selection Strategy 
+         like in qea and mongo/sqllight text matching db ,
+         after first master wheres (service+location) ( wheres can be sql or text matching fields (where concept are probabilistic ) )
+        > (ZZ) prompt : " we found many performers x 
+                        (PPO:) service you choose and preferred properties (ASW list of wheres matched on current selected set : mached wheres or wheres not matched but = for the current selected set , ex: location)
+                        here a sample list:
+                        ... 3 item with some prop (better discriminating ) also different each item
+                        please exit/retry or choose by name ( or some characteristic listed)  or general (not listed in item) char/property like type and size (if are discriminant , the other where are listed on ASW)
+                        you can also have the current list values for property type and size if you ask (or we have a approximation match from a answer for property and a property in list space),
+                        the are many items with property color white and black so you can choose such a property (disambiguating),
+                        thanks"
+
+        > run wheres still not matched (so not ASW), get the current selected set (sql will exclude items from set, or best match will add points every item with a match in property where, then choose some best)
+            and run fts/qea on name/short description/questions field of that set : each item have a score (name score + not ASW where score)
+            > so name/short description/questions is a large keywords/concepts container that associates item with its concepts . well do fts or bestmatch and multiply * field/property weight
+
+        > if best has distinguish score say we got a best item .... as PPO you can confirm that or see other result 
+        > so success or iterate on ZZ
+    */
+    location;// where location if present filter units before list, like in qea and mongo/sqllight text matching db ,
+
+        if(EnLoc) location= form_wheres.mod_location;// where location is requested (EnLoc=true), so get  its location. so units can be filtered ( where) with location before list to user x selection 
     // let ctl = qq.ctl;// get from a model reference (query also in different entity )the ctl part
     let pdate = form_wheres.mod_pdate;
 
-    console.log(' simplybook getPerfs request unit x serviceid: ', chservice, ' with where clause location: ', location, ' and a preferred date: ', pdate, ' that we can add as keyword in selector so when the selector run afterwords we alredy knows in its keyword ',
+    console.log(' simplybook getPerfs request unit x serviceid: ', chservice, ' with (ST44)where clause location: ', location, ' and a preferred date: ', pdate, ' that we can add as keyword in ahocorasick selector/matcher so when the selector run afterwords we alredy know/matched that keyword ',
         ' \n if the unit has the date available matching because when selecting we use this download data that can be provided in advance if we know in advance the date preferred so if fortuna we dont need to ask date downloading or we can do with more precision ');
     if (!token) return 'na';
 
@@ -225,8 +273,8 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     // now what the difference from providers and units ? 
 
     // todo : filter prestatori according with matched service mapping , add some selector description as best match concept and start recovering a datetime to propose and prepare the download of slot matrix 
-    let provxServiceL = [],// unit_map array x sel service [{id:'1',,,,,},,,,,]
-        provxServiceObj = {};// unit_map obj  {id:{id,feature:perfFeature,,,,},,,,,}// a map of units with feature loaded from description
+    let provxServiceL = [],// unit_map array x sel service [{id:'1',,,,,},,,,,] , the array of unit obj serving the service selected
+        provxServiceObj = {};// unit_map obj x sel service  {id:{id,feature:perfFeature,,,,},,,,,}// a map of units of selected service with feature loaded from description. the object containing the unit obj serving the selected service
 
     if (result) {// result is all unit list
 
@@ -236,37 +284,57 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
         // selected service has unit/performer id list as integer key of unit map for selected service :
         // ctl.eventObj[chservice].unit_map// automatic string > int conversion 
         // so cloned it :
-        let um = ctl.eventObj[chservice].unit_map;// void unit:map, so fill it in provxServiceObj , build also as list provxServiceL          ST4
+        let um ;
+        if(ctl.eventObj[chservice].unit_map)
+        um= ctl.eventObj[chservice].unit_map;// providerid that serves the service . ? void unit:map, so fill it in provxServiceObj , build also as list provxServiceL          ST4
+        // nb in simplybook portal um={1:null,2:null}
+        else{// no unit_map , no: can consider all units can do theservice selected or see at el=unit.data[unitid] .event_map or .services
+            
+        }
 
         // filtering feature location :
-        let mask = [];// mask discrim keywords
-        if (location) mask.push('location');// dont put location on key prompted , it is alredy matchd !
-        for (unitid in um) {// scan unit.data with um keys
-            el = unit.data[unitid];
-            // add feature from simplybookserver unit description data  inside descrizione del fornitore , ex:
+        let mask = [];// mask discrim keywords that alredy matches in selection list
+        if (location) mask.push('location');// dont put location on key prompted x best keyword match matcher , it is alredy matchd/filtered before selecting with ahocorasick matcher! ST44
+
+        for (unitid in um) {// scan unit.data units with unit id of selected service (um id keys) to process its items el=unit.data[i], um can be null !!
+                            // seems unitid="1" but  in simplybook portal um={1:null,2:null}   ????????????????????????. nb unit.data={1:unitobj1,,,,,}
+            let el;
+            // no in not a array ! for(let i=0;i<unit.data.length;i++){if(unit.data[i].id==unitid){el=unit.data[i];break;}}// find unit that is related to the service
+             el = unit.data[unitid];
+            // add feature/properties from simplybookserver unit description data  inside descrizione del fornitore , ex:
             // <p hidden="">qs?location=mi&amp;type=prof</p>   qs_='location=mi&amp;type=prof'
             let x, y;
-            if (el.description) {
 
-                x = el.description.indexOf('qs?'); if (x > 0) y = el.description.indexOf('</p>', x);
+            const useUnitpardescr=false;// unitpardescr contains features non embedded on description field
+            if(useUnitpardescr&&ctl.eventObj[chservice].unitpardescr){
+                // the params are described in this obj. can also described embedded on .description !
+
+            }
+            if (el) {
+                if (el.description) {// extract featurures embedded in hidden description
+
+                x = el.description.indexOf('qs?'); if (x > 0) y = el.description.indexOf('</p>', x);// qs inserted/embedded using : <p hidden=\"\">qs?location=cinisello&amp;type=pubblico</p>
                 if (x > 0 && x < y) {
                     let qs_ = querystring.parse(
                         el.description.substring(x + 3, y)
                         .replace(/&amp;/g, '&')// (/&amp;/g, '*') or decode html  
                     );
                     if (qs_) {
+
+
+                        // >>>>>  extrapolate feature and put in map :  el.feature={}
+
                     el.feature = qs_;
-                        if (location) if (!(!qs_.location || qs_.location == location)) {// if qs location exists and different from location model the query where clause , select only specified location , if specified ( as db) 
+                        if (location) if (!(!qs_.location || qs_.location == location)) {// ST44 if qs location exists and different from location model the query where clause , select only specified location , if specified ( as db) 
                             // filter provider by location
                             el = null;
                         }
                     }
                 }
             }
-
-            if (el) {// fill with objmap got from qs is is not a filtered row
+            // fill with objmap got from qs is is not a filtered row
             provxServiceObj[unitid] = el;
-                provxServiceL.push(el);
+                provxServiceL.push(el);// =unit.data filtered with units in um
             }
         }
 
@@ -298,6 +366,8 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
              */
         if (provxServiceL) {
 
+            console.log('simplybook (req service=', ctl.serviceId, ') service unit list', provxServiceL);
+
             /* already done 
             let servProvList=[];
            if(location) for (let ij = 0; ij < provxServiceL.length; ij++) {
@@ -306,6 +376,22 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
             }else {servProvList=provxServiceL;}
     
             */
+
+            // find keys in unitObj or use def 
+            let keyname_, prompti_, gets_;
+            if(ctl.unitObj.unitpardescr){
+                keyname_=[]; prompti_=[]; gets=[];let ii=0;
+                gets__=function(prop){
+                   return function(i,query){if (query[i].param) return query[i].param[prop];}
+                }
+                for(let el in ctl.unitObj.unitpardescr){
+                    keyname_.push(el); prompti_.push(ctl.unitObj.unitpardescr[el]); gets=push(gets__(el));ii++;
+                }
+            }else{
+                keyname_=keyname; prompti_=prompti; gets_=gets;// def
+            }
+
+
 
             //let gets=null;// temporarely in getNameDiscr1
 
@@ -319,10 +405,29 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
                 outlist,
                 strategy, disambJ, disambiguate1, disambiguate2, discrJ// future case , now only strategy=1(mix best match) is done
             }
-                = getNameDiscr1(ctl.eventObj[chservice].name, provxServiceL, keyname, prompti, gets, 4);// todo strip 2 char words from name !! 'il merlo'
+                = getNameDiscr1(ctl.eventObj[chservice].name, provxServiceL, keyname_, prompti_, gets_, 4);// todo strip 2 char words from name !! 'il merlo'
             // where gets functions will extract concept keywords extracted  from hihhen unit descriptions and 
             // anyway update getNameDiscr1( code to : one concept  can alredy been a where alredy matched on caller ( province or city usually , so we alredy asked from server  unit by a location  )
             //  for this we can use a buffering local db instead to download the units eveytimes from symplybook , that anyway cant contain units spread in all the city of a nation !, in future  
+
+
+/*
+062021 : situazione best matching e wheres to filter
+i wheres dichiarati per il model provider vengono usati dal query model per estrarre la lista da selezionare. poi si identificano i param filed delle righe provider su cui fare un matching best match che serve alla 
+selezione un po come la selezione e' filtrata dai where formal solo che qui i param da usare per best matching sono scelti dinamicamente in funzione della servizio matchato e dei where che hanno filtrato la lista  
+mentre i where param non sono inseriti in genere nella lista parziale (magari lunghissima) e allora la list aparziale si puo dare o no ma l'limportante e' dare nel prompt che introduce la lista
+un warning che comunque la lista nel suo complesso si puo filtrare/whereare usando una entity il cui nome da l'idea dei valori da matchare ( o si puo anche chiedere una lista del valori del where es tipi, colori ...)
+
+conclusione i param discriminator sono tipo where db ma meno precisi e si puo dare indicazione di matchig o 
+- se lista e' piccola , listandoli in una lista parziale 
+    o 
+- se lista lunga, avvetendo prima di dare la lista parziale che comunque si puo filtrare per una entity di tipo conosciuto o dare la lista dei suoi possibile space 
+i items sono molti e che si puo filtrarli 
+*/
+
+
+
+
 
             // provxServiceL=outlist;
 
@@ -457,18 +562,20 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
 
 }
 
-async function getEvents(sbEPoint) {//
-
-    if(sbEPoint&&registered[sbEPoint]){
+async function getEvents(sbEPoint_) {// if null use the std endpoint
+    let sbEPoint;
+    if(sbEPoint_&&registered[sbEPoint_]){// remember to have alredy set all auth servers staff
         // rebuild app conn 
-        simplyBook = new SimplyBook(...registered[sbEPoint]);
-        let auth = simplyBook.createAuthService();
+        simplyBook = new SimplyBook(...registered[sbEPoint_]);// reset simplybook instance. nb : GTT if we use simplybook proxy every instance can connect a different site just from token
+        //let 062021
+        auth = simplyBook.createAuthService();// reset also , its just usefull to build the token at once
+        sbEPoint=sbEPoint_;
 
-    }else sbEPoint='sermovox';
+    }else sbEPoint='sermovox';// already init
 
-    console.log(' simplybook getEvents, application end point: ',sbEPoint);
-
-    token = await auth.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future insert the tokent into .ctl !!!
+    console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_,', set: ',sbEPoint);
+    let // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
+    token = await auth.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future (GTT )insert the tokent into .ctl !!!
         (err) => { console.error(' simplybook  on getEvents got ERROR : ', err); });
 
 
@@ -476,7 +583,7 @@ async function getEvents(sbEPoint) {//
         let event,
         eventList;// toarray
 if(token){    // goon, no ERROR
-    // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
+    // token.data : cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
     console.log('token is: ',token.data);
 
     // 建立Public Service
@@ -485,7 +592,7 @@ if(token){    // goon, no ERROR
     // /* // 取得Event List
     event = await publicService.getEventList();
     if(event)eventList = Object.values(event.data);// toarray
-    console.log('simplybook event list', eventList, ' json obj: ', JSON.stringify(event));
+    console.log('simplybook event list got', eventList, ' json obj: ', JSON.stringify(event));
     // */
     // build the service query model 
 
@@ -508,7 +615,7 @@ if(token){    // goon, no ERROR
     if (result) {
         let query = new QueryM();
 
-        for (let ij = 0; ij < result.length; ij++) {// build the best match on event.name
+        for (let ij = 0; ij < result.length; ij++) {// build the ahocorasick best match query model on event.name
                                                     // a copy with SSAA
             // if(ctl.eventSt[ctl.serviceId].providers.contains(result[ada].id))
             {
@@ -592,7 +699,9 @@ if(token){    // goon, no ERROR
         // end schema 
         */
 
-        query.ctl = { eventSt: result, eventObj: event.data };// {// the ctl event status (service+performer)}
+        query.ctl = { eventSt: result, eventObj: event.data
+        ,token // GTT
+        };// {// the ctl event status (service+performer)}
 
         return query;// {query};// return
 
@@ -719,7 +828,7 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
     // from param !! let ctl = qq.ctl;// get from a model reference (query also in different entity )the ctl part
 
     let serviceId = eventId = ctl.serviceId, performerId = ctl.unitId, unitId = '2', qty = 1;//unitid/performerId is the match of just selected unit/performer selector  query 
-
+    let token=ctl.token;// GTT
     if (!token) return 'na';
     // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
     console.log('token is: ',token.data)
@@ -750,7 +859,7 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
     //  dateTo = fromDate + inter;// NONONO new Date format , 3 days more then dateFrom
 
 
-    let dateTo = addDays(fromDate, inter);// fromDate= new Date(dateFromAPI="2021-01-04T01:00:00.000+01:00");inter=number of days to schift
+    let dateTo = addDays(fromDate, inter);// fromDate= new Date(dateFromAPI="2021-01-04T01:00:00.000+01:00");inter=number of days to schift.  >>> now addDays return a Date obj !!!!
     // old , let dateToUS = dateToISOLikeButUs(dateTo);//    dateTo=new Date('2021-01-07T10:32:00.000+01:00'),dateToUS= 2021-01-07T10:32:00.000-08:00
 
     /* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDate + https://www.w3schools.com/jsref/jsref_toutcstring.asp
@@ -766,7 +875,8 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
     // ok :
     //dateTo.toISOString());// expected output: 2011-10-05T14:48:00.000Z
     let datefrom=dateFromAPI.substring(0,10);// dateFromAPI or  dateFrom_  just date : 2011-10-05 ?
-    dateto=dateTo;// was : dateto=dateToUS.substring(0,10);//  just date : 2011-10-05 ?
+    // dateto=dateTo;// was : dateto=dateToUS.substring(0,10);//  just date : 2011-10-05 or a Date obj ?
+    dateto=dateTo.toISOString().substring(0,10); // ok ?
     // convertback to us server time
     let availableTime = await publicService.getStartTimeMatrix(datefrom, dateto, serviceId, performerId, qty);// ={success: true, data: {2020-12-29: Array(0), 2020-12-30:["09:00:00", "10:00:00", "11:00:00", …]}}
     // dateFrom = '2020-03-03'
@@ -1126,7 +1236,7 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
 
         const copy = new Date(Number(date))
         copy.setDate(date.getDate() + days)
-        return copy// Date obj , to get iso do : 
+        return copy// Date obj , to get iso do : .....
     }
 
     function dateToISOLikeButUs(date) {// https://stackoverflow.com/questions/12413243/javascript-date-format-like-iso-but-local  .  dateto='2021-01-07T10:32:00.000+01:00',dateToUS= 2021-01-07T10:32:00.000-08:00
@@ -1427,7 +1537,8 @@ async function book(vars, form_whInst, form_wheres, qs, rest) {//
     let eventId, unitId, slot = qs.slot, customer = qs.customer, tele = qs.tele, sc = 0;// sc=0 return problem
     let qq = qs.curStatus,booked_start,booked_end,bId=777,bookingsInfo;
     console.log('inside api simplybook, book try to book  , slot :', slot, ' cust tele: ', tele, ' cust : ', customer, ' status: ', qq);
-    // some sort of cache     let token = await auth.getToken().catch( (err) => { console.error(' simplybook  got ERROR : ',err); }); 
+    // some sort of cache     let token = await auth.getToken().catch( (err) => { console.error(' simplybook  got ERROR : ',err); });
+    let token=qq.ctl.token;// GTT 
     if (token) {
         sc = 1;
         // cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
@@ -1491,6 +1602,7 @@ async function fixedbooking(vars, form_whInst, form_wheres, qs, rest) {// consid
 
 }
 async function simplyDF(vars, form_whInst, form_wheres, qs, rest) {// consider only rest_,appcfg 
+                                                                    // (if remember correctly used if want single turn booking calling this ctl from df fullfillment ??)
 
     // similar to getPerf select 1/2 unit id basing on user params and launch query for first bookable slot 
 
@@ -1720,7 +1832,7 @@ if(qq){// 042021
 
   let 
  // myctl=Object.assign({},qq.ctl);// a clone , so avoid circular obj but f  cant see updated ctl values !!! 
-  myctl=qq.ctl;// circular . warning very dangerous !!!
+  myctl=qq.ctl;// circular . warning: very dangerous !!!
   // concept error   extend ctl with f and just call qq.ctl.f.relDay(desDtatTime.substring(0, 10) but reference using ctl.x=this.ctl there f.init(ctl) will
    func_ctl_=Object.assign({},{rows:qq.rows,ctl:myctl},func_ctl);// make rows and ctl available to func, rows will be added as query is created in firstReq{...start();...}
    ctl=Object.assign(qq.ctl,{f:func_ctl_});// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
@@ -1930,9 +2042,16 @@ if(qq){// 042021
                     if (sess_firstdate[qq.ctl.unitId]) {
                         firstDate_ = await sess_firstdate[qq.ctl.unitId];// a promise, resolve in '20211231' in local time 
 
-                        if (firstDate_.success) {
+                        if (firstDate_&&firstDate_.success){// can be null/void (no answer from call)
+                            firstDate = firstDate_.data;// first available data
+                        }else {
+                            if(desDtatTime)firstDate =desDtatTime.substring(0, 10);// assume same as desidered 
+                            else firstDate =new Date().toISOString().substring(0,10);// assume current date 
+                        }
+
+                        if (firstDate) {// true for sure 
                             firstDateNA = false;
-                            firstDate = firstDate_.data;// firstDate_.substring(0, 4) + '-' + firstDate_.substring(4, 6) + '-' + firstDate_.substring(6, 8);// iso short '2021-12-31' ; was pre donloaded firstbook selecting unit got ?if so we have alredy the first proposal 
+                            //firstDate = firstDate_.data;// firstDate_.substring(0, 4) + '-' + firstDate_.substring(4, 6) + '-' + firstDate_.substring(6, 8);// iso short '2021-12-31' ; was pre donloaded firstbook selecting unit got ?if so we have alredy the first proposal 
                             //if(desDtatTime)myd=desDtatTime.substring(0,4)+desDtatTime.substring(5,7)+desDtatTime.substring(8,10);// if selecting the unit user set preferred/desidered date time we can onfirm the date proposing a hour selection or a new 3 day proposal
                             //  if if no preferred we can immediately propose pre downloaded while waiting for full matrix bookable slot x unit selected 
 
@@ -3859,9 +3978,30 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
     
 
 
-    function getNameDiscr1(namea, query, keyname, prompti, gets, nextr = 4) {// nextr is the max items in out priority items list 
+    function getNameDiscr1(namea, query, keyname, prompti, gets, nextr = 4) {// nextr is the max items on prompted list to select (in out priority items list ) ' scegli in base ..., alcuni items da selezionare sono : ....'
+                                                                                // keyname, prompti  property/wheres name and its preamble prompts , keyname e' tag dato , serve solo come conceptname nel code
+                                                                                //      dvar=keyname.length : numero di where property da contare come keyword da matchare 
+
+
+            /* >>>>  Search/selection Strategy 
+         like in qea and mongo/sqllight text matching db ,
+         after first master wheres (service+location) ( wheres can be sql or text matching fields (where concept are probabilistic ) )
+        > (ZZ) prompt :  we found many performers x 
+                    PPO: service you choose and preferred properties (ASW list of wheres matched on current selected set : mached wheres or wheres not matched but = for the current selected set , ex: location) here a sample list
+            ... 3 item with some prop (better discriminating ) also different each iten
+            please exit/retry or choose by name ( or some characteristic listed)  or general not listed char/property like type and size (if are discriminant , the other where are listed on ASW)
+
+        > run wheres still not matched (so not ASW), get the current selected set (sql will exclude items from set, or best match will add points every item with a match in property where, then choose some best)
+            and run fts/qea on name/short description/questions field of that set : each item have a score (name score + not ASW where score)
+            > so name/short description/questions is a large keywords/concepts container that associates item with its concepts . well do fts or bestmatch and multiply * field/property weight
+
+        > if best has distinguish score say we got a best item .... as PPO you can confirm that or see other result 
+        > so success or iterate on ZZ
+    */
+
+
         // so keys/discriminatingVar/conceptvar are:   :
-        // - name extracted keys= first 3 word of name excluding 2 char words. not indexed 
+        // - name(short description) extracted keys= first 3 word of name excluding 2 chars words. not indexed 
         //      > prompt is just the first 3 3 words 
         //      indexed (max )
         // - wheres keys (where are db selecting prop or via equivalent procedure here . specifically each items must have a wheres[z] property )
@@ -3870,12 +4010,13 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
         //      concept[j]=gets[j] from properties and feature of query[i] item 
         //      > prompt contribution  are obtained adding were_prompti[i] before the key 
 
-        //      nb but these cant be selected 
+        //      nb but these cant be selected(?)
         //      so strategy dont indicate opportunity x selecting them with sb where selection , but could be done working here in gets related concepts
+
         /*
         returns  {names,prompt_,patt,strategy,disambJ,disambiguate1,disambiguate2,discrJ};
         - names: query[i].name items key name
-        - prompt:  prompt text to select sme words (max maxKeywordsinName) from .name and the other discrimunatory  var/concepts   , template is in  prompti
+        - prompt:  prompt text to select some words (max maxKeywordsinName) from .name and the other discrimunatory  var/concepts   , template is in  prompti
          gets[] : the cb(query[i]) to extract from iesimo item the discriminatory concepts , has dimension of discriminatory concepts is dvar.
                     so discriminatory concepts (max to prompt = mdp )and first maxKeywordsinName words on .name[i] are the keyworks to best match using prompt=prompt_[i]  and patt=patt[i] !!!
         
@@ -3891,12 +4032,167 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
         
                             
                             discriminatory selection ( select on all items of a discrim var, or jus disambiguate from 2 val of the var or )
+
+
+                            nb added to better explain :
+                            probabilmente 
+                                - con discriminatory si vuol indicare un where che meglio permette di diminuire il numero di item da selezionare
+                                        una where e' discriminatory se nel selection space count <=2
+                                    il prompt chiedera' quale valore dare al concept (tra lo space coperto dalla lista in selection , eventualmente disponibile con una richiesta :
+                                                'per sceliere un provider nella seguente lista puoi  scegliere anche keyvaluelist')
+                                                    >> see  prompt_,patt,
+            
+                                - con disambiguate si vuol indicare che lo space coperto da un  where/concept e' piccolo cosi vale la pena matcharlo per dimezzare il numero di items da selezionare
+                                    quindi promptero : 'preferisci il concept x sia disambiguate1 o disambiguate2 ?'
+
+
+
+
+                                    overview 
+
+                                        nb per il futuro e' bene avere per ogni item le versioni full wheres e solo wheres che sono discriminanti
+                                        poi nel chiamante a seconda del numero di items di partenza da selezionare :
+                                            - si scegli se per ogni items inserire tutti i  where per chiarezza, discriminanti o solo i descriminanti perche se no e' troppo lungo
+                                            - se ci sono moltissimi items si listeranno in parte e poi si dira che ho solo alcuni items , cerca di selezionare in particolare : i disscriminanti ( e anche la lista dei valori piu probabili ) 
+
+                                            todo fare un loop su un ask dove si da propt :
+                                            - ecco la lista parziale deli item selezionabili per le caratteristiche selezionate $wherematched , scegli nome e carartteristiche in pertilolare $discrim 
+                                            se desideri sapere caratteristiche piu comuni di che caratteristiche ???
+
+                                        nb questo getNameDiscr1 puo essere integrato con il qea con la versione where su un campo al posto del best match sul nome si spara il qea con lo score 
+                                            poi e poi filtro in base ai wheres best match score o wheres da db correggendo lo score del best match 
+                                            nb prima di sparare il qea faccio un reset del space usando i match sul wheres o il where con db , poi sparo il qea sullo space ridotto ( uso qea per le sezioni di space ridotto ( sezionando su where matched u su classi di essso ) 
+                                            ) in pratica e' forse meglio per numero di items intermedi di usare un best match con  nome vettoriale al posto di nome come strnga !!! o usa un fts + where con sqllight o mongo 
+
+                                        ---------------------------------------------------------------------------------------------------
+                                        nb  un where puo essere il desidered obj e gli altri campi i properties attached  es nome/descr = '', where1=desidered='autore/opera, where2 ' data 
+                                         cosi nella compilazione del cms usero righe :
+                                         
+                                            nome info /questions                  chi             answer
+
+                                            quando  nato                        autore          nato a milano 
+
+                                             nato                               opera           creata a roma 
+
+
+
+                                        ------
+
+                                            o sviluppo parzalmente  le dimensioni di , e vado a preselezionare il testo su cui cercare il best match con regex che estrae il concept meglio 
+
+
+                                            cjhi/come quando                autore/opera            temi comuni         answer
+
+
+
+                                            chi è                           autore
+
+                                            chi rappresenta                 opera
+
+                                            quando  creata                  opera
+
+
+                                            quando nato                     autore 
+
+
+
+
+
+                                            >>> posso bprendere opera , e raccogliere tutti i chi come quando mettendoli in righe del desidered opera !!!
+
+                                            cosi non serve ottimizzare i match con le colonne 1 e 2  ma matcho 1, e 2 e poi vado sul db esempio 1:N   opera con tutte le properties in una riga 
+                                             quindi ho tabelle opera e autore  e sue righe da immettere  piuttosto che matrice[opera/autore,chi/cosa/come]
+                                             
+                                             
+                                             in ogni caso come in book   cerchero di evitare di listare tutti gli items diro solo i piu frequenti e poi diro che i dsicriminanti sono opera autore e chi/come/quando/dove !!!!!
+
+
+                                        -------
+                                            o come in w&alpha posso evitare di sviluppare andando ausare query matchando solo i singoli campi per evitare di svilupparli 
+
+                                                autore/oprea
+
+                                                e aggancio via regex : 
+                                                chi è x 
+                                                quando è nato y
+                                                quale char ha pippo  
+
+                                                usero db ows in cui nel desidered metto tutte le properties di 1 o 2 wheres 
+                                        ---------------------------------------------------------------------------------------------------
+
+                                    ricordo che :
+                                    dvar= numero di wheres property 
+                                    nextr= is the max items on prompted list to select (in out priority items list ) 
+                                    scan  numero di item nella prompted list (< nextr se la query.length e' minore), solo i primi nextr sono considerati nella query !!
+
+                                    i= index nella lista items promptata
+                                    z= index della zesima chiave trovata in almeno un item 
+                                    j= jesimo wheres (wheres[j])
+                                    gets[j](i, query)  estrae il valore della where jesima (keyname[j]) dal iesimo item nella  lista items da selezionare 
+
+                                    wheres[j]= nome del jesimo where, es wheres[1]=città
+
+                                    values = [j][z]=roma,   (values[1][3]=roma in almeno un  item da listare  e' stato trovato il where  jesimo(primo) con valore roma , è il  zesimo (terzo) valore di jesimo where trovato) 
+                                    count  = [j][z]= 3 , il zesimo valore di where trovato e' stato trovato in 3 item
+                                    discr = [j][i]=z    nel iesimo prompted list item è stato trovato il zesimo where jesimo . il valore è roma ed e' stato trovato in complessivi 3 items (questo + altri 2 items)
+ 
+                                    analisi degli items i nei riguardi dei wheres jesimi:
+                                    per ogni item i calcolo one[], array che da il valore di    per ogni indice j 
+                                    one=[],=[1,3]: gli incici z 1 e 3 sono wheres con count =1, sono di massima discriminazione (il loro valore itentifica il item da selezionare) 
+                                    two[], come sopra ma ci possono essere piu item identificati con un valore ella chiave/where
+                                    discrim[j], discrim[j=2]=3  3 item nella lista sono discriminati con un valore della where jesimo ( sara roma parigi e milano)
+
+                                        se invece count >= (scan / 3) alora la wheres jesima permette di disambiguare (la lista e' caratterizzata da 2 valori di wheres da disambiguare )
+                                    disamb[j]  e somma dei count[j][discr[j][i]])). cioe e' il jesimo where ha determinazioni che sono in molti items
+                                        es discr[1]=[1,0,-1,1] la prima wheres enegli item 0 con un valore values[1,1]=roma nel item 1 con values[1,0] = milano  nel item 3 con values[1,1]=roma 
+                                            
+                                            count[1,0]=1 (valore milano), count[1,1]=2 (valore roma), wheres[1]=città  
+                                            ora per il j=1 wheres (città)
+                                            ci sono elementi   che hanno  promo wheres con z=count> scan/3   es scan=4 ( lista di 4 items)
+                                                i=0  count=2 > 4/3=1,3
+                                                i=1  count=1 !> 1,3
+                                                i=2  none
+                                                i=3  count=2 > 4/3=1,3
+
+
+                                                disamb[j] = 2,6  , 
+                                                disamb1[j] = (max dei count del jesimo where)=2; disamb1v[1]=roma,  disamb1v[1]=milano 
+                                                    puo valere la pena di inserirlo nel prompt che precede la lista degli items : ' molti items si riferiscono a milano e roma , scegli'
+
+                                        nb se il citta avesse piu determinazioni comuni in piu items avrei compilato anche disamb2[j] = z; disamb2v[j] ! 
+
+                                    poi si compilano per gli one i prompt e i patt :
+
+                                        es precedente : per il item i=1 count[j=1,0]=1 quindi il where j=1 e' in one : one=[x,discr[j][i]=discr[1][1]=0,x,,] 
+                                            se one[] e' >=0 per almeno qualche j allora il item e' discriminant con un buon punteggio priority !!!
+                                            > vuol dire che l'item corrente ha il where j=1 che è da considerare discriminante quindi lo prompto 
+
+                                           
+                                    prompt_[i] = prompt_[i] + prompti[y] + values[y][one[y]];// add discr that is present only on this item 
+                                        es i=1, y=j=1
+                                        prompt_[1] = prompt_[1] + prompti[1]= 'città di' + values[1][one[1]=0]='milano';// add discr that is present only on this item 
+
+                                    patt[i] = patt[i] + '|' + values[y][one[j]]='milano';
+                                    priority+=2   aumento la priorita del item se e' discriminant con count =1
+
+                                    cosi per two[] ........
+
+                                    per ultimo si da consigli sulla strategia da adottare :
+
+                                    strategy=1/2/3
+
+                                    std strategy=1
+                                        ............................
+
+                                    if() strategy=2
+                                    si scglie j= che massimizza citerio: .....
+                                    disambJ = j; score=disambS = disamb[j] / (2 * scan); disambiguate1 = disamb1v[j]; disambiguate2 = disamb2v[j]; 
         
         */
 
-        let maxKeywordsinName = 3// sure ?
+        let maxKeywordsinName = 3// max key da prendere sul campo name (is multikey) , sure ?
             // nextr=4// max list item dimension ,:  limit the items to select to a max of nextr 
-            , dvar = keyname.length// city + province + type the discr var ex: large province sector : the discriminator concept to insert in returning   prompt_,patt,
+            , dvar = keyname.length// numero di where/property  city + province + type the discr var ex: large province sector : the discriminator concept to insert in returning   prompt_,patt,
             // here 
             , mdp = 2//maxdiscrinprompt <= dvar  , maxkeyInPrompt
 
@@ -4035,10 +4331,10 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
                         onec++;
                     } else if (z == 2) { two.push(discr[j][i]); one.push(-1); twoc++; }// a little priority 
 
-                    else { one.push(-1); two.push(-1); }
+                            else { one.push(-1); two.push(-1); }
 
                     if (z >= (scan / 3)) {
-                    disamb[j] += z;
+                        disamb[j] += z;
                         if (z > disamb1[j]) { disamb1[j] = z; disamb1v[j] = values[j][discr[j][i]] }
                         else if (z > (disamb2[j])
                             //&&z<(disamb1[j])
@@ -4090,7 +4386,9 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
 
 
         // give advice (strategy) on next disambiguation action 
-        let disambJ = -1, disambS = 0, discrJ = -1, discrS = 0, disambiguate1 = null, disambiguate2 = null, strategy = 1;
+        let disambJ = -1, disambS = 0, discrJ = -1,
+         discrS = 0,// just to set the max 
+         disambiguate1 = null, disambiguate2 = null, strategy = 1;
         for (let j = 0; j < dvar; j++) {
             // choose strategy 
             if (discrim[j] / scan > 0.85 && discrim[j] / scan > discrS) { discrJ = j; discrS = discrim[j] / scan; strategy = 3 }// so strategy 3 is the same of strategy 1 but tests only one discr key not best match on names + all discr keys 

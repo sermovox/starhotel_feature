@@ -159,7 +159,7 @@ let http,https,request;
      init:function(http_,https_,request_){http=http_;https=https_;request=request_},
      jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
                                                       //  POST :
-                                                      //        qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
+                                                      //        qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs (x-www-form-urlencoded) or coding  data obj )
                                                       //        if urlenc=false: send json from  data . data must be a plain js obj or its json string . anyway will be sent as json ( header is built)
 
                                                       //  GET :  json case :
@@ -295,8 +295,8 @@ opt,
 function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ is a map obj, qs is query string .
                                                                        //  urlenc =encJson=true needs data_,
                                                                       //   urlenc =encJson=false  needs qs or  data_
-                                                                      // if urlenc =true :  put in body the  urlencoded  qs or get it from the js map data_
-                                                                      // if urlenc= false : put in body the  json of the js map data_
+                                                                      // if urlenc =true :  put in body the  urlencoded  qs or urlencoded the js map data_
+                                                                      // if urlenc= false : put in body the  json of the js map data_ or suppose its alredy in son format if type=string
   let body, head_;
 
 
@@ -314,11 +314,11 @@ function jhttppost(h, url, data_, head, qs, urlenc, resolve, reject) {// data_ i
 
     } else {// case encode data as x-www-form-urlencoded
       if (qs) {
-        body = qs;
+        body = qs;// put qs in body as is 
 
       } else {// get qs from form/data_ map obj 
         if (data_) {
-          body = toParam(data_);
+          body = toParam(data_);// transform a plain obj in qs format and set body
         } else {
           body='';// no data_, no qs , so request post with no data 
         }

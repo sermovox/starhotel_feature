@@ -26,6 +26,7 @@ const { MongoDbStorage } = require('botbuilder-storage-mongodb');
 
 // Load process.env values from .env file
 require('dotenv').config();
+let winston;
 
 let storage = null;
 if (process.env.MONGO_URI) {
@@ -83,6 +84,23 @@ httpserver=servs.httpserver;webserver=servs.webserver;// must add dependency int
 // webhook_uri (only many controller-cms) 
 
 const adapter = new WebAdapter({});// calling createSocketServer(http,optn, logic=controller.handleTurn.bind(botkit)); will build ws on http server , attach ws to controller 
+
+async function myBotBuilderMiddleware(turnContext, next) {
+
+    // do stuff with the turnContext BEFORE it is processed here
+    turnContext=turnContext;
+    // call next, make sure to use await
+    // inside this next is where your whole bot does its thing!
+    await next();
+    // do stuff AFTER the message has been processed. log the event result from the dialog
+    // log with winson  %%pbxcommand from text or use the channelData attributes
+    //if(turnContext.activity.channelData.event)winston.info(turnContext.activity.channelData.event,{pgm:'action returned to channel'});
+    //winston.info( JSON.stringify( turnContext.activity.channelData, null, 4),{pgm:'action returned to channel'});// debug
+}
+//To enable a BotBuilder adapter middleware, register it on the adapter object:
+
+adapter.use(myBotBuilderMiddleware);
+
 
 const webhook_uri='/api/messages';
 
@@ -240,6 +258,7 @@ jrest_,jrest;
 
 
 
+
 const mongoose = require('mongoose');// npm i mongoose , better before mongoosify
 var mongoosify = require("mongoosify");// alternative to convert-json-schema-to-mongoose, npm i mongoosify
 
@@ -265,6 +284,7 @@ if (process.env.DB_URI) {
 
 // in future add fw as plugin !!!
 let vctl=require('./nat/onChange.js');// vcontroller={init,onChange:fwAskOnChange,buildF,getappWrap,mustacheF,modsOnAsk,vfwF,injService}
+//winston=vctl.vFw.winston;
 
 controller.addPluginExtension('vCtl', vctl);// vcontroller will be available as controller.plugin.vCtl.xx
 controller.logs=vctl.vFw.logs;// inject the vctl logger (mainly logs convo staff, logs gogs into a file set in voice controller (onChange.js)(production debug))
@@ -307,6 +327,7 @@ rootDef(controller.webserver,controller,ngingurl,webhook_uri,nlpai);// moved her
 
 // now db connection wont be used any more !
 vctl.init(db,jrest,null,null,process.env);// service + controller ? . attention : fwbase is not alredy init : see  fwCtl=require('./nat/fwbase.js ....
+winston=vctl.vFw.winston;
 let app=require('./nat/app.js');// must set the cms endpoint port that gives the cms set of app, and the wellcome msg prompt 
 
 // Once the bot has booted up its internal services, you can use them to do stuff.

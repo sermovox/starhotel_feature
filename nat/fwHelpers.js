@@ -2441,7 +2441,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                     // - let all staff to a ai intent interface that manages that staff for registered agent :
                     //       url=service://plugins.intentai.res_intent // intent interface is added as plugin !
 
-                    if (url.substring(0, 8) == 'https://') {// a) : direct interface ,
+                    if (url.substring(0, 8) == 'https://') {// a) : direct interface , SOME CODE NEED TO BE INJECTED HERE TO BUILD A PROPER REST CALL to a EndPoint
 
                     if (this.ai) {// a) : direct interface , some end point implementation  (https://api.wit.....)
 
@@ -2889,16 +2889,47 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
     }// end refImplementation
 
 
-    function findWhere(exc_ent,vars){// exc_ent=excel[entity]  ;fills MATCHED wheres ={dependingWhere1:val1,,,} x dependant entity, filled in fwbase find_wheres()
+    function findWhere(exc_ent,vars,excel){// exc_ent=excel[entity]  ;fills MATCHED wheres ={dependingWhere1:val1,,,} x dependant entity, filled in fwbase find_wheres()
+                                        /* 062021   in praica in excel  i where di un query model sono inseriti come mod_wh_Of nel where model:
+
+            mod_location: {// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
+                notMatPr: ' la provincia '//  model entity name used in nmList not matched list 
+                , mod_wh_Of: 'mod_aiax_prest'
+
+                // definition:
+                vmatches: { cl: 'classico', wa: 'giovane' },// model specification , item voice name 
+                vlist: ['classico', 'giovane'],
+
+                model: 'cl-\bclas&wa-wave',
+
+            },
+
+            ask_prest_1102: {// no model ,that's are defined in line. just a not match prompt so can be checked in ask 0  and if no match ...$$miss&... will display it 
+
+                notMatPr: ' la data e l orario preferito '//  model entity name used in nmList not matched list 
+
+            },
+
+                                        pero in  in fwbase find_wheres() per comodita di estrazione dei where qui nel matcher query, si attaccano tutti i wheres sulla query model !!!! 
+
+
+                                        proposal of dynamic prefilter model for query model
+                                        consegnare al query model url anche i axcel model dei wheres cosi in caso di selezioni multiturno il where puo essere dinamicamente definito in excel 
+                                        cosi nel prsimo turno posso fare una refne matchando il where che conterra' i discriminator values solo della lista da selezionare 
+                                        in condition si usera matchare riferendosi al model definito in excel : $%model_where_di_querymodel::
+
+                                        >>>> so added excel as param to return the array of the excel model definition to set using discriminator values and notmatched prompt to prompt for them !
+
+                                        */
         let wheres_,wc=0;
     if(exc_ent&&exc_ent.wheres)wheres_=exc_ent.wheres;// the depend on models,  wheres_=['mod_city',,,]
     // no its not a ask ! if(direc[entity]&&direc[entity].wheres)wheres_=direc[entity].wheres;// the where fields wheres_=['mod_city',,,]
 
-    let wheres,wheresInst;//  wheres={mod_city:'rome',,,,}  wheresInst={mod_city:{the matched instance matches.mymod.instance},,,,}
+    let wheres,wheresInst,excelWh;//  wheres={mod_city:'rome',,,,}  wheresInst={mod_city:{the matched instance matches.mymod.instance},,,,}
 
 
     if(wheres_)
-    { wheres={};wheresInst={};
+    { wheres={};wheresInst={};excelWh={};
         for(wh in wheres_){// fills where dependency resolved by ... in 
         wc=1;
         if(vars.matches[wheres_[wh]]&&vars.matches[wheres_[wh]].match)
@@ -2906,8 +2937,14 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
             wheresInst[wheres_[wh]]=vars.matches[wheres_[wh]].instance;// a matched where condition
 
            }
+
+           // insert wheres excel models array 
+           if(excel&&excel[wh])
+           { excelWh[wh]=excel[wh];
+
+           }
     }}
-    if(wc==0)return null;else return {wheres,wheresInst};
+    if(wc==0)return null;else return {wheres,wheresInst,excelWh};// map of  where model name, its matched model instance, its current excel model def 
 }
 
     function getHost_(url){// OLD return host , qs 
