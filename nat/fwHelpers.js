@@ -2534,7 +2534,10 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                        if(fwh.wheresInst)wheresInst=fwh.wheresInst;
                    }
  
-                   let form={entity,term,wheres,wheresInst};// excel is debug param, usually is in the service
+                   let form={entity,term,wheres,wheresInst};// excel is debug param, usually is in the service 
+                                                            // wheres is map of where with its matches , and if there are .instance they are put in wheresInst
+
+
                         let  mr=await await this.run_jrest(hostqs,form,true);// old : external REST Data Service // TODO .catch .....   !!!!!(form);// call specific caller to internal data service adapter that knowing additional scheme cal call a db
                         //  // returns  res={rows=Intent/Entity,reason} reason  'someerr' or 'runned'
                         if(!mr||mr.reason!='runned'||!mr.rows)return false;
@@ -2762,6 +2765,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
             }
 
+
+              // >>>>>  wheres is map of where with its matches , and if there are .instance they are put in wheresInst
             let form={entity,term,wheres,wheresInst,meta,whMmeta
             ,isQuery// future use now useless. means it comes from dynQuery ?
             };// excel is debug param, usually is in the service
@@ -2890,7 +2895,10 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
     function findWhere(exc_ent,vars,excel){// exc_ent=excel[entity]  ;fills MATCHED wheres ={dependingWhere1:val1,,,} x dependant entity, filled in fwbase find_wheres()
-                                        /* 062021   in praica in excel  i where di un query model sono inseriti come mod_wh_Of nel where model:
+
+
+                                        /* 062021   >>>> so added excel 
+                                        in pratica in excel  i where di un query model sono inseriti come mod_wh_Of nel where model:
 
             mod_location: {// vmatches:{'piano 1':'piano 1','piano 2':'piano 2','piano terra':'piano terra'},// model specification , item voice name 
                 notMatPr: ' la provincia '//  model entity name used in nmList not matched list 
@@ -2914,9 +2922,9 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
 
                                         proposal of dynamic prefilter model for query model
-                                        consegnare al query model url anche i axcel model dei wheres cosi in caso di selezioni multiturno il where puo essere dinamicamente definito in excel 
+                                        consegnare al query model url anche i excel model dei wheres cosi in caso di selezioni multiturno il where puo essere dinamicamente definito in excel 
                                         cosi nel prsimo turno posso fare una refne matchando il where che conterra' i discriminator values solo della lista da selezionare 
-                                        in condition si usera matchare riferendosi al model definito in excel : $%model_where_di_querymodel::
+                                        in condition si usera matchare riferendosi al model definito in excel : $%model_where_di_querymodel:
 
                                         >>>> so added excel as param to return the array of the excel model definition to set using discriminator values and notmatched prompt to prompt for them !
 
@@ -2938,7 +2946,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
 
            }
 
-           // insert wheres excel models array 
+           // insert wheres excel models array to dynamically reset (refinements with other disriminator in following turns )
            if(excel&&excel[wh])
            { excelWh[wh]=excel[wh];
 

@@ -14,6 +14,18 @@ const textFwCmd=true;// user text='... %%acmd-par; ....'
                                                        // that is used in simplybookingaiaxctl to connect to a registered simplebook endpoint
  const preStartCSonWELCOME=true;// manage bot welcome  prestart in case of start_ctx=='cs'. to extend also to other cases ( sermovox,....)
 
+ const startStrat=0;// see  SAWETWG: at wellcom event match:
+ /* 0: OOO : lascia df welcome prompt that must have a case of triggering the csWhatService ' ok prenoto' intent that will send to bot a user request that match a ask condition triggering the same intent 
+          so the bot respond to the same intent (in altre parole bot intent process the df matched same intent with a right answer )
+
+    1:AAA: inserire la parte del prompt che triggera il bot cmd (dipende da phone param), come sopra ma la pare bot del prompt serve a triggerare il dialogo/cmd settato dal param di phone context 
+          tipicamente si aggiungerà  'puoi anche prenotare servizi di facileprenotare_cmd'
+
+
+
+    2: BBB: lasciare che sia il bot cmd a dare il prompt ( dovra avere anche delle parti che triggerano gli intent df , se ci sono .(non devono dipendere dal phone param !)) 
+ */
+
 const fs = require('fs');
 
 let logf='voximplant.log';
@@ -798,6 +810,7 @@ else {// df1
           //console.log('webhook debug request body: ',req.body);
           // req.body : see df_trace_request_json.txt
           // >>>> HAVING PREPARED THE context to use (ctx and ctx_out) now SET REQ  to start/continue bot turns(processActivity), then according with bot response returns fulfillment with the right ctx 
+          let fulfilledText=req.body.queryResult.fulfillmentText;
           req.body = requDF1(req.body, usranswerPar, session, intent);// reset req body with bot request x the intents AA
           // >>> now SEND REQ To Bot AND RETURN FULFILLMENT (usualy send to bot then send fulfillment but not in welcome intent can be done)
           console.log('wekhook send to bot :', req.body.text);
@@ -806,13 +819,31 @@ else {// df1
 
           // >>> now here manage the prestart of bot for Welcome intent (respond fulfillmet without wait for bot returns for timeout problems) 
           if (intent == 'Default Welcome Intent') {// if welcome we can prestart the bot to meet a intermediate intene , and come back to df without waiting the bot answer!
+
+            // ASWES
             if (start_ctx == 'sermovox') {// def serving do not need to change the df def response text . if welcome dont came from phone anyway will be : start_ctx == 'sermovox'
-              console.log(' bot webhook : reset stack :res.end called immediately with null fulfill  ');
+              console.log(' bot webhook : reset stack :res.end called immediately with null fulfill  , so let the df  wellcome prompt');
               res.end();// returns null immediately, dont need to change context or answer text, df has alredy set the right way 
               block_bot_answ=true;// discard bot answer 
             } else {
-              if (start_ctx == 'cs') {// cs serving . if we start bot dialog to avoid timeout we anticipate the bot response as a df fulfillment response and manage next intent as df intent that finally will pass to bot x goon with dialog turns 
-                let promptServ = ' puoi procedere chiedendo servizi di prenotazione del tuo centro servizi o farti passare un operatore o uscire ';
+              if (start_ctx == 'cs') {// cs serving . if we start bot dialog to avoid timeout we anticipate the bot triggered thread response as a df fulfillment response and manage next intent as df intent that finally will pass to bot x goon with dialog turns 
+
+
+                let promptServ;
+
+                /*
+                 tipicamente promptServ= 
+                 ' puoi procedere chiedendo servizi di prenotazione del tuo centro servizi ' + // parte che triggera il bot intent/thread/child pronotare
+                 'o farti passare un operatore o uscire ';// parte che triggera intent df 
+
+                */
+               if(startStrat==0)promptServ=fulfilledText;// df provide the full prompt , molto simile a ASWES ma qui si modificano anche i context 
+               else if(startStrat==1){promptServ=fulfilledText;
+               if (start_ctx == 'cs')// sure
+                promptServ+=' o anche chiedere servizi di prenotazione facile prenotare cs'
+               }else if(startStrat==2);// todo
+
+
                 console.log(' bot webhook : reset stack :anticipate bot response immediately, it will set centroservizi outcontex prompting for centroservizi service: ', promptServ,'\n context: ',JSON.stringify(ctx, null, 4));
                 let jsres = respDF([{text:promptServ}], ctx);
                 //  console.log(' bot webhook : intent= ',intent,' ctx= ',ctx,' ctx_out= ',ctx_out,'\n bot called res.json (',jt,') so call res.json( ',resp1,')');
@@ -1280,7 +1311,7 @@ turnscontinue intent : pass text to bot remaining into turns context. till the b
      }}else{
        // ???
      }
-     console.log('wekhook with intent csWhatService:  continue a already started cs bot book dialogue  with endpoint: ',oCtx.parameters.endpoint,', or start cs from beginning  using text: ',text);
+     console.log('wekhook with intent csWhatService:  continue a already started cs bot book dialogue askoperator.parameters.started=',oCtx.parameters.started,'  with endpoint: ',oCtx.parameters.endpoint,', or start cs from beginning  using text: ',text);
     
     }else if(intent=='turnscontinue');// do nothing pass text
     else return;// exit
@@ -1337,14 +1368,14 @@ wserv.post(webhook_uri+'/testend', (req, res) => {
 }// end  df1
 
 function respDF(x,ctx,event){
-  console.log('bot answered:',x)
+  console.log('cfgWebPost received from bot ',x.length,' messages: ', x,'\n now fulfilling using first msg , from askkey ',x[0].key,', text: ',x[0].text);
   let text;
-  text=x[0].text;
+  text=x[0].text;// first msg
   if(text)text=text.replace(/(<.*?>)|(\/n)/g,'');//Regex.Replace(mesage.text,"<.*?>",string.Empty);
   // no: text=text.replace(/(<.*?>)|(\//n)/g,'');
    //text=text.trim().replace(/<.*?>/g,'');// just remove /n and <some>
   let res=response_df1(text,ctx,event);
-  console.log('df fullfil (strip <...> !) answered:',res)
+  console.log('df fulfill  (strip <...> !) answered is:',res)
   return res;
 }
 

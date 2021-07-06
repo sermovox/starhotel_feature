@@ -64,7 +64,7 @@ main def :
 let inter = 7;//4;// interval reset to 6 if gotdate
 const debugL=true,
 tests_3D=3,tests_3H=3,// def number of items in selectors
-EnLoc=false;// enhable location filtering ( a where in a selection )  in find performers. todo debug now is in error
+EnLoc=true;// enhable location filtering ( a where in a selection )  in find performers. todo debug now is in error
 
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
@@ -88,13 +88,16 @@ if(sbServer) SimplyBook = require("simplybook-js-api");// need to set baseurl : 
                                 // so create a new instance of SimplyBook proxy just to create the token . after that from token in .ctl , every SimplyBook proxy instance can obtain the connector : simplyBook.createPublicService(token.data);
 else SimplyBook = require("./simplybook");// need to set baseurl : this.BaseURL = 'https://user-api.simplybook.me' + url in base.service.js
 
-const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
+// const orReg = /\?*,*\.*\s+,*\s*|,|\?/g;// \?*,*\.*\s+,*\s*|,|\?|\.  /\?*,*\.*\s+,*\s*/g;// /\?*,*\.*\s+,*\s*/ig;// 'The quick brown fox jumps over , the lazy? , dog. If the dog reacted, was it really lazy?' >> "The|quick|brown|fox|jumps|over|the|lazy|dog|If|the|dog|reacted|was|it|really|lazy?"
+const orReg = /\?*,*\.*\s+,*\s*|,|\?|\./g,
+orReg1= /(?:\?*,*\.*\s+,*\s*|,|\?|\.|^)(\w+)/g;
+
 
 // see simplyinfoingAiaxCtl.js the global field approach . here prefers to work with rest passed as param in simplybooking(vars, form_whInst,form_wheres, qs, rest)
 // let rest;// got from nlpai.js :
 // nb  rest_ is the (rest.js).jrest  , so     jrest:function(url,method,data,head, urlenc,qs){// data ={prop1:value1,,,}  , the js plain 1 level obj (js map)
 //                                                                                            //  qs, urlenc  are post only param :    if urlenc = true send a    x-www-form-urlencoded body (got from qs or coding  data obj )
-// DEFAULT units discriminators ( used if not found in unitObj.unitpardescr(={keyname1:prompti1,,,,), in this case use gets=()=>):
+// DEFAULT units discriminators ( used if not found in unitObj.meta.keynames(=unitpardescr)={keyname1:prompti1,,,,), in this case use gets=()=>):
 const // all array has a index i  mapping those attributes
 prompti = [], gets = [], keyname = [];// mask=[];will not insert as discriminator the these keys because already whered in the query that give the rows 
 // now list all the keys used to discriminate the query performers rows to build a selection model ( discriminator will add a OR entry  in the pattern to match )
@@ -109,7 +112,7 @@ prompti = [], gets = [], keyname = [];// mask=[];will not insert as discriminato
 prompti.push(' con sede presso '); keyname.push('location');// index i=0, the words user to present the discriminator key/var 
 prompti.push(' provincia di '); keyname.push('provincia');
 prompti.push(' tipo di servizio '); keyname.push('tipologia');// pubblico/ privato 
-gets.push(function (i, query) {// index i . a function used to extract the key value from the entity(row) of the cursor/rows
+gets.push(function (i, query) {// index i . a function used to extract the key value from the entity(row)=query[i] (the unit instance) of the cursor/rows query
     //query[i].name.split
     if (query[i].feature) return query[i].feature.location;
 });
@@ -142,7 +145,7 @@ const canwait = true,// when unit selected i wait for matrix then do alternative
 
 registered={// simplybook registered endpoint api connection data. simplybook library from this info can obtain a token to connect to a simpybook server end point
             // token1 and token2  here means the registration is done on auth servers so now we ask access to api and get a token
-'sermovox_centro-servizi-speciali':['sermovox_centro servizi speciali',
+'sermovox_centro-servizi-speciali':['sermovox_centro-servizi-speciali',
 '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
 'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
 'admin',
@@ -170,7 +173,7 @@ let simplyBook = new SimplyBook(// simplybook std app site: sermovox entry. news
     'luigiDOluigi');
 
 // 建立Auth Service
-let auth = simplyBook.createAuthService();// std auth
+let auth = simplyBook.createAuthService();// std auth > must create a bank in future of auth assocated to its site name !!
 let token;// std token , GTT: better use the token put in .ctl !
 
 /*  27012021
@@ -249,7 +252,7 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     let publicService = simplyBook.createPublicService(token.data);
 
     let unit = await publicService.getUnitList();// use location filtering ? or filter locally using 
-    let unitList = Object.values(unit.data);// toarray
+    let unitList = Object.values(unit.data);//  ctl.unitObj = unit.data   toarray
     console.log('simplybook (req service=', ctl.serviceId, ')full unit list', unitList, ' json obj: ', JSON.stringify(unitList));
     // */
     // build the service query model 
@@ -261,6 +264,17 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
       */
     // put in ctl like ctl.eventObj ( map with integer index )
     ctl.unitObj = unit.data;// {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3
+                    /* + if comes from bookcms 
+                        meta={keynames: //= "unitpardescr"
+                                 {
+                                "location": "presso",
+                                "type": "struttura"
+                                }
+                            }
+                    */
+
+    let unitpardescr;  if(ctl.unitObj.meta)unitpardescr=ctl.unitObj.meta.keynames;
+
     ctl.unitL = unitList;//[{id:'1',,,,,},,,,,]
     let result = unitList;//[{id:'1',,,,,},,,,,]
 
@@ -275,8 +289,10 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     // todo : filter prestatori according with matched service mapping , add some selector description as best match concept and start recovering a datetime to propose and prepare the download of slot matrix 
     let provxServiceL = [],// unit_map array x sel service [{id:'1',,,,,},,,,,] , the array of unit obj serving the service selected
         provxServiceObj = {};// unit_map obj x sel service  {id:{id,feature:perfFeature,,,,},,,,,}// a map of units of selected service with feature loaded from description. the object containing the unit obj serving the selected service
-
-    if (result) {// result is all unit list
+                            // >>>>  praticamente una clone di ctl.unitObj = unit.data con solo gli unit x service selected e senza l'eventuale .meta
+ let provxServiceL_ = [],// prescan (not filtered by location)
+     provxServiceObj_ = {};
+                            if (result) {// result is all unit list
 
         // very like getEvents build a singleturn query model :
 
@@ -286,7 +302,7 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
         // so cloned it :
         let um ;
         if(ctl.eventObj[chservice].unit_map)
-        um= ctl.eventObj[chservice].unit_map;// providerid that serves the service . ? void unit:map, so fill it in provxServiceObj , build also as list provxServiceL          ST4
+        um= ctl.eventObj[chservice].unit_map;// providers ids that serves the service . ? void unit:map, so fill it in provxServiceObj , build also as list provxServiceL          ST4
         // nb in simplybook portal um={1:null,2:null}
         else{// no unit_map , no: can consider all units can do theservice selected or see at el=unit.data[unitid] .event_map or .services
             
@@ -306,12 +322,17 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
             let x, y;
 
             const useUnitpardescr=false;// unitpardescr contains features non embedded on description field
-            if(useUnitpardescr&&ctl.eventObj[chservice].unitpardescr){
+            if(useUnitpardescr&&unitpardescr){
                 // the params are described in this obj. can also described embedded on .description !
-
+                // seems useless
             }
-            if (el) {
-                if (el.description) {// extract featurures embedded in hidden description
+            if (el) {// copy features from parameters build feature (s) from qs in description
+                    // >>>>>  feature will contain keywords/prop/discrim + properties used as context in in template ex .instr
+                if (el.parameters){
+                    el.feature=el.parameters;// copy , 
+                }
+
+                else if (el.description) {// extract features embedded in hidden description if parameters are missing
 
                 x = el.description.indexOf('qs?'); if (x > 0) y = el.description.indexOf('</p>', x);// qs inserted/embedded using : <p hidden=\"\">qs?location=cinisello&amp;type=pubblico</p>
                 if (x > 0 && x < y) {
@@ -332,12 +353,29 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
                     }
                 }
             }
-            // fill with objmap got from qs is is not a filtered row
-            provxServiceObj[unitid] = el;
-                provxServiceL.push(el);// =unit.data filtered with units in um
-            }
-        }
 
+            let insert=true;
+            if(location&&el.feature&&el.feature.location&&el.feature.location!=location)insert=false;
+
+            // fill with objmap got from qs is is not a filtered row
+            if(insert){provxServiceObj[unitid] = el;// should be unitid=el.id
+                provxServiceL.push(el);// =unit.data filtered with units in um
+            }else{provxServiceObj_[unitid] = el;
+                provxServiceL_.push(el);// =unit.data filtered with units in um
+            }
+            }
+
+        }
+            // pass not filtered if filtered are a few
+            if(provxServiceL.length<3)
+            {   let is=0;
+                for(let ij=provxServiceL.length;ij<3;ij++)
+            { if(is<provxServiceL_.length){
+                
+                let el_=provxServiceL_[is++];unitid_=el_.id;
+                provxServiceObj[unitid_]=el_;// should be unitid=el.id
+                provxServiceL.push(el_);// =unit.data filtered with units in um
+            }}}
 
         /*
                 provxServiceL, provxServiceObj={}; can also be downloaded by our server (x selected service) that has the unit data, so in simply book we keep only datatime matrix !!!
@@ -377,15 +415,18 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     
             */
 
-            // find keys in unitObj or use def 
+            // find keyname/prop in unitObj or use def 
             let keyname_, prompti_, gets_;
-            if(ctl.unitObj.unitpardescr){
-                keyname_=[]; prompti_=[]; gets=[];let ii=0;
+            if(unitpardescr){// keyname/prop are defined in unitObj: use it. unit parameters are expected , so dont need them extracted as feature in embedded description qs
+                keyname_=[]; prompti_=[]; gets_=[];let ii=0;
                 gets__=function(prop){
-                   return function(i,query){if (query[i].param) return query[i].param[prop];}
+                   return function(i,query){//  unit=query[i] parameters are expected , so dont need them extracted as .feature in embedded description qs
+                        // nb parameters=features
+                       if (query[i].parameters) return query[i].parameters[prop];}
                 }
-                for(let el in ctl.unitObj.unitpardescr){
-                    keyname_.push(el); prompti_.push(ctl.unitObj.unitpardescr[el]); gets=push(gets__(el));ii++;
+                for(let el in unitpardescr){
+                    keyname_.push(el); prompti_.push(unitpardescr[el]); 
+                    gets_.push(gets__(el));ii++;
                 }
             }else{
                 keyname_=keyname; prompti_=prompti; gets_=gets;// def
@@ -562,18 +603,20 @@ i items sono molti e che si puo filtrarli
 
 }
 
-async function getEvents(sbEPoint_) {// if null use the std endpoint
-    let sbEPoint;
+async function getEvents(sbEPoint_) {// if null use the std endpoint set by last user : VERY DANGEROUS !!!
+    console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_);
+    let sbEPoint;// todo create a bank of current site connection 
     if(sbEPoint_&&registered[sbEPoint_]){// remember to have alredy set all auth servers staff
         // rebuild app conn 
         simplyBook = new SimplyBook(...registered[sbEPoint_]);// reset simplybook instance. nb : GTT if we use simplybook proxy every instance can connect a different site just from token
         //let 062021
         auth = simplyBook.createAuthService();// reset also , its just usefull to build the token at once
         sbEPoint=sbEPoint_;
+        console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_,', set: ',sbEPoint);
 
-    }else sbEPoint='sermovox';// already init
-
-    console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_,', set: ',sbEPoint);
+    }else {sbEPoint='sermovox';// error . use the auth currently set before by previus turn also from different user so NOGOOD !!, probably was sermovox but any user can set its endpoint 
+    console.error(' simplybook getEvents CANT set properly user asked book SITE, application end point, asked: ',sbEPoint_,', so set default/previous turn related site: ',sbEPoint);}
+    
     let // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
     token = await auth.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future (GTT )insert the tokent into .ctl !!!
         (err) => { console.error(' simplybook  on getEvents got ERROR : ', err); });
@@ -614,19 +657,23 @@ if(token){    // goon, no ERROR
     let result = eventList;
     if (result) {
         let query = new QueryM();
+        const stripshort=true;
 
         for (let ij = 0; ij < result.length; ij++) {// build the ahocorasick best match query model on event.name
                                                     // a copy with SSAA
             // if(ctl.eventSt[ctl.serviceId].providers.contains(result[ada].id))
             {
-                let sname = result[ij].name.toLowerCase();
-                // let prompt=sname;
+                let sname = result[ij].name.toLowerCase(),patt;
+                //// let prompt=sname;
                 // const orReg = /\?*,*\.*\s+,*\s*/ig;
-                let patt = sname.replace(orReg, '| ');//patt = sname.replace(orReg, '|');  // @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
-
+                // patt =  '@ ' + sname.replace(orReg, '| ');//patt = sname.replace(orReg, '|');  // @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
                 //if (ij == 0)   patt = '@' + patt;// @ :  ahocorasick
-                    patt = '@ ' +patt;// @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
- 
+                
+                if(stripshort)patt=stripshort_(sname,3);
+                else  patt = '@ '+sname.replace(orReg, '| ');
+
+
+
                 let row = {//query.rows.push({
                     value: sname,// std datetime duck is "2021-01-04T13:00:00.000-08:00"  so take as our def : "2021-01-04T13:00:00"
                     patt: patt,// 
@@ -1232,10 +1279,15 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
 
     function addDays(date, days) {// https://codewithhugo.com/add-date-days-js/. // date= new Date(dateFromAPI="2021-01-04T01:00:00.000+01:00");days=number of days to schift
 
+    // 30062021 WORNING DONT WORK    use setTime, se after 
+
         // use const date = new Date();const newDate = addDays(date, 10);
 
         const copy = new Date(Number(date))
-        copy.setDate(date.getDate() + days)
+        // copy.setDate(date.getDate() + days);
+
+        copy.setTime(date.getTime()+days*86400000);
+
         return copy// Date obj , to get iso do : .....
     }
 
@@ -1748,7 +1800,7 @@ simplybooking
     // old : 
     // let desDateTimeEntityMatch=form.mod_date_des;// form.thenameofentity;
     //  let desBookingDate,desBookingSlot;// calc from desDateTimeEntityMatch !!!!
-    console.log('\n Simplybooking book ctl received form instance where : ', form_whInst,' qs: ',qs);
+    console.log('\n Simplybooking book ctl received form wheres: ',form_wheres,' wheres instance : ', form_whInst,' qs: ',qs);
     // now rest on simplybooking to find available slot on desBookingDate
     // so form_whInst={value,date,time}  ?????
     // calc start(dateFrom,dateTo )
@@ -1769,7 +1821,7 @@ simplybooking
         prefHour, prefHour_,// integer calendar 
         hou;// target hour ??
 
-        // extrack preferred datetime Duck
+        // >>>>    extrack desDtatTime  as preferred datetime Duck, used only in ........
         if (form_whInst && form_whInst.mod_date_des && form_whInst.mod_date_des.value) {// the user select performaer and asked a preferred date 
 
             desDtatTime = form_whInst.mod_date_des.value;// local (+01) but duckling presented as was US local "2016-02-09T00:00:00-08:00" , the new request/desidered  datetime about the query
@@ -3355,7 +3407,7 @@ function dontMHelper() {// dont match
         if (qq && !gotdate) {
             if (qq.ctl.slotMat.bookDays < 3) {
                 inter = 10;// integer
-                qq = await start(curDate,FromDate, inter, ctl);// really we should complete the alredy downloaded (where ?) matrix !
+                qq = await start(curDate,fromDate, inter, ctl);// really we should complete the alredy downloaded (where ?) matrix !
                 /*
                     qq={query:  {,,,// std            
                                 ctl:{                                                                       // the dyn selector model managed by query matcher 
@@ -3371,11 +3423,11 @@ function dontMHelper() {// dont match
 
             if (qq.ctl.slotMat.bookDays < 3) {
                 inter = 30;
-                qq = await start(curDate,FromDate, inter, ctl);
+                qq = await start(curDate,fromDate, inter, ctl);
             }
             if (qq.ctl.slotMat.bookDays < 3) {
                 inter = 90;
-                qq = await start(curDate,FromDate, inter, ctl);
+                qq = await start(curDate,fromDate, inter, ctl);
             }
         }
 
@@ -4190,7 +4242,7 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
         
         */
 
-        let maxKeywordsinName = 3// max key da prendere sul campo name (is multikey) , sure ?
+        let maxKeywordsinName = 4// 3 or 4 , max key da prendere sul campo name (is multikey) , sure ?
             // nextr=4// max list item dimension ,:  limit the items to select to a max of nextr 
             , dvar = keyname.length// numero di where/property  city + province + type the discr var ex: large province sector : the discriminator concept to insert in returning   prompt_,patt,
             // here 
@@ -4213,6 +4265,9 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
                 ni, key = query[i].id;
             function iter(ind, cc) {
                 cc++;//if(cc++>mwords)return ind;
+
+                // >>> be better use orReg1   , to take count of , . ?   so here it is required that provider name are \w separated by \s+
+
                 if ((ni = myn.indexOf(' ', ind)) < 0) return -1; else {
                     if (cc >= mwords) return ni;
                     else return iter(ni + 2, cc);// 'i  frari '  ???? min length= 2 
@@ -4353,15 +4408,16 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
     */names[i] = getname_.key;// full name 
             vname[i] = prompt_[i] = getname_.prompt;// first word 
             let priority = 0;// number of discrimination concept (excluding name keys ) in prompt , will be set in pool position 
-            // patt[i]=prompt_[i].split(/[\s,]+/,3).join('|');//max 3 item anyway,  exclude search ? , exclude length < 3 ?
-            patt[i] = ''; prompt_[i].split(/[\s,]+/, 3).forEach(el => { if (el.length > 2) patt[i] += el + '|'; });
+            // patt[i]=prompt_[i].split(/[\s,]+/,3).join('|');//max 3-4 item anyway,  exclude search ? , exclude length < 3 ?
+            // patt[i] = ''; prompt_[i].split(/[\s,]+/, 3).forEach(el => { if (el.length > 2) patt[i] += el + '|'; });
+            patt[i] = ''; prompt_[i].split(/[\s,]+/, maxKeywordsinName).forEach(el => { if (el.length > 2) patt[i] += el + '|'; });
             if (patt[i]) patt[i] = patt[i].substring(0, patt[i].length - 1);//max 3 item anyway,  exclude search ? , exclude length < 3 ?
             pattt[i] = patt[i];
             if (onec < mdp) need2 = mdp - onec;
             let mycc = 0;
             for (let j = 0; j < dvar && mycc < onec; j++) {// see the key j on item i 
                 if (one[j] >= 0) {
-                    prompt_[i] = prompt_[i] + prompti[j] + values[j][one[j]];// add discr that is present only on this item 
+                    prompt_[i] = prompt_[i] +' '+ prompti[j] +' '+ values[j][one[j]];// add discr that is present only on this item 
                     patt[i] = patt[i] + '|' + values[j][one[j]];
                     mycc++; priority += 2;
                 }
@@ -4524,6 +4580,29 @@ if(!newDesidDaygot){
     console.error('  simplybook: firstReq, got a day in start proc after dedicated if');
 }
 return sc;
+}
+
+function stripshort_(p,lt=3){// lt fixed
+    // const lt=3;
+    p.toLowerCase();
+    //console.log(p.replace(orReg1, '|'));
+    // expected output: "The quick brown fox jumps over the lazy ferret. If the dog reacted, was it really lazy?"
+    var match = orReg1.exec(p);
+    var out='';
+    while (match != null) {
+      // matched text: match[0]
+      // match start: match.index
+      // capturing group n: match[n]
+      if(match[1].length>=lt)out+=match[1]+'| ';
+      //console.log(out)
+      match = orReg1.exec(p);
+    }
+    let result;
+    if(out&&out.length>2)result='@ '+out.substring(0,out.length-2);
+    return result;
+
+
+
 }
 
 /*
