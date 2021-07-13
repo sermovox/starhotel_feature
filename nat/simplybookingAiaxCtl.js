@@ -71,8 +71,8 @@ const querystring=require('querystring');// it is a built in module , need to re
 const nearpol=// 0 is tested 
 0,// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
 // 1;// testing to do 
-//sbServer=true;// use simplybook library to connect registered simplybook endpoint site
-sbServer=false;// use simplybook proxy to connect registered simplybook endpoint site
+sbServer=true;// use simplybook library   to connect registered simplybook endpoint site
+// sbServer=false;//  use simplybook proxy     to connect registered simplybook endpoint site
 let SimplyBook;
 // WARNING ****************************
 // do not call this ctl with different session.simplybook_endpoint if use sbServer=true . the reset of simplybook library will destroy connection info set by previous session
@@ -170,10 +170,12 @@ let simplyBook = new SimplyBook(// simplybook std app site: sermovox entry. news
     '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
     'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
     'admin',
-    'luigiDOluigi');
+    'luigiDOluigi'
+    // better : ...registered.sermovox
+    );
 
 // 建立Auth Service
-let auth = simplyBook.createAuthService();// std auth > must create a bank in future of auth assocated to its site name !!
+let auth ={}; auth.sermovox=simplyBook.createAuthService();// std auth > must create a bank in future of auth assocated to its site name !!
 let token;// std token , GTT: better use the token put in .ctl !
 
 /*  27012021
@@ -603,26 +605,38 @@ i items sono molti e che si puo filtrarli
 
 }
 
-async function getEvents(sbEPoint_) {// if null use the std endpoint set by last user : VERY DANGEROUS !!!
-    console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_);
-    let sbEPoint;// todo create a bank of current site connection 
-    if(sbEPoint_&&registered[sbEPoint_]){// remember to have alredy set all auth servers staff
+async function getEvents(sbEPoint='sermovox') {// if null use the std endpoint set by last user : VERY DANGEROUS !!!
+    if(sbEPoint=='undefined')sbEPoint='sermovox';// nb undefined is a string here !!!
+    console.log(' simplybook getEvents, application end point, asked: ',sbEPoint);
+   // let sbEPoint=sbEPoint_||'sermovox';// todo create a bank of current site connection 
+   let // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
+   token ;
+
+    if(sbEPoint&&registered[sbEPoint]){// remember to have alredy set all auth servers staff
         // rebuild app conn 
-        simplyBook = new SimplyBook(...registered[sbEPoint_]);// reset simplybook instance. nb : GTT if we use simplybook proxy every instance can connect a different site just from token
+        if(!auth[sbEPoint]) {
+            let simplyBook_ = new SimplyBook(...registered[sbEPoint]);// reset simplybook instance. nb : GTT if we use simplybook proxy every instance can connect a different site just from token
         //let 062021
-        auth = simplyBook.createAuthService();// reset also , its just usefull to build the token at once
-        sbEPoint=sbEPoint_;
-        console.log(' simplybook getEvents, application end point, asked: ',sbEPoint_,', set: ',sbEPoint);
-
-    }else {sbEPoint='sermovox';// error . use the auth currently set before by previus turn also from different user so NOGOOD !!, probably was sermovox but any user can set its endpoint 
-    console.error(' simplybook getEvents CANT set properly user asked book SITE, application end point, asked: ',sbEPoint_,', so set default/previous turn related site: ',sbEPoint);}
-    
-    let // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
-    token = await auth.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future (GTT )insert the tokent into .ctl !!!
+        let auth_= auth[sbEPoint]=simplyBook_.createAuthService();// reset also , its just usefull to build the token at next booking transaction/childDialog
+ 
+    // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
+    token = await auth_.getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future (GTT )insert the tokent into .ctl , so we can recover  publicService todo next api call !!!
         (err) => { console.error(' simplybook  on getEvents got ERROR : ', err); });
+        }else{    
+            token=await auth[sbEPoint].getToken().catch(// NOW PUT the token at server scope , so 1 token for all app in server , in future (GTT )insert the tokent into .ctl , so we can recover  publicService todo next api call !!!
+        (err) => { console.error(' simplybook  on getEvents got ERROR : ', err); });
+        }
 
-
+    }else {
+        console.error(' simplybook  on getEvents got ERROR because we cant recover a auth to get the token ');
+        return;// error
+    }
+    //else {sbEPoint='sermovox';// error . use the auth currently set before by previus turn also from different user so NOGOOD !!, probably was sermovox but any user can set its endpoint 
+    //console.error(' simplybook getEvents CANT set properly user asked book SITE, application end point, asked: ',sbEPoint_,', so set default/previous turn related site: ',sbEPoint);}
+   
     
+        console.log(' simplybook getEvents, application end point, asked: ',sbEPoint,' recovered token: ',token);
+
         let event,
         eventList;// toarray
 if(token){    // goon, no ERROR
@@ -745,10 +759,11 @@ if(token){    // goon, no ERROR
         
         // end schema 
         */
-
-        query.ctl = { eventSt: result, eventObj: event.data
+            let ctl=
+        { eventSt: result, eventObj: event.data
         ,token // GTT
         };// {// the ctl event status (service+performer)}
+        query.ctl = ctl;// set ctl here in getEvents()
 
         return query;// {query};// return
 

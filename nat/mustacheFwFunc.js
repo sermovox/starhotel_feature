@@ -876,7 +876,7 @@ function modsOnAsk(script) {// will be used by fwbase.initCmd to set vars.modson
                     name = line.collect.key;// line/step key name
 
                     if(modsOnAsk_[name]){
-                        console.error('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var (askname)  ', name, '.\n WARNING :  DUPLICATED ASK  NAME ');
+                        console.log('** modsOnAsk , in thread ', thread, ' evaluating ask on step ', p, '  with collect var (askname)  ', name, '.\n WARNING :  DUPLICATED ASK  NAME ');
  
 
                     }else{
