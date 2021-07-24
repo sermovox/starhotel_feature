@@ -64,15 +64,16 @@ main def :
 let inter = 7;//4;// interval reset to 6 if gotdate
 const debugL=true,
 tests_3D=3,tests_3H=3,// def number of items in selectors
-EnLoc=true;// enhable location filtering ( a where in a selection )  in find performers. todo debug now is in error
+EnLoc=false;// true;// enhable location filtering ( a where in a selection )  in find performers. todo : debug now is in error
 
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
 const nearpol=// 0 is tested 
-0,// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
+0;// 0 : match hour if >= the prefHour , 1: match hour anyway , take the first >= otherwise the previous . 1 to implement 
 // 1;// testing to do 
-sbServer=true;// use simplybook library   to connect registered simplybook endpoint site
-// sbServer=false;//  use simplybook proxy     to connect registered simplybook endpoint site
+let sbServer=true;// true use simplybook library   to connect registered simplybook endpoint site
+                // false  use simplybook proxy     to connect registered simplybook endpoint site
+if(process.env.book_proxy=='true')sbServer=false;
 let SimplyBook;
 // WARNING ****************************
 // do not call this ctl with different session.simplybook_endpoint if use sbServer=true . the reset of simplybook library will destroy connection info set by previous session
@@ -348,15 +349,16 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
                         // >>>>>  extrapolate feature and put in map :  el.feature={}
 
                     el.feature = qs_;
+                        /* will be done after
                         if (location) if (!(!qs_.location || qs_.location == location)) {// ST44 if qs location exists and different from location model the query where clause , select only specified location , if specified ( as db) 
                             // filter provider by location
                             el = null;
-                        }
+                        }*/
                     }
                 }
             }
 
-            let insert=true;
+            let insert=true;// discard a provider if location is specified in location but dont match
             if(location&&el.feature&&el.feature.location&&el.feature.location!=location)insert=false;
 
             // fill with objmap got from qs is is not a filtered row

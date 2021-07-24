@@ -10,11 +10,24 @@ this ends point can also call directly the bot ( as a fw web adapter module) . b
 
 let querystring=require('querystring');
 // fw config
+
+// cs defaults and constants to resume a prestarted :
 // news : use preStartCSonWELCOME is enougth , delete const textFwCmd=true;// user text='... %%acmd-par; ....'
                                                        // that is used in simplybookingaiaxctl to connect to a registered simplebook endpoint
  const preStartCSonWELCOME=true,// manage bot welcome  prestart in case of start_ctx=='cs'. to extend also to other cases ( sermovox,....)
- start_ctx_ = 'cs',
- cs_endpoint_ = 'sermovox',
+
+ // THIS adapter will config the bot in phone context evaluation using  registered configuration  in  book_ep register, here the defaults  :
+ // - cmd to start start_ctx_, 
+ // - its start param/option,simplybook_st_,  and the 
+ // - book site ,cs_endpoint_. Following the def config : cs
+ // defaults , can be changed by phone context in welcome
+ start_ctx_ = 'cs',// the def registered starting and configuring bot cmd
+ cs_endpoint_ = 'sermovox',// the def book site content end point, set using embeded param
+ simplybook_st_=start_ctx_||{},// the triggered bot cmd config obj param , will be put in vars.start_cx in cms.js at begindialog as option. not set using embedded method
+ start_ = '%%WELCOMECCAI prenota %%simplybook-',// the def starting event got as trigger matching text 
+ buttausertxt = false,// the user cant add text to triggering text
+  botResume= 'ripeti',// cause the replay of triggered prompt ask template
+
 
  startStrat=0;// see  SAWETWG: at wellcom event match:
  /* 0: OOO : lascia df welcome prompt that must have a case of triggering the csWhatService ' ok prenoto' intent that will send to bot a user request that match a ask condition triggering the same intent 
@@ -54,7 +67,7 @@ parseAdminUsers = function(string) {
   var users = {};
   creds.forEach(function(u) {
       var bits = u.split(/\:/);
-      users[bits[0]] = bits[1];
+      users[bits[0]] ={ cfg:bits[1],site:bits[2],cmdopt:bits[3]};
   });
 
   return users;
@@ -559,18 +572,37 @@ else {// df1
     askOpDateTime = "2021-04-04T12:00:00+02:00";// name "date-time" askoperatorC.parameters["date-time"]=askOpDateTime , see AADD 
 
 
+    function setBotCfg(tnum){
+      if(book_ep[tnum]){// reset cfg
+      start_ctx = book_ep[tnum].cfg;//'cs';// serve this enrty with centroservizi outcontext(simplybook prenota std dialog)
+      // in first implementation the fulfillment of df point to a df entry (a df post entry)of a bot.js that uses a simplybook ctl (simplybookingAiaxCtl ) pointing to sermovox simplybook application 
+      //    in future when a channelid/user match the prenota child dialog _book_simple0_v2  
+      // simplyBook = new SimplyBook(// simplybook std app : sermovox entry
+      cs_endpoint = book_ep[tnum].site;
+      simplybook_st= book_ep[tnum].cmdopt;//
+      }
+}
+
     let usranswerPar = {},// ex: param={transferred:'acquisti'} %%transferred-acquisti; use condition: $$%mod_sys:{£&}§1^%%(\w+(?=-))\W(\w+)§tr£^transferred&wait£^transfertwait&miss£^miss
       welcomePar = {},// see phone context, transf_number ("393703522039") ( and caller_id ) parameters to se the outcontext  
 
-      // >>>>>   defined and used only in intent 'Default Welcome Intent'. coming from phone adapter will also insert a flag in centroservizi context (oCtx.parameters.started=='cs') to use when need to start the centroservizi dialog
+
+      // >>>>>>>>>  SEE bot config Reference BCF !!
+      // in the following old config defaults ( named 'cs') now set in book_ep['393703522040']
+      // >>>>>   OLD : defined and used only in intent 'Default Welcome Intent'. coming from phone adapter will also insert a flag in centroservizi context (oCtx.parameters.started=='cs') to use when need to start the centroservizi dialog
       start_ctx = null,// the context to serve user, used when call the bot to insert the name of simplybook entry point (usually in welcome intent ) to load right registered  null will be std datetime
       //    NBNB now centroservizi general book  dialog is available via ccai1 command
       // so, when in requDF1() (see ABAAX ), intent 'csWhatService' comes to start book bot dialog , we can use  flag to see what is the entry point to connect/continueusingfinitialized
       cs_endpoint = cs_endpoint_,// the endpoint registered in book_ep for start_ctx='cs'
+      simplybook_st=simplybook_st_,// 
       isPhone = false,// is phne platform
 
 
       contexts, intent, session;
+
+    if(book_ep['393703522040'])setBotCfg(book_ep['393703522040']);// reset using env def
+
+
     if (req.body.queryResult && req.body.queryResult.intent) intent = req.body.queryResult.intent.displayName;
     if (intent && (contexts = req.body.queryResult.outputContexts)) {// is a df call
       // for(let i=0;i<contexts.length;i++){el=contexts[i];
@@ -635,11 +667,7 @@ else {// df1
                   //  if (welcomePar.transf_number == '393703522039') {
                   if (book_ep[welcomePar.transf_number]) {
                     // AAB
-                    start_ctx = 'cs';// serve this enrty with centroservizi outcontext(simplybook prenota std dialog)
-                    // in first implementation the fulfillment of df point to a df entry (a df post entry)of a bot.js that uses a simplybook ctl (simplybookingAiaxCtl ) pointing to sermovox simplybook application 
-                    //    in future when a channelid/user match the prenota child dialog _book_simple0_v2  
-                    // simplyBook = new SimplyBook(// simplybook std app : sermovox entry
-                    cs_endpoint = book_ep[welcomePar.transf_number];
+                    setBotCfg();
                   }
                 }
               }
@@ -694,6 +722,7 @@ else {// df1
         } else if ((intent == 'bookparam' || intent == 'csWhatService') && ictx && session) {// prepare ctx[] context , we are passing to bot control, so  active context will be turns, 
                                                                                               // set askoperatot life=0 ( no active)
                                                                                               // and ctx_out context is set to be used when end bot  ( next outcontext: askoperator) returning on df control 
+                                                                                              //  passing  to turns  context , ctx_out context is set to be used when end bot  ( next outcontext: askoperator) returning on df control 
                                                                                               // get bot params got in df 
                                                                                               // 
           // ABAA 
@@ -830,8 +859,9 @@ else {// df1
 
         } else if (intent == 'centro') {
 
-          // forza il match di wsWhatService quando il centro e' matchato a sproposito !!! es : Volevo prenotare un controllo generale in provincia di Treviso domani alle 10
+          // forza il match di csWhatService quando il centro e' matchato a sproposito !!! es : Volevo prenotare un controllo generale in provincia di Treviso domani alle 10
           // vedi direttamente in AWSS
+          // todo : match esteso x csWhatService , se match torna il fulfillment  settando event csWhatService  , senza chiamare il bot !
 
         } else {
           // manage other intents if needed 
@@ -848,7 +878,7 @@ else {// df1
         if (intent != 'centro') req.body = requDF1(req.body, usranswerPar, session, intent);// reset req body with bot request x the intents AA
         else req.body = null;
         // >>> now SEND REQ To Bot AND RETURN FULFILLMENT (usualy send to bot then send fulfillment but not in welcome intent can be done)
-        if (req.body) console.log('webhook has something to send to bot :', req.body.text);
+        if (req.body) console.log('webhook has something to send to bot :', req.body);
         else console.log('webhook will not send anything to bot');
 
 
@@ -898,7 +928,7 @@ else {// df1
 
 
               res.end();// returns null immediately, dont need to change context or answer text, df has alredy set the right way 
-              block_bot_answ = true;// discard bot answer 
+              block_bot_answ = true;// discard bot answer if we pass to bot the turn
             } else {
               if (start_ctx == 'cs') {// cs serving . if we start bot dialog to avoid timeout we anticipate the bot triggered thread response as a df fulfillment response and manage next intent as df intent that finally will pass to bot x goon with dialog turns 
 
@@ -911,7 +941,7 @@ else {// df1
                  'o farti passare un operatore o uscire ';// parte che triggera intent df 
 
                 */
-                if (startStrat == 0) promptServ = fulfilledText;// df provide the full prompt , molto simile a ASWES ma qui si modificano anche i context ?
+                if (startStrat == 0) promptServ = fulfilledText;// df welcome prompt intent is not changed  , molto simile a ASWES ma qui si modificano anche i context ?
                 else if (startStrat == 1) {
                   promptServ = fulfilledText;
                   if (start_ctx == 'cs')// sure
@@ -919,7 +949,7 @@ else {// df1
                 } else if (startStrat == 2);// todo
 
 
-                console.log('  cfgWebPost ,  PRESTART of bot for Welcome intent, start_ctx =cs  . bot webhook : reset stack :anticipate bot response immediately, it will set centroservizi outcontex prompting for centroservizi service: ', promptServ, '\n context: ', JSON.stringify(ctx, null, 4));
+                console.log('  cfgWebPost ,  PRESTART of bot for Welcome intent, start_ctx =cs  . bot webhook : reset stack :this adapter will update/substitute/add  the Welcome PROMPT immediately (it will add/update centroservizi outcontex prompting for centroservizi bot service): ', promptServ, '\n context: ', JSON.stringify(ctx, null, 4));
                 let jsres = respDF([{ text: promptServ }], ctx);
                 //  console.log(' bot webhook : intent= ',intent,' ctx= ',ctx,' ctx_out= ',ctx_out,'\n bot called res.json (',jt,') so call res.json( ',resp1,')');
                 res.json(jsres);// respond without wait bot
@@ -928,7 +958,7 @@ else {// df1
               }
 
             }
-            block_bot_answ = true;// discard bot answer again !!!!!
+            block_bot_answ = true;// discard bot answer again !!!!! currently the bot answer will not build fulfillment
           }
           // >>> ENDs  manage the PRESTART 
 
@@ -1248,9 +1278,11 @@ else {// df1
 
 
     function requDF1(x, param, convoId = 'xyz1', intent) {// setta il request x bot in funzione di text e contexts
-                                                          // puo calcolare text_matching/entity/param addizioninali che non sono provided da df/phone context 
+                                                          // puo calcolare text_matching/entity/param addizionali che non sono provided da df/phone context 
                                                           //    il principale,  per welcome intent , e' start_ctx :
                                                           //        definisce, al welcome intent time, il bot starting point/as , its text trigger/event and its 'modality'
+                                                          //                  > see book_ep, preStartCSonWELCOME,start_ctx_ ,cs_endpoint_ = 'sermovox',
+
                                                           //        start_ctx will define modality start filling oCtx = askoperatorC context that will be used 
                                                           //            to calc the trigger/start text 
                                                           //                  ex in cs text=
@@ -1258,16 +1290,28 @@ else {// df1
                                                           //            - welcome intent itself   and later in df intent 'csWhatService' resumed using user text (goon mode available) or 'ripeti' )  or 
                                                           //             - later in df intent 'csWhatService' 
                                                           //  returning from requDF1 we know:
-                                                          //    - if welcome intent :the trigger bot sequence for the bot  dialog (text in user turns current and following )can add more matching steps) 
+                                                          //    - if welcome intent :the trigger bot sequence for the bot  dialog (text in current and following turns can add more matching steps) 
                                                           //          in askoperatorC  !
                                                           //    - return res = { user: convoId, text, type: "message" }; the input for bot request that will be processed ()at its return to calc fulfill  
 
-                                                          //    - after set .body=res , check if here we can set the DF fulfillment for the case bot is not requested (welcome intent + centro intent)
+                                                          //    - after set .body=res , check if here we can set the DF fulfillment 
+                                                          //          in the case bot is not passed (welcome intent with usually a void req.body =equDF1()  + centro intent)
                                                           //          fulfillment are updates on text and context due to additional (to DF) matching login here in cfgWebPost
                                                           //    - goon with bot request and its returns process to calc DF fulfillment 
 
-      /*   01072021  >>>>>>>> REVIEW di cfgWebPost sul  wellcome intent ,  see PRE0 slide
 
+                                                          // NBNB  only cs case is updated , sermovox is to review !!!!!!!!!!!!!!!
+
+      /*   01072021  BCF   reference
+             THIS adapter will config the bot in phone context evaluation using  registered configuration  in  book_ep register set in parseAdminUsers(), 
+             if this adapter is called by df fulfillment with out phone context here we use the default entry using the 'cs' config in the defaults book_ep entry   :
+        >>>>>>>> REVIEW di cfgWebPost sul  welcome intent ,  see PRE0 slide
+ 
+        NBNB  if the bot dialogs must understood the msg event param we use here () and embedded param we use here to configure .
+              if the bot is started by another adapter , 
+                  the command here configurated can be configured  injecting using tetx embedded param( here are : %%WELCOMECCAI and %%simplybook)
+ 
+        in case we start the bot using a different adapter usually we can cfonfig the bot using the  embedded param we use here :
 
           // >>>>>  welcome intent phase 1 : 
 
@@ -1277,11 +1321,29 @@ else {// df1
 		- cs_endpoint (the booksite to start ( will be set in askoperator params then in user session when bot is triggered ( csWhatService ) starts ))
 		- set ctx, the context update to expone :
 			askoperator, the bialog flow intent o run after welcome 
-			centroservizi, the bot trigger with the cmd/subcmd/thread to start 
+      centroservizi for csWhatService / datetime for sermovox, the bot trigger with the cmd/subcmd/thread to start 
+      
+      
+
+
+
 
   	// >>>>>  requDF1, phase 2 : 
 
-		- pre lancia il bot in base a  start_ctx e cs_endpoint 
+
+     - pre lancia il bot in base a  start_ctx e cs_endpoint (ex: '%%WELCOMECCAI prenota %%simplybook-sermovox_centro-servizi-speciali;')
+     
+  		inoltre setta il cfg start param del cmd father triggered (%%WELCOMECCAI) using stad embedded technique (%%WELCOMECCAI-$simplybook_st;) or adding event param to message .start_ctx=$simplybook_st
+      botworker at begin dialog  ( see cms.js) will add start_ctx as starting param (vars.start_ctx=$simplybook_st) x the triggered base father cmd %%WELCOMECCAI
+      
+
+      old note :
+                **OO** 3rd level of bot customization starting from phone adapter: todo  
+          %%start_cs-cs;>> buttato  ( in ........... convo.begindialog copy activity..stropn? ) to :  vars.start_cs (!=vars.session.simplybook_endpoint che e' simile ma si riferisce di piu al content del site e non è un parametro di config del bot
+                NB decidersi vars.session  or vars. for simplybook_endpoint / start_cs
+              puntato da start_ctx) che potrebbe essere usato nei template dei dialoghi sotto il dialog entry puntato da start_ctx_
+              >> quindi potrei avere una famiglio di start_ctx_=cs_1/2/3 che puntano sempre al '%%WELCOMECCAI con template che pero testano il start_ctx_  
+        
 
   	// >>>>>  after, phase 3 : 
 
@@ -1401,7 +1463,7 @@ else {// df1
 
 
       //const start_='%%WELCOMECCAI prenota %%simplybook-sermovox; ';//' cs case: centro servizi prenota %%simplybook-sermovox; ';// change sermvox with the right endpoint 
-      let start_ = '%%WELCOMECCAI prenota %%simplybook-';//' cs case: 'CmdTriggering + %%simplybook-sermovox; ';// %%simplybook : is put in session by the cmd started, change sermvox with the right endpoint 
+      //let start_ = '%%WELCOMECCAI prenota %%simplybook-';//' cs case: 'CmdTriggering + %%simplybook-sermovox; ';// %%simplybook : is put in session by the cmd started, change sermvox with the right endpoint 
 
       if (intent == 'Default Welcome Intent') {// init bot serving some serving context  // will set the book endpoint if comes from phone
         // AAAA, AAAAX
@@ -1429,7 +1491,10 @@ else {// df1
 
         } else if (start_ctx == 'cs') {//set  ctx to set  the app/ctx the user is tied to run if in future csWhatService will be matched
           // no dynCmd , the bot cmd to run is fixed and here mapped by start_
-          start = start_ += cs_endpoint + ';';//' cs case: cs_endpoint is set properly , use it
+
+          // yes  dynCmd  is responsability of user to set the trigger to entry bot dialog 
+          if (dynCmd) start = text;else
+          start = start_ + cs_endpoint + ';';//' cs case: cs_endpoint is set properly , use it
           //start=start_;// sermovox or ...., prenota intent (thread book_simple) has sess_bookapp entity that will be match with 'sermovox' and will set session.simplybook_endpoint
           // that is used in simplybookingaiaxctl to connect to a registered simplebook endpoint
 
@@ -1490,7 +1555,8 @@ else {// df1
               else;// user text  try goon on bot thread    
             } else {
               // start from reset TODO   text='%%resetDial-xx; '+ ....
-              start = start_ += oCtx.parameters.endpoint + ';';//' cs case: cs_endpoint is set properly , use it
+              start = start_+ oCtx.parameters.endpoint + '; ';//' cs case: cs_endpoint is set properly , use it
+              if(buttausertxt)start += text;
             }
 
           } else if (oCtx.parameters.started == 'sermovox') {// istruzioni per entrare nel bot cmd associato a 'sermovox' 
@@ -1500,9 +1566,9 @@ else {// df1
             let dynCmd = false;// let welcome text to set the starting cmd via text 
             if (!isPhone && text.indexOf('%%') >= 0) dynCmd = true;
 
-            const buttausertxt = false;// parti comunque da un repeat non usare user text per procedere con il dialogo , siamo rientrati e vogliamo ripartire dal primo/secondo prompt    
+          //  const buttausertxt = false;// parti comunque da un repeat non usare user text per procedere con il dialogo , siamo rientrati e vogliamo ripartire dal primo/secondo prompt    
             if (oCtx.parameters.isstarted) {
-              if (buttausertxt) text = 'ripeti';// bot convo waiting in right intent to continue the dialog , just repeat its prompt (really is not the same that start prompt but we must prestart the dialog for timing issues)
+              if (buttausertxt) text = botResume;// botResume, bot convo waiting in right intent to continue the dialog , just repeat its prompt (really is not the same that start prompt but we must prestart the dialog for timing issues)
               else {
                 ;// user text  try goon on bot thread  from the started thread in welcome intent 
 
@@ -1523,18 +1589,35 @@ else {// df1
 
 
             // no info about a prestarted bot so start a bot seeing to current text and context parameters / entities
-            start_ += oCtx.parameters.endpoint + ';';//=cs_endpoint=cs_endpoint
-            text = '%%resetDial-xx; ' + start_;// sermovox bot can be prestarted so reset dialogs
+            //start_ += oCtx.parameters.endpoint + ';';//=cs_endpoint=cs_endpoint
+            text = '%%resetDial-xx; ' + start_ + oCtx.parameters.endpoint + ';';// sermovox bot can be prestarted so reset dialogs
           }
         } else {
           // ???
         }
+
+        if(debuglog){
+          if (oCtx.parameters.isstarted) {
+
+        console.log('wekhook with intent csWhatService:  continue a already started directive start_ctx(=cs)  bot book dialogue askoperator.parameters.started=', oCtx.parameters.started, '  with endpoint: ', oCtx.parameters.endpoint, ',using also user text: ',buttausertxt,' ,so  text x bot is: ', text);
+
+          }
+          else{
+
+            console.log('wekhook with intent csWhatService:  start directive start_ctx(=cs) from beginning   bot book dialogue askoperator.parameters.started=', oCtx.parameters.started, '  with endpoint: ', oCtx.parameters.endpoint,  ',adding to start_cs triggering text current user text: ',buttausertxt,' ,so  text x bot is: ', text);
+
+          }
+            
+        }
+
+
+
         console.log('wekhook with intent csWhatService:  continue a already started cs bot book dialogue askoperator.parameters.started=', oCtx.parameters.started, '  with endpoint: ', oCtx.parameters.endpoint, ', or start cs from beginning  using text: ', text);
 
       } else if (intent == 'turnscontinue');// do nothing pass text
       else return;// exit
 
-      res = { user: convoId, text, type: "message" };
+      res = { user: convoId, text, type: "message",start_ctx:simplybook_st };
       return res;
     }
 
@@ -1585,7 +1668,7 @@ wserv.post(webhook_uri+'/testend', (req, res) => {
 
 }// end  df1
 
-function respDF(x,ctx,event){
+function respDF(x,ctx,event){// set df fulfillment response
   console.log('cfgWebPost returning fulfillment',x.length,' messages: ', x,'\n now fulfilling using cfgWebPost   PRESTART fullfillment prompt for Welcome intent, \n OR the bot first response msg , from askkey ',x[0].key,', \n text: ',x[0].text);
   let text;
   text=x[0].text;// first msg
