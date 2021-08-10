@@ -38,6 +38,8 @@ if (http_) {
     // Create HTTP server
    //  this.addDep('webserver');
     let webserver = express();
+    //this.webserver.use('/x', express.static('/home/luigi/localdev/starhotel_feature'+  '/public'));// dont work
+    webserver.use(express.static(__dirname + '/../public'));
     // capture raw body
     webserver.use((req, res, next) => {
         req.rawBody = '';

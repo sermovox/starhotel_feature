@@ -17,19 +17,17 @@ let querystring=require('querystring');
  const preStartCSonWELCOME=true,// manage bot welcome  prestart in case of start_ctx=='cs'. to extend also to other cases ( sermovox,....)
 
  // THIS adapter will config the bot in phone context evaluation using  registered configuration  in  book_ep register, here the defaults  :
- // - cmd to start start_ctx_, 
+ // - the procedure to follow ( pointing to a bot cmd to start) start_ctx_, 
  // - its start param/option,simplybook_st_,  and the 
  // - book site ,cs_endpoint_. Following the def config : cs
  // defaults , can be changed by phone context in welcome
  start_ctx_ = 'cs',// the def registered starting and configuring bot cmd
  cs_endpoint_ = 'sermovox',// the def book site content end point, set using embeded param
- simplybook_st_=start_ctx_||{},// the triggered bot cmd config obj param , will be put in vars.start_cx in cms.js at begindialog as option. not set using embedded method
+ simplybook_st_=start_ctx_||{},// the triggered bot cmd config obj param ,will be added as msg property so will be put in vars.start_cx in cms.js at begindialog as option. not set using embedded method
  start_ = '%%WELCOMECCAI prenota %%simplybook-',// the def starting event got as trigger matching text 
  buttausertxt = false,// the user cant add text to triggering text
-  botResume= 'ripeti',// cause the replay of triggered prompt ask template
-
-
- startStrat=0;// see  SAWETWG: at wellcom event match:
+  botResume= 'ripeti';// cause the replay of triggered prompt ask template
+let  startStrat=0;// see  SAWETWG: at wellcom event match:
  /* 0: OOO : lascia df welcome prompt that must have a case of triggering the csWhatService ' ok prenoto' intent that will send to bot a user request that match a ask condition triggering the same intent 
           so the bot respond to the same intent (in altre parole bot intent process the df matched same intent with a right answer )
 
@@ -116,12 +114,15 @@ wserv.get('/someuri', (req, res) => {
     const urlparams=req.params;
     let myjson=JSON.stringify(req.body);
     console.log('cfgWebPost phone receved .../phone req.body : ',myjson,' with params: ',urlparams);
-    let event,contexts,text='',customParams;
+    let event,contexts,text='',
+    customParams; // ??????????????????????  see AQHG
+
     if (req.body.queryInput && req.body.queryInput.text) text=req.body.queryInput.text.text;// usually null if !event
     if (req.body.queryInput && req.body.queryInput.event) event=req.body.queryInput.event;// {name,parameters={}}
   
     if (req.body.contexts) contexts=req.body.contexts;//['a','c']
-    // if (req.body.customParams) customParams=req.body.customParams;// a map, future use 
+
+    // if (req.body.customParams) customParams=req.body.customParams;// a map, future use   AQHG
 
 
     const res_json = res.json, res_end = res.end;// store original express res cb 
@@ -572,19 +573,21 @@ else {// df1
     askOpDateTime = "2021-04-04T12:00:00+02:00";// name "date-time" askoperatorC.parameters["date-time"]=askOpDateTime , see AADD 
 
 
-    function setBotCfg(tnum){
+    function setBotCfg(tnum,cid){
       if(book_ep[tnum]){// reset cfg
       start_ctx = book_ep[tnum].cfg;//'cs';// serve this enrty with centroservizi outcontext(simplybook prenota std dialog)
       // in first implementation the fulfillment of df point to a df entry (a df post entry)of a bot.js that uses a simplybook ctl (simplybookingAiaxCtl ) pointing to sermovox simplybook application 
       //    in future when a channelid/user match the prenota child dialog _book_simple0_v2  
       // simplyBook = new SimplyBook(// simplybook std app : sermovox entry
       cs_endpoint = book_ep[tnum].site;
+      if(book_ep[tnum].cmdopt){
       simplybook_st= book_ep[tnum].cmdopt;//
-      }
+      if(cid&&simplybook_st.substring(0,2)=='qs'&cid)simplybook_st+='&callerId='+cid;// if qs add callerId at run time
+      }}
 }
 
     let usranswerPar = {},// ex: param={transferred:'acquisti'} %%transferred-acquisti; use condition: $$%mod_sys:{£&}§1^%%(\w+(?=-))\W(\w+)§tr£^transferred&wait£^transfertwait&miss£^miss
-      welcomePar = {},// see phone context, transf_number ("393703522039") ( and caller_id ) parameters to se the outcontext  
+      welcomePar = {},// see phone context, transf_number ("393703522039") ( and caller_id ) parameters to set the outcontext  
 
 
       // >>>>>>>>>  SEE bot config Reference BCF !!
@@ -600,7 +603,24 @@ else {// df1
 
       contexts, intent, session;
 
-    if(book_ep['393703522040'])setBotCfg(book_ep['393703522040']);// reset using env def
+    if(book_ep['webinterface'])setBotCfg(book_ep['webinterface']);// reset using env def
+
+
+
+    // MAIN LOGIC
+    // ML-A : per i intent rilevanti estrae e updata i context sets 
+    //    (uno ctx per turns continue 
+    //    l'altro ctx_out per bot exit, in realtà alternativo a settare un return event) 
+    //    che verra associato al bot answere  dopo  tornare + setta una versione 
+    // ML-B : now SET req  to start/continue bot turns(processActivity), then 
+    // ML-C : PRESTART of bot for Welcome intent (respond fulfillmet without wait for bot returns for timeout problems
+    // ML-D : according with bot response returns fulfillment with the right ctx 
+
+
+
+
+
+    // ML-A : 
 
 
     if (req.body.queryResult && req.body.queryResult.intent) intent = req.body.queryResult.intent.displayName;
@@ -616,7 +636,9 @@ else {// df1
         //let start_ctx = null,// the context to serve user, null will be std datetime
         csPresent = false;// useless , centroserviziC its enougth
 
+        // ML-A : 
          // >>>>>>>>>>>>>>   get fulfillment context ctx ( and array of ctx name ctxName ) and ctx_out from relevant intent ctx and ctx_out 
+
         if (intent == 'Default Welcome Intent') {// welcome intent: start building ( get all context in ctx[]) the right context to goon 
                                                 // set askoperator lfe =1 (askopeator will be active anyway in next turn)
                                                 // set start_ctx, cs_endpoint in case of phone interface, they will modify the context gathered 
@@ -645,7 +667,7 @@ else {// df1
 
           // >>>>>  welcome intent phase 1 : set  start_ctx  ( the bot cmd/subcmd/thread to start) and   cs_endpoint (the booksite to start ( will be set in askoperator params then in user session when bot is triggered ( csWhatService ) starts ))
 
-          start_ctx = start_ctx_;// default cmd to start 
+          start_ctx = start_ctx_;// procedura da seguire , implica anche il default cmd to start 
           //start_ctx = 'sermovox';// debug reset the default serving ctx , is the most slow app , reset if other will be match
           // start_ctx = 'serm';// debug reset the default serving ctx 
 
@@ -667,7 +689,15 @@ else {// df1
                   //  if (welcomePar.transf_number == '393703522039') {
                   if (book_ep[welcomePar.transf_number]) {
                     // AAB
-                    setBotCfg();
+                    setBotCfg(el.parameters.transf_number,el.parameters.caller_id);
+                  }
+                }else if(el.parameters.caller_id){
+                  welcomePar.transf_number = el.parameters.caller_id;// >>> 
+                  welcomePar.caller_id = el.parameters.caller_id;// merged in msg.user too
+                  //  if (welcomePar.transf_number == '393703522039') {
+                  if (book_ep[welcomePar.transf_number]) {
+                    // AAB
+                    setBotCfg(el.parameters.caller_id,el.parameters.caller_id);
                   }
                 }
               }
@@ -873,16 +903,23 @@ else {// df1
         console.log(' ctx_out[] is also calculated : ',!!ctx_out,' (used in case the bot will end its dialog and pass to df again )');
         //console.log('webhook debug request body: ',req.body);
         // req.body : see df_trace_request_json.txt
+
+
+
         // >>>> HAVING PREPARED THE context to use (ctx and ctx_out) now SET REQ  to start/continue bot turns(processActivity), then according with bot response returns fulfillment with the right ctx 
+
+
+    // ML-B : now SET req  to start/continue bot turns(processActivity), 
+
         let fulfilledText = req.body.queryResult.fulfillmentText;
-        if (intent != 'centro') req.body = requDF1(req.body, usranswerPar, session, intent);// reset req body with bot request x the intents AA
+        if (intent != 'centro') req.body = requDF1(req.body, cid+usranswerPar, session, intent,welcomePar.caller_id);// reset req body with bot request x the intents AA
         else req.body = null;
         // >>> now SEND REQ To Bot AND RETURN FULFILLMENT (usualy send to bot then send fulfillment but not in welcome intent can be done)
         if (req.body) console.log('webhook has something to send to bot :', req.body);
         else console.log('webhook will not send anything to bot');
 
 
-
+        //  ML-C : PRESTART of bot for Welcome intent (respond fulfillmet without wait for bot returns for timeout problems
         // >>> now here manage the PRESTART of bot for Welcome intent (respond fulfillmet without wait for bot returns for timeout problems) 
         //    or the fulfillment without run the bot ( in centro ) 
 
@@ -941,20 +978,34 @@ else {// df1
                  'o farti passare un operatore o uscire ';// parte che triggera intent df 
 
                 */
+
+                 
+
+                 if(!preStartCSonWELCOME&&simplybook_st&&simplybook_st.substring(0,23)=='%%embed_qs_parrucchieri'){//     if (preStartCSonWELCOME) ){
+                  // second level of customization change cs procedure x this custom case qs_parrucchieri
+                  startStrat=2; 
+                 }
+
+                 if (startStrat == 2)// let the bot to forward the prompt that will set the df and df bot transfer ( tied to csWhatService intent ) intents prompt
+                 //  csWhatService will get all bot intents to trigger !
+                   {
+                    // goon as usual return the bot prompt
+                   }else{// fulfill using df prompt + here calculated prompt 
+
                 if (startStrat == 0) promptServ = fulfilledText;// df welcome prompt intent is not changed  , molto simile a ASWES ma qui si modificano anche i context ?
                 else if (startStrat == 1) {
                   promptServ = fulfilledText;
                   if (start_ctx == 'cs')// sure
                     promptServ += ' o anche chiedere servizi di prenotazione facile prenotare cs'
-                } else if (startStrat == 2);// todo
-
+                } 
 
                 console.log('  cfgWebPost ,  PRESTART of bot for Welcome intent, start_ctx =cs  . bot webhook : reset stack :this adapter will update/substitute/add  the Welcome PROMPT immediately (it will add/update centroservizi outcontex prompting for centroservizi bot service): ', promptServ, '\n context: ', JSON.stringify(ctx, null, 4));
                 let jsres = respDF([{ text: promptServ }], ctx);
                 //  console.log(' bot webhook : intent= ',intent,' ctx= ',ctx,' ctx_out= ',ctx_out,'\n bot called res.json (',jt,') so call res.json( ',resp1,')');
                 res.json(jsres);// respond without wait bot
                 res.end();// returns immediately
-                block_bot_answ = true;// discard bot answer 
+                block_bot_answ = true;// discard bot answer in case we prestart the bot 
+              }
               }
 
             }
@@ -980,11 +1031,14 @@ else {// df1
         const res_json = res.json, res_end = res.end;// store original express res cb 
 
         res.json = res_json_; res.end = res_end_;// set response cb to get and control  bot answer with res_json and res.end = res_end_
+
+
         // >>> now here CALL BOT OR single turn CTL and returs to DF if not alredy done according with modified res.json(), 2 cases: 
         const singleturn = false;
         if (!singleturn)// launch bot fw (if res() is alredy sent/called  the bot answer will be discarded )
         {
-          ctl.adapter.processActivity(req, res, ctl.handleTurn.bind(ctl)).catch((err) => {// a promise.catch()
+          ctl.adapter.processActivity(req, res, ctl.handleTurn.bind(ctl))// will return using res.....  cb
+          .catch((err) => {// a promise.catch()
             // nb il adapter middleware ritorna ( e manda la risposta del bot ) quando handleTurn si risolve 
             // todo: expose this as a global error handler?
             console.error('Experienced an error inside the turn handler', err);
@@ -1002,6 +1056,11 @@ else {// df1
 
           } else res.end();// returns null immediately
         }
+
+
+
+
+            // ML-D : according with bot response returns fulfillment with the right ctx 
 
         // local functions:
         function res_json_(jt) {// see requDF1()
@@ -1082,13 +1141,14 @@ else {// df1
                     parm.performer = jt[prompted].performer;
                     parm.datetime = jt[prompted].datetime;
                     console.log(' bot webhook : on turn msg n# ', y, ' detected event field .df_exit of value: ', eventTr, ' with param: ', parm);
+                  // }if (eventTr == 'interrupted') {event=2;
                   } else event = 0;// fail
                 }
 
                 console.log(' bot webhook : received event as channelData field .df_exit of value: ', eventTr, ' bot response to turnscontinue intent, there are (many) messages, the number is: ', jt.length);
-                if (embed && event < 0)// search in embedded
+ 
+                if (embed && event < 0)// alternatively search in embedded
                 {
-
                   if ((iu = text.indexOf('%%df_exit-')) >= 0) {
                     ii = text.substring(iu + 7).indexOf(';');
                     if (ii > 0) qs = text.substring(iu + 7, iu + 7 + ii);
@@ -1277,7 +1337,7 @@ else {// df1
 
 
 
-    function requDF1(x, param, convoId = 'xyz1', intent) {// setta il request x bot in funzione di text e contexts
+    function requDF1(x, param, convoId = 'xyz1', intent,caller_id) {// setta il request x bot in funzione di text e contexts
                                                           // puo calcolare text_matching/entity/param addizionali che non sono provided da df/phone context 
                                                           //    il principale,  per welcome intent , e' start_ctx :
                                                           //        definisce, al welcome intent time, il bot starting point/as , its text trigger/event and its 'modality'
@@ -1332,10 +1392,15 @@ else {// df1
 
 
      - pre lancia il bot in base a  start_ctx e cs_endpoint (ex: '%%WELCOMECCAI prenota %%simplybook-sermovox_centro-servizi-speciali;')
-     
-  		inoltre setta il cfg start param del cmd father triggered (%%WELCOMECCAI) using stad embedded technique (%%WELCOMECCAI-$simplybook_st;) or adding event param to message .start_ctx=$simplybook_st
-      botworker at begin dialog  ( see cms.js) will add start_ctx as starting param (vars.start_ctx=$simplybook_st) x the triggered base father cmd %%WELCOMECCAI
-      
+      				cosi avro disponibile il param in vars. session ( lo posso usare nei template e in simplybookingAiaxCtl.js
+     					  {{#mustacheF.out}}$$if&vars.session.simplybook_endpoint&==&sermovox_centro-servizi-speciali&
+         
+
+      inoltre setta il cfg start param del cmd father triggered (%%WELCOMECCAI) adding (event) start_ctx param to message ={text,user,start_ctx:$simplybook_st,,,}
+  				nb eventually can also using stad embedded technique (%%WELCOMECCAI-$simplybook_st;) 
+      botworker at begin dialog  ( see cms.js as done for every msg attributes) will add start_ctx as starting param (vars.start_ctx=$simplybook_st) x the triggered base father cmd %%WELCOMECCAI
+      				cosi avro disponibile il param in vars. session ( lo posso usare nei template e in simplybookingAiaxCtl.js :
+      					{{#mustacheF.out}}$$if&vars.start_ctx&==&cs&
 
       old note :
                 **OO** 3rd level of bot customization starting from phone adapter: todo  
@@ -1453,6 +1518,9 @@ else {// df1
       //              if so the bot is already prestarted so goon and pass text or 'repeat' to bot 
       //              if no (def service dont require to reset the context and its param in welcome intent ! )we suppose that sermovox bot is anyway started (preStartCSonWELCOME), so restart bot to pouint to the right intent 
 
+
+      if(caller_id)convoId='cid:'+welcomePar.caller_id+'-'+convoId;// add cli id in user
+
       console.log('requDF1 , intent: ', intent, ' run with: ', x, param, convoId, '\n botCmd/start_ctx is: ', start_ctx, ' prelaunch bot at welcome is set: ', preStartCSonWELCOME);
       const oCtx = askoperatorC;// centroserviziC
       let text, start, keys = Object.keys(param), res = null,
@@ -1475,7 +1543,8 @@ else {// df1
         if (!isPhone && text.indexOf('%%') >= 0) dynCmd = true;
 
 
-        if (start_ctx == 'sermovox') {// set text to start the associated bot cmd (sermovox > 'centro servizi prenota servizio di controllo') examine ctx to discover the app/ctx the user is tied to run 
+        if (start_ctx == 'sermovox') {// old , to review like 'cs' . 
+                                    // set text to start the associated bot cmd (sermovox > 'centro servizi prenota servizio di controllo') examine ctx to discover the app/ctx the user is tied to run 
           if (dynCmd) start = text;// ciao ... set the cmd to start // usually the cmd will be continued in csWhatService with a ripeti / reply !!!
           else start = ' centro servizi prenota servizio controllo ';// mancando  %%simplybook-xxx; il site sarà sermovox( default simplybook sermovox app (vaccino ), datetime context start='';
           if (oCtx) {
@@ -1492,15 +1561,31 @@ else {// df1
         } else if (start_ctx == 'cs') {//set  ctx to set  the app/ctx the user is tied to run if in future csWhatService will be matched
           // no dynCmd , the bot cmd to run is fixed and here mapped by start_
 
+
+
+
+          if(!preStartCSonWELCOME&&simplybook_st&&simplybook_st.substring(0,23)=='%%embed_qs_parrucchieri'){//     if (preStartCSonWELCOME) ){
+            // second level of customization change cs procedure x this custom case qs_parrucchieri
+            // set text to trigger the cmd cid:clientId that will give the right prompt x customer 
+            start='%%cid:'+caller_id;//
+          }else{
           // yes  dynCmd  is responsability of user to set the trigger to entry bot dialog 
           if (dynCmd) start = text;else
           start = start_ + cs_endpoint + ';';//' cs case: cs_endpoint is set properly , use it
           //start=start_;// sermovox or ...., prenota intent (thread book_simple) has sess_bookapp entity that will be match with 'sermovox' and will set session.simplybook_endpoint
           // that is used in simplybookingaiaxctl to connect to a registered simplebook endpoint
 
+          start+=' '+simplybook_st;// embed dyn option for bot 
+
+        }
+
+
+          // put welcome param to context to find it later in other intent to goon with bot 
           if (!oCtx.lifespanCount) oCtx.lifespanCount = 1;
           oCtx.parameters = oCtx.parameters || {};
           oCtx.parameters.endpoint = cs_endpoint;//this flag mean that cs has activated on welcome intent thanks to a phone param 
+          oCtx.parameters.simplybook_st=simplybook_st;// can have clientId too
+          
           // so when the cs intent csWhatService matches we know to continue a alredy started turn !! see requDF1
           if (oCtx) {
             oCtx.parameters.started = start_ctx;// this flag mean that cs has activated on welcome ntent thanks to a phone param and preprocess started 
@@ -1512,6 +1597,7 @@ else {// df1
 
 
         // if (textFwCmd) no more used
+        // f (preStartCSonWELCOME) 
          text = '%%resetDial-xx;' + start;// reset all dialog , text+='%%resetDial-xx; fammi echo';
 
       }
@@ -1554,8 +1640,10 @@ else {// df1
               if (buttausertxt) text = 'ripeti';// bot convo waiting in right intent to continue the dialog , just repeat its prompt (really is not the same that start prompt but we must prestart the dialog for timing issues)
               else;// user text  try goon on bot thread    
             } else {
+
               // start from reset TODO   text='%%resetDial-xx; '+ ....
               start = start_+ oCtx.parameters.endpoint + '; ';//' cs case: cs_endpoint is set properly , use it
+              if (oCtx.parameters.simplybook_st) start+=' '+simplybook_st;// embed dyn option for bot 
               if(buttausertxt)start += text;
             }
 
@@ -1617,7 +1705,7 @@ else {// df1
       } else if (intent == 'turnscontinue');// do nothing pass text
       else return;// exit
 
-      res = { user: convoId, text, type: "message",start_ctx:simplybook_st };
+      res = { user: convoId, text, type: "message",start_ctx:simplybook_st };// start_ctx   :really used embedded way
       return res;
     }
 

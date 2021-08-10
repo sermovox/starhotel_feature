@@ -1,6 +1,8 @@
 #!/bin/sh
 # ./link_save_master_files1.sh mybot_v2_03_12_18
-MD="/home/luigi/Documents/save/$1"
+# cambiata MD in this install !!!!!  08082021
+#MD="/home/luigi/Documents/save/$1"
+MD="/home/luigi/Documents/botDocuments_from_sda9_on/save/$1"
 if [ -d $MD ] 
 then
     echo "Directory $MD exists !" 
@@ -12,7 +14,7 @@ else
 	cp -r ./features $MD
 	cp -r ./nat $MD
 #	cp -r ./skill $MD
-	cp -r ./save $MD
+# ?? 	cp -r ./save $MD
 
 #	now we save the added git tracked on masked ( compilated ) node_modules 
 #	as, after a install on a local node_modules , the fw bb obj are set by trached git files , we store these file also in /nat/inj_js 

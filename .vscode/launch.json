@@ -7,9 +7,12 @@
         {
             "type": "node",
             "request": "launch",
+            "outputCapture": "std",
+            ////"console": "integratedTerminal" ,
             "name": "Launch Program",
             "program": "${workspaceFolder}/bot.js",
             "sourceMaps": false
+        
         }
     ]
 }

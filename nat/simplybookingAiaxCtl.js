@@ -64,7 +64,9 @@ main def :
 let inter = 7;//4;// interval reset to 6 if gotdate
 const debugL=true,
 tests_3D=3,tests_3H=3,// def number of items in selectors
-EnLoc=false;// true;// enhable location filtering ( a where in a selection )  in find performers. todo : debug now is in error
+EnLoc=false;// true;// enhable default location filtering ( a where in a selection )  in find performers. todo : debug now is in error
+// >>> parametric customization will be done according the start command injected param vars.start_ctx (see location )
+//          see also : dyncfg=vars.start.ctx;
 
 const querystring=require('querystring');// it is a built in module , need to require ?
 // config behaviour:
@@ -187,7 +189,7 @@ now split start in :
 - start()that get the slot matrix  
 
 */
-async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_wheres.location ctl.serviceId
+async function getPerfs(form_wheres, ctl,dyncfg) {// input: form_wheres.mod_pdate form_wheres.location ctl.serviceId
                                             // nb form_wheres where filled because in excel.dependeemodel.mod_wh_Of=thedependent_model_launchingthismatcher and the dependeemodel matched
                                             // ex : excel.mod_location.mod_wh_Of='mod_aiax_prest' and mod_location matche the value : form_wheres.mod_location
                                             // in pratica il model mod_location e' un where del selection sulla entity mod_aiax_prest che ha come property un field mod_location !!!
@@ -215,9 +217,10 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
         > if best has distinguish score say we got a best item .... as PPO you can confirm that or see other result 
         > so success or iterate on ZZ
     */
-    location;// where location if present filter units before list, like in qea and mongo/sqllight text matching db ,
+    location;// where location , if present filter units (on unit.feature.location) before list, like in qea and mongo/sqllight text matching db ,
 
-        if(EnLoc) location= form_wheres.mod_location;// where location is requested (EnLoc=true), so get  its location. so units can be filtered ( where) with location before list to user x selection 
+  
+        if(dyncfg) location= form_wheres.mod_location;// where location is requested (dyncfg/EnLoc=true), so get  its location. so units can be filtered ( where) with location before list to user x selection 
     // let ctl = qq.ctl;// get from a model reference (query also in different entity )the ctl part
     let pdate = form_wheres.mod_pdate;
 
@@ -255,8 +258,10 @@ async function getPerfs(form_wheres, ctl) {// input: form_wheres.mod_pdate form_
     let publicService = simplyBook.createPublicService(token.data);
 
     let unit = await publicService.getUnitList();// use location filtering ? or filter locally using 
+    // unit={success,data:{1:{},2:{},,,meta:{keynames:{}}}}
     let unitList = Object.values(unit.data);//  ctl.unitObj = unit.data   toarray
-    console.log('simplybook (req service=', ctl.serviceId, ')full unit list', unitList, ' json obj: ', JSON.stringify(unitList));
+    console.log('simplybook (req service=', ctl.serviceId,//')full unit list', unitList, 
+    ') json obj: ', JSON.stringify(unitList));
     // */
     // build the service query model 
     // datetime = await publicService.getFirstWorkingDay(1) is first av slot ?
@@ -630,7 +635,7 @@ async function getEvents(sbEPoint='sermovox') {// if null use the std endpoint s
         }
 
     }else {
-        console.error(' simplybook  on getEvents got ERROR because we cant recover a auth to get the token ');
+        console.error(' simplybook  on getEvents trying to get auth x sbendpoint : ',sbEPoint,' got ERROR because we cant recover a registered auth to get the token ');
         return;// error
     }
     //else {sbEPoint='sermovox';// error . use the auth currently set before by previus turn also from different user so NOGOOD !!, probably was sermovox but any user can set its endpoint 
@@ -1822,8 +1827,39 @@ simplybooking
     // so form_whInst={value,date,time}  ?????
     // calc start(dateFrom,dateTo )
 
-    let session=vars.session;
+    let session=vars.session,
+    dyncfg=EnLoc;// static default cfg param
 
+
+    // check cmd option/param start_ctx ,qs_parrucchieri   ...., see XXFGRY : in master_df_builder......  
+    // can be injected on vars or in vars.session (also in qs format)
+
+    // search param in vars :
+        if(vars.start_ctx){
+        dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
+
+        } else if(vars.qs_parrucchieri){
+            dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
+    
+            
+
+        }else if(session){
+
+        // search in vars.session
+
+            if(session.start_ctx){// auto embedded from 	 %%embed_start_ctx-enloc; , see XXFGRY : see in master_df_builder...
+            if (typeof (session.start_ctx) === 'string'){
+            dyncfg=session.start_ctx=='enloc';
+            }
+            else{
+                dyncfg=session.start_ctx.start_ctx=='enloc';
+            }
+        } else    if(session.qs_parrucchieri){// auto embedded from %%embed_qs_parrucchieri-
+    {
+                dyncfg=session.qs_parrucchieri.ctx.start_ctx=='enloc';
+                // other params ......
+            }
+        }}
     let qq = qs.curStatus,// the passed last query obj request to this controller , at init is null
                         // if null it will be load using   qq=getEvent(session)
                         //  session.simplybook_endpoint is the name of registered simplybook endpoint api connection data (registered:{'session.simplybook_endpoint':[apiconndataarray],,,,})
@@ -2031,7 +2067,7 @@ if(qq){// 042021
         //selStat = qq.ctl.selStat;// cur status of selection process
         match = qq.match; inst = qq.instance;// the proposed selection was matched 
         groupsel = qq.group.sel;
-
+        // if called by ask_book :  selAction_string = qs.selAction_string;
         selAction = qs.selAction;// a user request that is tied to a new way to give prompt and collect results ( event programming)  to do some matching different from default method followed by selStat 0 ( day , the, hour ) 
         // like a aiax param to get a updated query from page ctl , no more as a ctl attribute !!
         // usually not null if dont match, so match=false
@@ -3341,7 +3377,7 @@ function dontMHelper() {// dont match
             const qc = qq.ctl;// the ctl status injected on query model 
 
             // so as done x query model book_res_child , filled by a matcher with url refearring to this ctl  
-            qq = await getPerfs(form_wheres, qc);// build ctl structure , fill simple query model 
+            qq = await getPerfs(form_wheres, qc,dyncfg);// build ctl structure , fill simple query model ,dyncfg=true/false (according to EnLoc/enloc) : dynamic config custom code parametrization 
 
 
 
