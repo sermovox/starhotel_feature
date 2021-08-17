@@ -16,6 +16,20 @@ function got(ac){
 
 module.exports={
 
+
+ /* riassunto 10082019
+ see 
+ https://developers.google.com/calendar/quickstart/nodejs
+ 
+ Open the Google Cloud Console. user sermovoice irisbianco progetto Quickstart
+ controlla avere gcal api , 
+ You can use either an OAuth client ID or a service account with domain delegation   > we use oauth2
+ so 
+
+
+ */
+
+
 // start connection to gcal 
 // this func should be available to 
 //          - 1 the  app controller in onchange.js  using the service given by fw in a obj like service.app.appservices:{gcal:{init,doapirest}} 

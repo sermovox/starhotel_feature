@@ -60,6 +60,7 @@ main def :
 
 
 // config :
+const stripshort=3;// minimum letter in word to count best match ( if 0 any word)
 // const debugL=false;
 let inter = 7;//4;// interval reset to 6 if gotdate
 const debugL=true,
@@ -653,6 +654,8 @@ if(token){    // goon, no ERROR
     // 建立Public Service
     let publicService = simplyBook.createPublicService(token.data);// also store as a  singlethon as the token ???
 
+    let cli=await publicService.getClientInfo('1hkgcp9a'); 
+
     // /* // 取得Event List
     event = await publicService.getEventList();
     if(event)eventList = Object.values(event.data);// toarray
@@ -678,7 +681,7 @@ if(token){    // goon, no ERROR
     let result = eventList;
     if (result) {
         let query = new QueryM();
-        const stripshort=true;
+
 
         for (let ij = 0; ij < result.length; ij++) {// build the ahocorasick best match query model on event.name
                                                     // a copy with SSAA
@@ -690,7 +693,7 @@ if(token){    // goon, no ERROR
                 // patt =  '@ ' + sname.replace(orReg, '| ');//patt = sname.replace(orReg, '|');  // @ :  ahocorasick ,add ' '  to make imposible match keywork in the middle of a word 
                 //if (ij == 0)   patt = '@' + patt;// @ :  ahocorasick
                 
-                if(stripshort)patt=stripshort_(sname,3);
+                if(stripshort>0)patt=stripshort_(sname,stripshort);
                 else  patt = '@ '+sname.replace(orReg, '| ');
 
 
@@ -4635,7 +4638,7 @@ if(!newDesidDaygot){
 return sc;
 }
 
-function stripshort_(p,lt=3){// lt fixed
+function stripshort_(p,lt=3){// lt= minimum letter in p words,is fixed
     // const lt=3;
     p.toLowerCase();
     //console.log(p.replace(orReg1, '|'));
