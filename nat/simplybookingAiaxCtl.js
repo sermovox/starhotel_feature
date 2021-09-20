@@ -156,10 +156,10 @@ registered={// simplybook registered endpoint api connection data. simplybook li
 'luigiDOluigi']
 ,
 'sermovox_parrucchieri':['sermovox_parrucchieri',
-'58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
+'58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',// can be gcal credentials file with app account and password and .....
 'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
-'admin',
-'luigiDOluigi']
+'admin',// cms user x all clients
+'luigiDOluigi']// cms pass 
 ,sermovox:['sermovox',
 '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
 'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
@@ -821,7 +821,7 @@ if(token){    // goon, no ERROR
         return null;// server cant return data 
     }
 }
-async function client(qspar){// 082021 : client mng, qsparrucchieriParam
+async function client(qspar){// 082021 : qspar=session.qs_parrucchieri .    old:client mng, qsparrucchieriParam
                         //  sermovox_parrucchieri end point require qs_parrucchieri auto embedded session flags set 
                         //  that will be used in the service presentation template , presentation of prestatori avoid because auto selected 
                         //  
