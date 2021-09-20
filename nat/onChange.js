@@ -1,4 +1,4 @@
-// the vCtl/vcontroller   !!!
+// the REAL CONTROLLER : the vCtl/vcontroller   !!!
 var db,rest;// services
 
 let{ mustacheF,modsOnAsk}=require('./mustacheFwFunc.js');//fw functions
@@ -21,8 +21,8 @@ let cfg,logs='app.log';
         a_logger:function(message,ch,send),// log into file bot.log  , used in web adapter channel to log in and out !!!
 }
 */
-const vFw={// voice fw helper func . available from this plugins (vCtl) as controller.plugins.vCtl.vFw
-logger:function(message,ch,send){//logger({user,text},ch,'')
+const vFw={// logging ctl : many logs sys definition. voice fw helper func . available from this plugins (vCtl) as controller.plugins.vCtl.vFw
+logger:function(message,ch,send){ // app.log-public/booking.html logger , just I/O loggre . logger({user,text},ch,'')
     if(!message.text)return;
     let x,mylog;
         if(send){x=' send ';}else x=' receive from '+message.user;
@@ -47,14 +47,15 @@ logger:function(message,ch,send){//logger({user,text},ch,'')
      });
 
 }
-,winston:wlog// warning see wlog def. will be updated on .init()   !!!!!!!!!!!1
+,winston:wlog// the winston log sys . warning see wlog def. will be updated on .init()   !!!!!!!!!!!1
 
 
-,a_logger:function(message,ch,send){// should got from webadapter  as vcontroller plugins vCtl.vFw.a_logger . or as a factory ?
+,a_logger:// bot.log . another i/o minimal log into bot.log
+function(message,ch,send){// should got from webadapter  as vcontroller plugins vCtl.vFw.a_logger . or as a factory ?
     if(!message.text)return;
     let x,mylog;
         if(send){x=' send ';}else x=' receive from '+message.user;
-    mylog='\n'+new Date().toUTCString()+'web adapter channel '+ch+x+', text : '+message.text.replace(/(\r\n|\n|\r|\s+)/gm," ").substring(0,100);;
+    mylog='\n'+new Date().toUTCString()+'web adapter channel '+ch+x+', text : '+message.text.replace(/(\r\n|\n|\r|\s+)/gm," ").substring(0,100);// todo :  \n or \\n ????
     mylog+=' ..';
     fs.appendFile('bot.log', mylog, function (err) {
         if (err) return console.log(err);
@@ -486,7 +487,7 @@ let vfwF = {// framework functions module used in convo obj
         
         */
         let vars=step.values,askmatches = vars.askmatches;
-        console.log(' ** addMatcRes called to set matching result on ask ',previous.collect.key,'  ,matches: ', mat, ',entity: ', entity, ',model item (name(static) or obj) storemat: ', storemat, ', routing: ', routing,', selecting a desire ent:',param!=null);
+        console.log('\n       ** MATCHING RESULT -- addMatcRes called to set matching result on ask ',previous.collect.key,'  ,matches: ', mat, ',model/entity: ', entity, ',model item (name(static) or obj) storemat: ', storemat, ', routing: ', routing,'\n condition number: ',storeMId,' , selecting a desire ent:',param!=null);
         if (reset) {
             if (entity) step.values.matches[entity] = null;
             askmatches[previous.collect.key] = null;

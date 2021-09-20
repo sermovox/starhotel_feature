@@ -1,7 +1,9 @@
 const rest = require('./rest.js').jrest;// module alredy initialized in bot.js , just get the congigured singlethon (called rest as in nlpai, see there hou to call a json get/post)
 // Load process.env values from .env file
 require('dotenv').config();
-const SimplyBook_ = require("simplybook-js-api");
+const SimplyBook_ = require("simplybook-js-api"),
+
+gCal= require('./gCal.js');
 
 // this library will connect to ext book portal interfacing it with its api. if native simplybook will use its api library SimplyBook_
 const interf = 1;// 0 relay to simplybook:SimplyBook_
@@ -39,10 +41,15 @@ const SimplyBook = function (name_, t1_, t2_, user_, pass_) {// constructor
 
 
 
-    this.name = name_; this.t1 = t1_; this.t2 = t2_; this.user = user_; this.pass = pass_;
-    if (interf == 0) inst = new SimplyBook_(name_, t1_, t2_, user_, pass_);// create the relayed simplybook server if use that server
+    this.name = name_; // the name of registered connection info to simplybook site
+    this.t1 = t1_; 
+    this.t2 = t2_; 
+    this.user = user_; // 
+    this.pass = pass_;
+
+    if (interf == 0) inst = new SimplyBook_(name_, t1_, t2_, user_, pass_);// create the relayed simplybook.com server library connection if use that server
     else {
-        console.log( ' new create book cms instance  x user: ',this.user,' endpoint name: ',this.name,'  process.env.book_proxy_url: ',process.env.book_proxy_url);
+        console.log( ' new create book cms proxy instance  x user: ',this.user,' endpoint name: ',this.name,'  process.env.book_proxy_url: ',process.env.book_proxy_url);
         if (process.env.book_proxy_url&&autoRegCMS
 
             // GTT      && this.name == 'sermovox'
@@ -62,8 +69,9 @@ book_proxy_adminpass=xyz1
                {// for a endpoint named sermovox that are the data to connnect the server: url, the name of admin user and its passord and the token to use book server api
                     url: process.env.book_proxy_url,// main api server domine
                     users: {
-                        admin: { pass: process.env.book_proxy_adminpass, token: process.env.book_proxy_token }// token is for api to get services,performers and slot matrix, pass is to connect admin users to set book data for a endpoint (passord put in .env) and get the token
-
+                        admin: { pass: process.env.book_proxy_adminpass, token: process.env.book_proxy_token }// token is for api to get services,performers and slot matrix, 
+                                                                    // pass is to connect admin users to set book data for a endpoint (passord put in .env) and get the token
+                        ,gcal:{credentials:'cred_file,future use'}
                     }
                 }
 
@@ -71,8 +79,30 @@ book_proxy_adminpass=xyz1
 
         }
     };
+
+    // now can prepare gcal to be ready to give future user auth2 client to access to user client (registered on the current site portal )info  
+
+
     SimplyBook.prototype.createAuthService = function () {
         if (interf) {
+            
+            
+            
+            /* 102021 token mng summary 
+
+                manages:
+                - token process for simplybook/proxy  according to simplybook rules
+                - token to gt book cms resource according trivial cms book token ( is a password) rules
+                - token to get oth2 access from gcal x slot access x authorizing user. can use credential set in simplybook vars 
+
+
+
+
+            */
+
+
+
+
             /*
                 createAuthService get, from configured data passed on constructor, the params to ask a oauth 2 token, usually needs a user and password to connect to auth server , 
                  the token to identify the resources to ask, and the name of the book site
@@ -93,7 +123,7 @@ book_proxy_adminpass=xyz1
                 //  - give a library token_ (token_ = 'T.....')to the library user that will be used here  as register entry to give the service on authorized bookcms resources (using token ) when it will send following api request
                 //      so if in following api library AAA call , the AAA handlers endpoint (getUnitList,...)  recognize the token_  so  we know the token to use in  bookcms api to get the info available for that token
                 //              a token will make available some resouces x the caller ( user that asked acces x some resources in a time slot )
-                if ((mu = eP.users[this.user])) {// the user declared to the librry correspond to the user in portal/proxy
+                if ((mu = eP.users[this.user])) {// portal (cms or simplybook portal) admin user. the user declared to the librry correspond to the user in portal/proxy
                     if (mu.pass == this.pass) {// user password check he simulate a book portal auth rervice call to get the token x the site 
 
                         token = 'T' + Math.random();// some admin call will get the token (but here we used a previous saved released token ) that access a url server that 1:knowing the token give a specific site data or 2:here we add site to server api 
@@ -102,7 +132,7 @@ book_proxy_adminpass=xyz1
                         users[token] = { tk: mu.token, url: eP.url, resource };// timetoken can give the long living token to connect user this.user to endPoint of url 
                     }
                 }
-                console.log( ' createAuthService x user: ',this.user,' endpoint name: ',this.name,' created token: ',token,' for resource: ',resource,' url: ',eP.url)
+                console.log( ' createAuthService x cms admin user: ',this.user,' endpoint name: ',this.name,' created token: ',token,' for resource: ',resource,' url: ',eP.url)
             }
             return {
                 getToken: (function () {
@@ -127,6 +157,14 @@ book_proxy_adminpass=xyz1
                 getUnitList: (function () {
                     return async function () {
                         let result = await apiRequest(user, 'getunitlist', params = {}, 'GET');
+                        if (result) return { success: 'true', data: result };// data= {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3
+
+
+                    }
+                })(),
+                getClientInfo: (function () {
+                    return async function (cli) {// cli ? or all clients ???
+                        let result = await apiRequest(user, 'getclientinfo/'+cli, params = {}, 'GET');// cli as param not in qs
                         if (result) return { success: 'true', data: result };// data= {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3
 
 
@@ -169,7 +207,9 @@ book_proxy_adminpass=xyz1
     }
 }
 let users = {};// users tokens users={timetoken:{tk:mu.token,url:eP.url},,,}
-let bookendpoint = {// this are the proxy book connection params to the book portal (or bookcms) // >>>>>>>>>  will be overwritten by constructor for the base implementation using .env cfg param
+
+let bookendpoint = {//{booksite:{connectionconfigparam(cms+gcal)},,,,}
+                    // this are the proxy book connection params to the book portal (or bookcms) // >>>>>>>>>  will be overwritten by constructor for the base implementation using .env cfg param
                     // so in baseimplementation there is only one book portal that can give book data about a resource (the site name)
                     // infact api url will be build adding url to /resource+.....
 

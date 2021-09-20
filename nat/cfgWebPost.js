@@ -47,7 +47,7 @@ let lev2Custom={'qs_parrucchieri':function(sb_st){
   // main use is : in welcome intent updates the std init param used x env     generic simplybook_st(cfgparamtouseInTemplatetoPasstoStartingCmd) param : see SBSTDEF
   if(sb_st.substring(8,23)=='qs_parrucchieri')//     '%%embed_qs_parrucchieri')
     return true;else return false;
-}}
+}};
 
 
 const fs = require('fs');
@@ -76,6 +76,7 @@ parseAdminUsers = function(string) {
   var users = {};
   creds.forEach(function(u) {
       var bits = u.split(/\:/);
+      //if(bits.length>4)users[bits[0]] ={ cfg:bits[1],site:bits[2],cmdopt:bits[3],operator:bits[4]};// operator is temporary/optional      else 
       users[bits[0]] ={ cfg:bits[1],site:bits[2],cmdopt:bits[3]};
   });
 
@@ -568,6 +569,7 @@ else {// df1
       turnsC,//turnsC in case we have to add
       askoperatorC,// the outputcontext to set params  when bot returns succfffully booking 
       centroserviziC, datetimeC,// service context: centroservizi will expose csWhatService, datetime will expose df intent bookparam (one turn single try df booking intent) 
+      phoneC,// phone ctx , need to pass operator transfert 
       ctx_out = [],// when pass to bot control active context will be turns, and ctx_out context is set to be used when end bot  ( next outcontext: askoperator) returning on df control 
       askOpLocation,// debug : template for askoperator outcontext parameters to set as  result of bot booking 
       askOpDateTime;// debig : template for askoperator outcontext parameters to set as  result of bot booking 
@@ -576,18 +578,35 @@ else {// df1
     askOpDateTime = "2021-04-04T12:00:00+02:00";// name "date-time" askoperatorC.parameters["date-time"]=askOpDateTime , see AADD 
 
 
-    function setBotCfg(tnum,cid){
-      if(book_ep[tnum]){// reset cfg
-      start_ctx = book_ep[tnum].cfg;//'cs';// serve this enrty with centroservizi outcontext(simplybook prenota std dialog)
+    function setBotCfg(tnum,cid){// tnum e cid sono pram del phone param proveniete dal pbx . sono transf.tel. e client/user sip/ntel del chiamante
+      let usr;
+      if(cid&&book_ep[cid]){// we have client go to find registration 
+        usr=book_ep[cid];
+        console.log(' cfgWebPost: welcome intent ,  the caller client is registered as callerid in .env book_endpoint under key: ',usr);
+
+
+
+      }else if(book_ep[tnum]){// reset cfg . 
+        usr=book_ep[tnum];
+        console.log(' cfgWebPost: welcome intent ,  the caller client is registered as (provider)transfer in .env book_endpoint under key: ',usr);
+        
+      }
+
+     if(usr){
+      start_ctx = usr.cfg;//'cs';// serve this enrty with centroservizi outcontext(simplybook prenota std dialog)
       // in first implementation the fulfillment of df point to a df entry (a df post entry)of a bot.js that uses a simplybook ctl (simplybookingAiaxCtl ) pointing to sermovox simplybook application 
       //    in future when a channelid/user match the prenota child dialog _book_simple0_v2  
       // simplyBook = new SimplyBook(// simplybook std app : sermovox entry
-      cs_endpoint = book_ep[tnum].site;
-      if(book_ep[tnum].cmdopt){
-      simplybook_st= book_ep[tnum].cmdopt;//
-      if(cid&&simplybook_st.substring(8,10)=='qs'&cid)simplybook_st+='&user='+cid;// if qs add callerId at run time, must : simplybook_st=%%embed_qs_somecfg2ndlevelName-qs
-      }}
-}
+      cs_endpoint = usr.site;
+      if(usr.cmdopt){
+      simplybook_st= usr.cmdopt;//
+      if(cid&&simplybook_st.substring(8,10)=='qs')simplybook_st+='&user='+cid;// if qs add callerId at run time, must start as: simplybook_st=%%embed_qs_somecfg2ndlevelName-qs
+      }
+      console.log(' key (both caller_id and transfert) must be registered as bot welcome cmd in cms to have thespecific prompt,\n also when book ctl run it will recover the client from site/resource: ',cs_endpoint );
+      console.error(' key will be queryed in client cms client to get the client when ctl will serve the request.temporarely the cms client is assumed have the same name as the key/tel.number , change searching by tel number !');
+
+  }}
+    
 
     let usranswerPar = {},// ex: param={transferred:'acquisti'} %%transferred-acquisti; use condition: $$%mod_sys:{£&}§1^%%(\w+(?=-))\W(\w+)§tr£^transferred&wait£^transfertwait&miss£^miss
       welcomePar = {},// see phone context, transf_number ("393703522039") ( and caller_id ) parameters to set the outcontext  
@@ -600,7 +619,7 @@ else {// df1
       //    NBNB now centroservizi general book  dialog is available via ccai1 command
       // so, when in requDF1() (see ABAAX ), intent 'csWhatService' comes to start book bot dialog , we can use  flag to see what is the entry point to connect/continueusingfinitialized
       cs_endpoint = cs_endpoint_,// the endpoint registered in book_ep for start_ctx='cs'
-      simplybook_st=simplybook_st_,// 
+      simplybook_st=simplybook_st_,// after eventually added &x=y then must be terminated by ;  see DEW
       isPhone = false,// is phne platform
 
 
@@ -681,27 +700,30 @@ else {// df1
             if (mnam == 'phone') {// both these incontext  will run a previous  welcome iniated bot , so transmit to bot the used context params
               // AAB
               isPhone = true;
+              phoneC=el;
               // array.forEach(element => {  });
               if (el.parameters) {//  direct call parameters:{transf_number:"","caller_id":"393703522039"}},
                 //  segreteria associazione :  parameters:{transf_number:"393703522039","caller_id":"0434541509"}},
 
                 // bookparam/datetime params (covid bot )
 
-                if (el.parameters.transf_number) {
+                console.log(' cfgWebPost: welcome intent , examinin if the caller client ',el.parameters.transf_number,' or ',el.parameters.caller_id,' is registered in .env book_endpoint')
+                if (el.parameters.transf_number) {// bad formatted code, now anycase we call setBotCfg() the same
                   welcomePar.transf_number = el.parameters.transf_number;// >>>  only segretery can associate a custom book site registered on 
-                  //  if (welcomePar.transf_number == '393703522039') {
-                  if (book_ep[welcomePar.transf_number]) {
+                  welcomePar.caller_id = el.parameters.caller_id;
+                  //  if (welcomePar.transf_number == '393703522039'/'luigi') {
+                 // if (book_ep[welcomePar.transf_number]) {
                     // AAB
-                    setBotCfg(el.parameters.transf_number,el.parameters.caller_id);
-                  }
+                    setBotCfg(el.parameters.transf_number,el.parameters.caller_id);// both caller_id, transf
+                  //}
                 }else if(el.parameters.caller_id){
-                  welcomePar.transf_number = el.parameters.caller_id;// >>> 
+                  welcomePar.transf_number = el.parameters.transf_number;// >>> 
                   welcomePar.caller_id = el.parameters.caller_id;// merged in msg.user too
                   //  if (welcomePar.transf_number == '393703522039') {
-                  if (book_ep[welcomePar.transf_number]) {
+                  //if (book_ep[welcomePar.transf_number]) {
                     // AAB
-                    setBotCfg(el.parameters.caller_id,el.parameters.caller_id);
-                  }
+                    setBotCfg(el.parameters.transf_number,el.parameters.caller_id);// caller_id, forse transf
+                  // }
                 }
               }
             } else if (mnam == 'centroservizi') {
@@ -712,7 +734,7 @@ else {// df1
 
             } else if (mnam == askoperator) {
               isAsk = true;
-              el.lifespanCount = 1;//, keep present but set 1
+              el.lifespanCount = 2;//, keep present but set 1
               askoperatorC = el;// or clone it ? :  Object.assign({}, el); el_out.lifespanCount = 1;// el_out=new Ctx(nam,1,el.parameters);
             }
             ctxName.push(mnam);
@@ -744,7 +766,7 @@ else {// df1
                   datetimeC.lifespanCount = 0;
 
                 }
-              } if (miss_) console.log(' cfgWebPost: centroservizi and datetime ctx not present in welcome intent ')
+              } if (miss_) console.log(' cfgWebPost: centroservizi and datetime ctx not present in welcome intent ');
             }
 
           }
@@ -901,6 +923,9 @@ else {// df1
         }
 
         // >>>>>>>>>>>>>>  End get fulfillment context ctx ( and array of ctx name ctxName ) and ctx_out from relevant intent ctx and ctx_out 
+
+
+        simplybook_st+=';';// terminating , DEW
 
         console.log('webhook cfgWebPost got a request with intent: ', intent, ', so we updated  the contexts ctx[] to put in fulfillment request return): ', ctxName);
         console.log(' ctx_out[] is also calculated : ',!!ctx_out,' (used in case the bot will end its dialog and pass to df again )');
@@ -1122,6 +1147,47 @@ else {// df1
 
 
 
+              // 082021  >>>>>>>>   search EVENT to handle.
+              // EVENT and its properties are msg params (embedded or as msg properties ) set by asks/steps when wants to end conversation with DF (via this fulfillment code).ex in step : (in thread ccai1#!#topic-th_book) ,
+              // return fulfilll according to event found , 
+              //  - if no event let DF continue this intent == 'turnscontinue' 
+              //  - if book found set df event (event_oper) parm x DF intent (book_ok) to match result context and
+              //  - set some param to be handled on voximplant as usual in context askoperator (the tel number of operator to call )
+              //    askoperator context is available in voximplant receivinng the fulfill on welcome intent 
+              //      or probably can be added to book_ok intent and the transferring intent operator setting askopertor context in intent output context 
+
+
+              //  - nb the operator transf number can be set in this code before call  bot welcome  prompt cmd when set askoperator params got from .env.book_endpoint:
+              //       "user":"","endpoint":"sermovox_parrucchieri","simplybook_st":"%%embed_qs_parrucchieri-start_ctx=enloc&par2=pippo&user=luis;","started":"cs"
+              //      or here as param of msg set by the bot ask that set the EVENT msg param ,
+              //        like service, performer and datetime;
+              //       the step setting the event param will getting the operator transf number as param of session.qs_parrucchieri set by this code when start the bot :start=....... 
+              //        AND completed in book ctl when build the ctl status in getEvents when rest client and services , from client can have the operator tel.nember to add in  session.qs_parrucchieri !
+
+              //  - nb the operator transf number can be set 
+              //      -in this code before call  bot welcome  prompt cmd when set askoperator params got from .env.book_endpoint:
+              //          "user":"","endpoint":"sermovox_parrucchieri","simplybook_st":"%%embed_qs_parrucchieri-start_ctx=enloc&par2=pippo&user=luis;","started":"cs"
+              //      OR 
+              //      - here , in following code managing the book event, as param of msg set by the bot ask (ccai1#!#topic-th_book after the child cmd (_book_simple0_v2) returned in ask ccai_ret returning return={,,,operator} 
+              //	      infact operator can be recovered in bot in some ask that call (eventually via a matcher/ctl) the book site that has the client info
+              //	      - example 1: in main bot dialog (ccai1 + child _book_simple0_v2):
+              //	           operator was set in child return at ask cf_needs_ask in   _book_simple0_v2#!#topic-th_exit 
+              //	              operator transf number is got as param (phone) of session.qs_parrucchieri set by this code when start the bot :start=....... 
+              //        	      AND completed (phone param ) when a ask calls first time the book ctl simplybookingAiaxCtl
+              //		            the book ctl when build the ctl status in getEvents() when do rest client and services , 
+              //			           from client can have the operator tel.nember (client.phone) , set in bookcms , to add in  session.qs_parrucchieri !
+              //		         ask cf_needs_ask  set the EVENT msg param , like service, performer and datetime;
+
+		          //        - example 2 : can be set in client prompt cmd (luigi o parrucchieri_luis) that can rest directly or via book ctl , the site get the client data and return the operator (client.phone)
+		          //		          as event param .
+		          //		          TEMPORARELY we just insert manually without rest the site ( todo in future !) 
+
+
+
+
+
+
+
 
               //if bot text contains %exit o 'telefono' o 'è stata confermata' e si ciede di riconfermare si passa al context useranswer ( in comune con l proposta locale)  
               // const exitregex=/(?:^|\s)%%exit-((\w|=|-)+)/i   ;// ex: text='... %%exit-qs;...'  will recover qs='city=pordenone-colore=giallo'   and obj is recovered with querystring.parse(qs.replace(/-/g,'&'))
@@ -1135,14 +1201,14 @@ else {// df1
               let y, eventTr, event = -1;// =reason, event -1 NA, >=0 : 0 fail,event 1 book!
               for (y = 0; y < jt.length; y++) {
                 if (jt[y].df_exit) {
-                  prompted = y;// df_exit  is a expected event 
+                  prompted = y;// df_exit param is really an expected event 
 
                   eventTr = jt[y].df_exit;
                 }
 
                 text = jt[prompted].text;
                 if (eventTr) {// some event to exame found, see if registered 
-                  if (eventTr == 'booked') {
+                  if (eventTr == 'booked') {// event=book , so run handler
                     event = 1;
                     parm = {};
                     parm.service = jt[prompted].service;
@@ -1150,12 +1216,20 @@ else {// df1
                     parm.datetime = jt[prompted].datetime;
                     console.log(' bot webhook : on turn msg n# ', y, ' detected event field .df_exit of value: ', eventTr, ' with param: ', parm);
                   // }if (eventTr == 'interrupted') {event=2;
-                  } else event = 0;// fail
+                  } else 
+                    if (eventTr == 'started') {// after we return from client prompt cmd
+                      event = 2;
+                      parm = {};
+                      parm.operator= jt[prompted].operator;
+
+                      console.log(' bot webhook : on turn msg n# ', y, ' detected event field .df_exit of value: ', eventTr, ' with param: ', parm);
+                    // }if (eventTr == 'interrupted') {event=2;
+                    } else event = 0;// fail
                 }
 
                 console.log(' bot webhook : received event as channelData field .df_exit of value: ', eventTr, ' bot response to turnscontinue intent, there are (many) messages, the number is: ', jt.length);
  
-                if (embed && event < 0)// alternatively search in embedded
+                if (embed && event < 0)// avoid , here alternatively search in embedded instead of using msg param
                 {
                   if ((iu = text.indexOf('%%df_exit-')) >= 0) {
                     ii = text.substring(iu + 7).indexOf(';');
@@ -1204,9 +1278,14 @@ else {// df1
 
 
               if (event >= 0) {
-                ctx_ = ctx_out;
+                // ctx_ = ctx_out;
 
                 if (event == 1) {// book
+                  ctx_ = ctx_out;
+                  askoperatorC.parameters=askoperatorC.parameters||{};
+                  askoperatorC.parameters["oper_prompt"] = "";// the prmpt to add if then i choose to talk to oper
+                  askoperatorC.parameters["exit_prompt"] = "";
+
                   nextEv = {// fulfillmentMessages will be ignored , the prompt will be given by the event triggered intent (a ask with nogoon)
                     name: "event_oper"
                     /*,parameters: {
@@ -1218,7 +1297,15 @@ else {// df1
                     , "languageCode": "it-IT"
                   };
 
-                } else {// fail
+                } else if (event == 2) {// started
+                  console.log(' bot webhook : received event started , do nothing now,  in future add operator transfer number to askoperator context ');
+ 
+                  // ctx= 
+                  // todo just check askoperator is in ctx then add the param , ex operator, to it if needed 
+                  // ex: ctxoperator=findctx(ctx,'askoperator');
+                  // ctxoperator.parameters.operator=parm.operator;// added a param got from bot(querried bookcms site to get client data or set manually in the started event ) in one askoperator parameters !!!!
+  
+                  } else{// fail
 
                   nextEv = {// fulfillmentMessages will be ignored , the prompt will be given by the event triggered intent (a ask with nogoon)
                     name: "event_fail"
@@ -1602,6 +1689,34 @@ else {// df1
           oCtx.parameters.endpoint = cs_endpoint;//this flag mean that cs has activated on welcome intent thanks to a phone param 
           oCtx.parameters.simplybook_st=simplybook_st;// can have clientId too
           // already done    if(caller_id)oCtx.parameters.simplybook_st+='&user='+caller_id;
+
+
+        if(simplybook_st.substring(0,10)=='%%embed_qs'){
+        // can be usefull put also the operator in parameters if present in simplybook_st qs 
+
+
+
+        let ioa1 = simplybook_st.indexOf('-'), ioa2 = simplybook_st.indexOf(';'),fcorpus;
+        if(ioa1>0&&ioa2>ioa1)fcorpus = simplybook_st.substring(ioa1+1, ioa2);
+
+
+        let pars;
+        if(fcorpus)pars=querystring.parse(fcorpus);// use & as separator 
+        if(pars){
+          for (x in pars) {
+           
+            
+            if(x=='opTelNumb'){// rooting info , extract other context or event to trigger 
+              let attr=pars[x];
+              // if first char is number add + 
+              if(attr&&!isNaN(attr.charAt(0))){
+              oCtx.parameters.operator='+'+attr;
+              if(phoneC)phoneC.parameters.operator=oCtx.parameters.operator;// too , that surely can be recovered as bot returns to DF
+              }
+          }
+        }
+      }}
+
           if(caller_id)oCtx.parameters.user=+caller_id;// can be usefull?
           
           // so when the cs intent csWhatService matches we know to continue a alredy started turn !! see requDF1
@@ -1795,7 +1910,7 @@ function respDF(x,ctx,event){// set df fulfillment response
   console.log('cfgWebPost returning fulfillment',x.length,' messages: ', x,'\n now fulfilling using cfgWebPost   PRESTART fullfillment prompt for Welcome intent, \n OR the bot first response msg , from askkey ',x[0].key,', \n text: ',x[0].text);
   let text;
   text=x[0].text;// first msg
-  if(text)text=text.replace(/(<.*?>)|(\/n)/g,'');//Regex.Replace(mesage.text,"<.*?>",string.Empty);
+  if(text)text=text.replace(/(<.*?>)|(\n)/gs,'');//  nb  \n means newline  , \\n means '\n' , Regex.Replace(mesage.text,"<.*?>",string.Empty);
   // no: text=text.replace(/(<.*?>)|(\//n)/g,'');
    //text=text.trim().replace(/<.*?>/g,'');// just remove /n and <some>
   let res=response_df1(text,ctx,event);

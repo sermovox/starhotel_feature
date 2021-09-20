@@ -122,7 +122,7 @@ const logger1 = winston.createLogger({
                }),
   // utilFormatter(),     // <-- this is what changed
    // format.colorize(),
-    format.printf(({level, message, label, timestamp}) => `${timestamp} ${label || '-'} ${level}: ${message}`),
+    format.printf(({level, message, label, timestamp}) => `\n >> ${timestamp} ${label || '-'} ${level}: ${message}`),
   ),
   });
 
@@ -131,7 +131,7 @@ const logger1 = winston.createLogger({
   
   logger.add( new winston.transports.File({ filename: 'combined.log' }));
   logger.add( new winston.transports.File({ 
-    format:format.printf(({level, message, label, pgm,timestamp}) => `${timestamp} ${label || '-'} ${pgm || 'pgm?'} ${level}: ${message}`),
+    format:format.printf(({level, message, label, pgm,timestamp}) => `\n >>> ${timestamp} ${label || '-'} ${pgm || 'pgm?'} ${level}: ${message}`),
     filename: 'combFormat.log' }));
 
 
@@ -154,7 +154,7 @@ function transform(info, opts) {// returns transformed info
 function utilFormatter() { return {transform}; }// return  {transform:function (info,optn){}}// see 
 
 module.exports = {
-  logger:function(env_){cfg=env_;if(cfg.CATEGORY){CATEGORY=cfg.CATEGORY;};
+  logger:function(env_){cfg=env_;if(cfg.CATEGORY){CATEGORY=cfg.CATEGORY;};// identify these logs as launched by a category app
   console.log('logs: returning logger: ',logger)
   return logger;}
 };

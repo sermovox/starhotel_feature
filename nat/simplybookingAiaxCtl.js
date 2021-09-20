@@ -76,7 +76,7 @@ const nearpol=// 0 is tested
 // 1;// testing to do 
 let sbServer=true;// true use simplybook library   to connect registered simplybook endpoint site
                 // false  use simplybook proxy     to connect registered simplybook endpoint site
-if(process.env.book_proxy=='true')sbServer=false;
+if(process.env.book_proxy){if(process.env.book_proxy=='true')sbServer=false;else sbServer=true;}
 let SimplyBook;
 // WARNING ****************************
 // do not call this ctl with different session.simplybook_endpoint if use sbServer=true . the reset of simplybook library will destroy connection info set by previous session
@@ -155,7 +155,7 @@ registered={// simplybook registered endpoint api connection data. simplybook li
 'admin',
 'luigiDOluigi']
 ,
-'sermovox_centro servizi speciali':['sermovox_centro servizi speciali',
+'sermovox_parrucchieri':['sermovox_parrucchieri',
 '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',
 'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
 'admin',
@@ -527,12 +527,11 @@ i items sono molti e che si puo filtrarli
             // - start the request of first slot for the pool position unit , so we can be ready in advance to propone the first date !
             // concurrency : see https://stackoverflow.com/questions/35612428/call-async-await-functions-in-parallel
             //                  https://medium.com/@piotrkarpaa/async-await-and-parallel-code-in-node-js-6de6501eea48
-            let sess_firstdate = {};
+            let sess_firstdate = {};// will store the promises to get first times 
 
 
-            ctl.curKeyList.first3date = Date.now();// store ref
-            hwSession[ctl.curKeyList.first3date] = sess_firstdate;// store ref in ctl status 
-
+            ctl.curKeyList.first3date = Date.now();// store ref. in ctl to let available later, is like a random number 
+            hwSession[ctl.curKeyList.first3date] = sess_firstdate;// store promises under the ref. , so can be resolved later
             // first 3 date 
             /*function getFirst(id) {
                 return new Promise(resolve => {
@@ -613,8 +612,11 @@ i items sono molti e che si puo filtrarli
 
 }
 
-async function getEvents(sbEPoint='sermovox') {// if null use the std endpoint set by last user : VERY DANGEROUS !!!
-    if(sbEPoint=='undefined')sbEPoint='sermovox';// nb undefined is a string here !!!
+async function getEvents(session) {// if null use the std endpoint set by last user : VERY DANGEROUS !!!
+    let sbEPoint;
+    if(session.simplybook_endpoint){sbEPoint=session.simplybook_endpoint;
+        if(sbEPoint=='undefined')sbEPoint='sermovox';// nb undefined is a string here !!!
+    }else sbEPoint='sermovox';
     console.log(' simplybook getEvents, application end point, asked: ',sbEPoint);
    // let sbEPoint=sbEPoint_||'sermovox';// todo create a bank of current site connection 
    let // GTT : build the token to put in .ctl , from that we can recover the connection to every site 
@@ -646,15 +648,21 @@ async function getEvents(sbEPoint='sermovox') {// if null use the std endpoint s
         console.log(' simplybook getEvents, application end point, asked: ',sbEPoint,' recovered token: ',token);
 
         let event,
+        publicService,
         eventList;// toarray
 if(token){    // goon, no ERROR
     // token.data : cabe12dac8ba2e4aa2fbdcf16021f55b0ce673c3123bfb5ebd9ac608231373ecf
     console.log('token is: ',token.data);
 
     // 建立Public Service
-    let publicService = simplyBook.createPublicService(token.data);// also store as a  singlethon as the token ???
+    publicService = simplyBook.createPublicService(token.data);// also store as a  singlethon as the token ???
 
-    let cli=await publicService.getClientInfo('1hkgcp9a'); 
+    
+    let mycli;
+    if(session.qs_parrucchieri&&session.qs_parrucchieri.user)mycli=await client(session.qs_parrucchieri);// 082021 : client mng in qs_parrucchieri .     //let cli=await publicService.getClientInfo('1hkgcp9a'); 
+
+
+
 
     // /* // 取得Event List
     event = await publicService.getEventList();
@@ -680,7 +688,7 @@ if(token){    // goon, no ERROR
     
     let result = eventList;
     if (result) {
-        let query = new QueryM();
+        let query = new QueryM();// std query model 
 
 
         for (let ij = 0; ij < result.length; ij++) {// build the ahocorasick best match query model on event.name
@@ -769,19 +777,92 @@ if(token){    // goon, no ERROR
         
         // end schema 
         */
+
+
+        
             let ctl=
-        { eventSt: result, eventObj: event.data
+        { eventSt: result, eventObj: event.data // result = eventList;
         ,token // GTT
         };// {// the ctl event status (service+performer)}
+        let prefProvider;
+        if(mycli)
+        if(mycli.clientSt.providers){
+            // 
+            if((prefProvider=mycli.clientSt.providers[0])){// take first
+                // .services     are ok ?? or units list must be querried ?? or we can assume all services ????
+
+                // to do filter eventSt and eventObj by clientSt.services if available 
+
+            ctl.clientSt=mycli.clientSt;
+            
+            ctl.clientId=mycli.clientId;// usually the name not the id
+        }
+    
+    // add here the preset of query.param x i performer che non fara + il rest per in quanto la query ha 1 solo ( verra auto selected dal selector condition ) performer 
+    // verra usato in function getPerfs() to fill the query with the client performer mycli.clientSt.unit_map[mycli.clientSt.providers[0]], see JHHU 
+    // todo 
+
+    // chiarire come preparare la query con una sola riga
+    // 2 alt 
+    // a non modificare il navigation del dialogo ma far si che il selector auto matchi il client associated performer 
+    //  cio on modifica la costruzione del model query in getPerfs()  a parte una iniezione del sigolo rw al posto della query rest x ottenere i erformer 
+
+    // b  ???? esiste tale possibilità ?? il selector segue sempre il query  quindi non e' possibile evitare di 
+    //  chiamarlo differentemente o ruotarlo se query e selector sono sullo stesso ask !!!!!!!!!!!
+    
+    }
+
         query.ctl = ctl;// set ctl here in getEvents()
 
-        return query;// {query};// return
+        return query;// {query};// return qq
 
 
     } else {
         return null;// server cant return data 
     }
 }
+async function client(qspar){// 082021 : client mng, qsparrucchieriParam
+                        //  sermovox_parrucchieri end point require qs_parrucchieri auto embedded session flags set 
+                        //  that will be used in the service presentation template , presentation of prestatori avoid because auto selected 
+                        //  
+
+
+                        // see simplybookingAiaxCtlctlStatus_extracts.txt
+    // is there a client set by bot adapter ? find in session 
+    let cli,clientId,clientSt,cliList;// clientSt is the client : {id,name,,,,,}
+    if(qspar&&qspar.user){let client=qspar.user;// '1hkgcp9a'  , user/ set in cfgWebPost from .env config is the telnumber/sipuser passed by voximplant 
+        let singlecli=true;// singlecli:the endpoint can return just a specific client info , if use proxy library set true
+        if(process.env.book_proxy=='true')singlecli=true;
+        
+        if(!singlecli){cli=await publicService.getClientInfo(); // same format then getEventList: data= {1:{id:'1',,,,,},,,,,}
+        if(cli)cliList = Object.values(cli.data);// toarray
+        console.log('simplybook client list got', cliList, ' json obj: ', JSON.stringify(cliList));
+        // search by name
+        if(cliList){
+            let cliId
+            cliList.forEach((cli)=>{if(cli.name==client){clientId=cli.id;clientSt=cli;}})// clientSt
+
+        }
+    }else{// proxy library
+        clientId=qspar.user;// clientId= really the name or id depending on simplyboox portal or proxy , 
+                            // now qspar.user is the tel.number/sipuser in .env config so if  is != name you MUST find the client with the right tel.number in properties set by book cms client item
+                            // assume temporely name=qspar.user   so we dont need a tel.number/sipuser field !!!!!!!!!!!
+        cli=await publicService.getClientInfo(clientId); // here clientId is the name !. same format then getEventList: data= {1:{id:'1',name,,,,},,,,,}
+
+
+        // add .catch ......  when do not responde as successfull json 
+
+        // todo ..........
+        if(cli&&cli.data)clientSt=cli.data;// {id:'1',name:'luigi',phone:'luis',email:'...',,,}
+
+        // ADD some to session param :
+        if(clientSt.phone)qspar.phone=clientSt.phone;// now the the transfer operator number used in bot when returning to DF
+
+    }
+    }
+if (clientSt)return {clientSt,clientId};// clientId= really the name or id depending on simplyboox portal or proxy , now is the name 
+}
+
 
 }// end getEvents() 
 
@@ -1622,7 +1703,7 @@ async function book(vars, form_whInst, form_wheres, qs, rest) {//
         console.log('token is: ',token.data)
         // 建立Public Service
         let publicService = simplyBook.createPublicService(token.data)
-        let additionalFields = null;//{'6740d3bce747107ddb9a789cbb78abf3':'value1',b0657bafaec7a2c9800b923f959f8163:'value2' }; 
+        let additionalFields = null,//{'6740d3bce747107ddb9a789cbb78abf3':'value1',b0657bafaec7a2c9800b923f959f8163:'value2' }; 
         clientData = {
             name: 'Client name',
             email: 'client@email.com',
@@ -1830,39 +1911,13 @@ simplybooking
     // so form_whInst={value,date,time}  ?????
     // calc start(dateFrom,dateTo )
 
-    let session=vars.session,
-    dyncfg=EnLoc;// static default cfg param
+    let session=vars.session;
 
 
     // check cmd option/param start_ctx ,qs_parrucchieri   ...., see XXFGRY : in master_df_builder......  
     // can be injected on vars or in vars.session (also in qs format)
 
-    // search param in vars :
-        if(vars.start_ctx){
-        dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
 
-        } else if(vars.qs_parrucchieri){
-            dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
-    
-            
-
-        }else if(session){
-
-        // search in vars.session
-
-            if(session.start_ctx){// auto embedded from 	 %%embed_start_ctx-enloc; , see XXFGRY : see in master_df_builder...
-            if (typeof (session.start_ctx) === 'string'){
-            dyncfg=session.start_ctx=='enloc';
-            }
-            else{
-                dyncfg=session.start_ctx.start_ctx=='enloc';
-            }
-        } else    if(session.qs_parrucchieri){// auto embedded from %%embed_qs_parrucchieri-
-    {
-                dyncfg=session.qs_parrucchieri.ctx.start_ctx=='enloc';
-                // other params ......
-            }
-        }}
     let qq = qs.curStatus,// the passed last query obj request to this controller , at init is null
                         // if null it will be load using   qq=getEvent(session)
                         //  session.simplybook_endpoint is the name of registered simplybook endpoint api connection data (registered:{'session.simplybook_endpoint':[apiconndataarray],,,,})
@@ -2129,67 +2184,30 @@ if(qq){// 042021
                 //      example fromDate = 2000-09-01  so if dayspan=[1,3,4] the first bookable day has relative=1 and is the 2000-09-02
                 //           2000-08-31 is relative=-1
 
-                    // if we already got the first date available ( looking in  
-                    let sess_firstdate,// array of  predownloaded fist date  x prbably unit to select 
-                        sel=1,// 1 3 day sel ,2 hour sel 
-                        detcaseprompt,//=case
-                        gotdate = false,// gotdate means we can propose a first day proposal because the prederred misses or meets the predownloaded fist date  ,
-                        //                   while wailing x full matrix downloaded 
-                        dontgotdate = false,
-                        myd;// ?
-                        let firstDateNA=true,// firstdate not available
-                            fromDate;// start day for matrix download . if null firstReq() will set currentdate
-                    // firstxUid= await hwSession[ctl.curKeyList.first3date]].Uid ='20211231' in local time 
+                // if we already got the first date available ( looking in  
+                let // sess_firstdate,// array of  predownloaded fist date  x prbably unit to select 
+                    sel = 1,// 1 3 day sel ,2 hour sel 
+                    detcaseprompt,//=case
+                    gotdate = false,// gotdate means we can propose a first day proposal because the prederred misses or meets the predownloaded fist date  ,
+                    //                   while wailing x full matrix downloaded 
+                    dontgotdate = false,
+                    myd;// ?
+                //var firstDateNA = true,// firstdate not available
+                let    fromDate;// start day for matrix download . if null firstReq() will set currentdate
+                // firstxUid= await hwSession[ctl.curKeyList.first3date]].Uid ='20211231' in local time 
 
-                    
-                        fromDate=desDtatTime;// default can be null , in this case it will be set as currentdate
 
-                        // now updates fromDate=desDtatTime  if we know firstDate we can say if surely desDtatTime is bookable (firstDate == desDtatTime >>  )
-                if (qq.ctl.curKeyList.first3date && (sess_firstdate = hwSession[qq.ctl.curKeyList.first3date])) {// was requested a pre download of first date for probale selecting unit ?
-                    let firstDate, firstDate_; 
-                    if (sess_firstdate[qq.ctl.unitId]) {
-                        firstDate_ = await sess_firstdate[qq.ctl.unitId];// a promise, resolve in '20211231' in local time 
+                fromDate = desDtatTime;// default can be null , in this case it will be set as currentdate
 
-                        if (firstDate_&&firstDate_.success){// can be null/void (no answer from call)
-                            firstDate = firstDate_.data;// first available data
-                        }else {
-                            if(desDtatTime)firstDate =desDtatTime.substring(0, 10);// assume same as desidered 
-                            else firstDate =new Date().toISOString().substring(0,10);// assume current date 
-                        }
+                let firstDate;
 
-                        if (firstDate) {// true for sure 
-                            firstDateNA = false;
-                            //firstDate = firstDate_.data;// firstDate_.substring(0, 4) + '-' + firstDate_.substring(4, 6) + '-' + firstDate_.substring(6, 8);// iso short '2021-12-31' ; was pre donloaded firstbook selecting unit got ?if so we have alredy the first proposal 
-                            //if(desDtatTime)myd=desDtatTime.substring(0,4)+desDtatTime.substring(5,7)+desDtatTime.substring(8,10);// if selecting the unit user set preferred/desidered date time we can onfirm the date proposing a hour selection or a new 3 day proposal
-                            //  if if no preferred we can immediately propose pre downloaded while waiting for full matrix bookable slot x unit selected 
+                
 
-                            if (!desDtatTime) {
-                                //  desDtatTime = firstDate + 'T00:00:00-08:00';// propone the predowloaded first date hour select , us local as duckling 
-                                console.log(' simplybook: setting matrix fromdate, no desDtatTime but have firstdate so set it : ', firstDate);
-                                fromDate = firstDate + 'T00:00:00-08:00';// fuso indifferente tanto viene sistemato
-                            } else {
-                                if (firstDate == desDtatTime.substring(0, 10)) {
-                                    gotdate = true;///se desidered = first available we now surely got  the day , so propone the predowloaded first date hour select 
-                                    //sel=2;
-                                    // detcaseprompt=1;
-                                    // is default:  fromDate=desDtatTime;
-                                    //  firstDate == desDtatTime 
-                                    console.log(' simplybook: setting matrix fromdate, firstDate == desDtatTime  so mark gotdate (so firstday(relative day 0)=desidered day is surely bookable (apart hour match) ) and set desDtatTime: ', fromDate);
-                                } else {
+                firstDate=await getFirstDate();// set starting date according with : firstavailable date if got,desidered user day if got otherwise current date
 
-                                    if (diffDay(firstDate, desDtatTime)>=0) {//firstDate < desDtatTime){// des date e' dopo first available  so get slot from   desDtatTime then check if à disponibile prevDay(firstDate, desDtatTime)
-                                        // default fromDate=desDtatTime;
-                                        // detcaseprompt=3;
-                                        console.log(' simplybook: setting matrix fromdate, firstDate <= desDtatTime  so set fromdate=desDtatTime: ', fromDate, ' nb firstday (relat day  =0) dont know if is bookable !');
-                                    } else {// des date is impossible  propose  firrst date and following 
-
-                                        fromDate = firstDate + desDtatTime.substring(10);// move on first day but keep the des hour ! 'T00:00:00-08:00';
-                                        console.log(' simplybook: setting matrix fromdate, firstDate > desDtatTime  so set firstDate: ', fromDate, ' nb firstday (relat day  =0) is surely bookable !');
-                                        //detcaseprompt=2;
-
-                                    }
-                                }
-                            }
+                        if (firstDate) {// now updates fromDate(=desDtatTime)  if we know firstDate we can say if surely desDtatTime is bookable (firstDate == desDtatTime >>  )
+                                        // true for sure 
+                        let frgo=updatesFromDateTime(fromDate,firstDate);fromDate=frgo.fromDate;if(frgo.gotdat)gotdate=rgo.gotdate
                             // we can inform that just matched unit meet r do not meet and in the meanwile justrecover the available  datetime slot to manage the user position
                         } else {
 
@@ -2197,172 +2215,226 @@ if(qq){// 042021
 
 
                         }
+ //  30082021                 }
+ //  30082021             }
+
+
+                /* ***************  DISCUSSIONE CASO GENERALE , utile se decido di fare il downloaded del matrix mentre do una prima indicazione in base al firstdate 
+                
+                
+                SLOT MATCHING FASE situazione in ingresso allo state -7(was 0) : ho matchato il unit e lo user  ha dato il preferred datetime , duckling desDtatTime, so se:
+                    > questa parte del ctl loop ( state >= -7 ask > ctl >ask >ctl ...) avviene sul child lanciato come second intent nel th loop (child èè gruppo di template che si occupa di matchare  lo slot ), 
+                            mentre la parte di selection del unit avviene come primo intent ( gestito dal condition nel ask 0) del th loop (status < -7 )
+                        esso e' interrompibile solo se viene interrotto richiamando una action del context superiore
+                        che si occupa di completare una azione parallela  di gestire una variazione del loop th_loop father o superiori
+                        temporaneamente il context interrupt   viene fatto iniettando i context interrupt condition nel child ma in futuro avverra nel context manager (il root dei 
+                            father loop stack 0 ) col problema di come riprendere eventualmente i child che il context ha interrotto ( discard ? a meno che il interrupt non serva un 
+                                loop parallelo e non influente con job che sta facendo il last level child loop e che completato (es una riciesta di aiuto o chiarimento))
+
+                 user matched unit e  ASKED a PREFERRED DATE  
+                 - se ho recuperato il first date time dei piu probabili unit in selection e 
+                    - A: gotdate matcha ! : user preferred e = first date , 
+                        - se posso aspettare il matrix (canwait) perche rapido , aspetto di caricare il matrix  con start date = first date e poi 
+                            quindi recupero il matrix con fromdate=firstreq() e costruisco il selector sul day fromdate : rispondero : oh scegli l'orario 
+                            case 1 ( gotdate)
+                            - prompt : la data e' disponibile, scegli orario  (tendenzialmente lo posso fare a mano o con duckling ma e' meglio iniettare il 'oggi' cosi il duckling sa che si riferisce ad oggi )
+                            - next status= 2 ( available hours proposed on a day )
+                            - prompt ok abbiamo alcune hour disponobili scegli ...
+
+                        - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
+                                ..........
+
+                    - B: : gotdate non matcha ! 
+                        - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
+                            recupero il matrix con datefrom il maggiore tra se e il desidered user e costruisco il selector su 3 available days 
+                            case ....
+                            - promptando : 'non ho disonibilita ma in futuro si ', o ' si ho slot disponibili per il desidered day'  e do 3 date 
+                            - next status= 1 (3 date proposed )
+
+                        - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
+                                ..........
+
+                 - se non ho recuperato il first 
+                        - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
+                        - C: recupero il matrix e 
+                            case 21 come B ma 
+                            - prompto con : ' ecco 3 date disponibili ,scegli data e preferred time' 
+
+                    
+                // next = await firstReq(1, gotdate);// fill the slot matrix x the performer choosen using qq.ctl starting from preferred date time 
+
+                // todo : calc firstReq param from each case 
+
+                // the user select performer and did NOT ASKED a PREFERRED DATE  
+                // so so here  return the first available date and ask for a preferred hour  and a new date time
+                //  in the meanwile justrecover the available  datetime slot ( aspettando o eventualmente  rendilo disponibile via desDtatTime)
+
+                //  - se ho recuperato il first date 
+                //      - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
+                //          case D
+                //          - next status 1 
+                //          - prompt : ecco le prime 3 date disponbili 
+
+                //      - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
+                //              next status -5  
+                //              -  H1 ho il first date  do la prima data disponibile e chiedo se va bene e se si di darmi il preferred hour, se no  di dare altro preferred day
+                //              -  H2 no ho il first date chiedo di dare il preferred quando risponde sono in status -5 e vedo la disponibilita con slot  matrix che spero nel frattempo aver raccolto  
+
+                //  - se non ho recuperato il first date 
+                //      - se posso aspettare : come case D
+
+
+                //      - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
+                //              next status -5  
+                //              -  D2 no ho il first date chiedo di dare il preferred quando risponde sono in status -5 e vedo la disponibilita con slot  matrix che spero nel frattempo aver raccolto  
+
+
+
+                // next = await firstReq(2);// fill the slot matrix x the performer choosen using qq.ctl , case 2 
+
+
+
+
+                // new : here because firstdate is not availabe 
+
+                if (!desDtatTime) {
+                    detcaseprompt=4;// use didnt ask preferred , so get slots from current time then propose first 3 date
+                    // desDtatTime will be set cur time 
+                }else{
+                    detcaseprompt=5;// fromdate is desDtatTime so get slots from  desDtatTime  then check if 
+                                    // - we got  desDtatTime so propose hour selection 
+                                    // - dont got so ask selecting 3 deys after 
+                }
+            }
+
+            */
+
+
+                /* so after mapping each case in action param + fromdate we call 
+
+                    -  (V) firstReq(0) ( just load the slot matrix to be checked after in in status -5 )+ interlocutory_dialog() ( next template/routings : complete=....);
+                        .... todo 
+                    -  (W) firstReq(sel,detcaseprompt,) ( complete=....);
+                        implemented !
+
+                        > summary SWY :
+                        - desDtatTime is user preference but revise if 
+                            - is missing choose firstDate , if is still missing it will be set current date 
+                            - is < firstDate  reset to firstDate 
+                        - sel (how to build the selector ):
+                            2 select 3 days  
+                            1 alredy got the date so  select hours in a day
+                            3: we need to get slots then see if desDtatTime is matched (first rel bookable is 0)
+                        - detcaseprompt (flags on template x the selector items list prompt ) as before set 
+                                ( nb sel is 1 if detcaseprompt is 1,
+                                             2 if detcaseprompt is 2,4, 
+                                             3 if detcaseprompt is 3 or 5)
+                             prompt : 
+                             // cases when first date available 
+                            1: la data e' disponibile, scegli orario 
+                            2:  des date is impossible  propose  first date and following 
+                            3:  des date e' dopo first available  so get slot from   desDtatTime then check 
+                                - if à disponibile if so do hour sel , otherwise give 3 days
+
+                            // cases when no first date available 
+                            4: no des date : le prime date disponibili sono  
+                            5: (like 3 ?) get slots from  desDtatTime  then check if first slot got fromdate  
+                                - if meet  desDtatTime : ci sono posti per il giorno richiesto ecco gli orari  
+                                - if dont : la  giorno richiesto non è disponobile le prime date disponibili sono  
+
+                            >>>  quando attendo il matrix download (solution coded ) firstdate serve solo a settare il fromdate 
+                                    fromdate : desidered if firstday <  desidered
+                                                firstday se firstday >  desidered
+                                                curdate if  both firstday and  desidered misses
+                              , poi guardando il primo relative day mi accorgo se il desidered è meet o no 
+
+                    next = await firstReq(sel,caseprompt,gotdate);// 
+                            >>>> idea : in irstReq map detcaseprompt in template context flags : group.ctx.th_book_geit
+                */
+
+                //fromdate=desDtatTime;// ok?
+
+                //ctl=Object.assign({},qq.ctl,func_ctl_) ;// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
+
+                qq.ctl.slotMat = {};// add metadata obj x building slot query , it will be added as query is created in firstReq{...start();...}
+                if (qq.ctl && !qq.ctl.f) {
+                    console.error('f not alredy set , ctl is null :', ctl == null);
+                    func_ctl_ = Object.assign({ rows: null, ctl: qq.ctl }, func_ctl);// make rows and ctl available to func, rows will be added as query is created in firstReq{...start();...}
+                    ctl = Object.assign(qq.ctl, { f: func_ctl_ });// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
+                }
+                // so ctl is exended qq.ctl . NEVER do like ctl=something  if plan to reuse qq.ctl . in this case : ctl=qq.ctl=something
+
+
+                next = // await firstReq(fromDate,desDtatTime,gotdate);// us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
+                    await firstReq(fromDate, desDtatTime, prefDay, prefHour, prefHM, gotdate)
+
+                if (next == 2) {// .....// manage result of firstReq ??
+
+
+                }
+
+
+            }
+            else {// update matrix , to do 
+                return null;// the aiax will not change model , no match 
+            }
+
+            async function getFirstDate(){// nb function inside a if block is like are defined ouside the block, so cant see the block local let
+                let firstDate_, sess_firstdate,firstDate;
+                if (qq.ctl.curKeyList && qq.ctl.curKeyList.first3date && (sess_firstdate = hwSession[qq.ctl.curKeyList.first3date])) {// was requested a pre download of first date for probable selecting unit ?
+                    
+                    if (sess_firstdate[qq.ctl.unitId]) {// we got a first date x the unit selected , so we can use this info to manage dates avalable
+                        firstDate_ = await sess_firstdate[qq.ctl.unitId];// a promise, resolve in '20211231' in local time 
+
+                    }}
+
+                        if (firstDate_ && firstDate_.success) {// can be null/void (no answer from call)
+                            firstDate = firstDate_.data;// first available data
+                        } else {
+                            if (desDtatTime) firstDate = desDtatTime.substring(0, 10);// assume same as user desidered time
+                            else firstDate = new Date().toISOString().substring(0, 10);// assume current date if no info about first date available x the selected unit and no user desidered time 
+                        }
+                        return firstDate;
+            }
+
+            function updatesFromDateTime(fromDate,firstDate){   // nb function inside a if block is like are defined ouside the block, so cant see the block local let                         
+                // firstDateNA = false;
+                //firstDate = firstDate_.data;// firstDate_.substring(0, 4) + '-' + firstDate_.substring(4, 6) + '-' + firstDate_.substring(6, 8);// iso short '2021-12-31' ; was pre donloaded firstbook selecting unit got ?if so we have alredy the first proposal 
+                //if(desDtatTime)myd=desDtatTime.substring(0,4)+desDtatTime.substring(5,7)+desDtatTime.substring(8,10);// if selecting the unit user set preferred/desidered date time we can onfirm the date proposing a hour selection or a new 3 day proposal
+                //  if if no preferred we can immediately propose pre downloaded while waiting for full matrix bookable slot x unit selected 
+                let gotdate=false;
+                if (!desDtatTime) {// set fromDate
+                    //  desDtatTime = firstDate + 'T00:00:00-08:00';// propone the predowloaded first date hour select , us local as duckling 
+                    console.log(' simplybook: setting matrix fromdate, no desDtatTime but have firstdate so set it : ', firstDate);
+                    fromDate = firstDate + 'T00:00:00-08:00';// fuso indifferente tanto viene sistemato
+                } else {
+                    if (firstDate == desDtatTime.substring(0, 10)) {
+                        gotdate = true;///se desidered = first available we now surely got  the day , so propone the predowloaded first date hour select 
+                        //sel=2;
+                        // detcaseprompt=1;
+                        // is default:  fromDate=desDtatTime;
+                        //  firstDate == desDtatTime 
+                        console.log(' simplybook: setting matrix fromdate, firstDate == desDtatTime  so mark gotdate (so firstday(relative day 0)=desidered day is surely bookable (apart hour match) ) and set desDtatTime: ', fromDate);
+                    } else {
+
+                        if (diffDay(firstDate, desDtatTime) >= 0) {//firstDate < desDtatTime){// des date e' dopo first available  so get slot from   desDtatTime then check if à disponibile prevDay(firstDate, desDtatTime)
+                            // default fromDate=desDtatTime;
+                            // detcaseprompt=3;
+                            console.log(' simplybook: setting matrix fromdate, firstDate <= desDtatTime  so set fromdate=desDtatTime: ', fromDate, ' nb firstday (relat day  =0) dont know if is bookable !');
+                        } else {// des date is impossible  propose  firrst date and following 
+
+                            fromDate = firstDate + desDtatTime.substring(10);// move on first day but keep the des hour ! 'T00:00:00-08:00';
+                            console.log(' simplybook: setting matrix fromdate, firstDate > desDtatTime  so set firstDate: ', fromDate, ' nb firstday (relat day  =0) is surely bookable !');
+                            //detcaseprompt=2;
+
+                        }
                     }
                 }
-                    
 
-                            /* ***************  DISCUSSIONE CASO GENERALE , utile se decido di fare il downloaded del matrix mentre do una prima indicazione in base al firstdate 
-                            
-                            
-                            SLOT MATCHING FASE situazione in ingresso allo state -7(was 0) : ho matchato il unit e lo user  ha dato il preferred datetime , duckling desDtatTime, so se:
-                                > questa parte del ctl loop ( state >= -7 ask > ctl >ask >ctl ...) avviene sul child lanciato come second intent nel th loop (child èè gruppo di template che si occupa di matchare  lo slot ), 
-                                        mentre la parte di selection del unit avviene come primo intent ( gestito dal condition nel ask 0) del th loop (status < -7 )
-                                    esso e' interrompibile solo se viene interrotto richiamando una action del context superiore
-                                    che si occupa di completare una azione parallela  di gestire una variazione del loop th_loop father o superiori
-                                    temporaneamente il context interrupt   viene fatto iniettando i context interrupt condition nel child ma in futuro avverra nel context manager (il root dei 
-                                        father loop stack 0 ) col problema di come riprendere eventualmente i child che il context ha interrotto ( discard ? a meno che il interrupt non serva un 
-                                            loop parallelo e non influente con job che sta facendo il last level child loop e che completato (es una riciesta di aiuto o chiarimento))
+                return {fromDate,gotdate};
+            }
 
-                             user matched unit e  ASKED a PREFERRED DATE  
-                             - se ho recuperato il first date time dei piu probabili unit in selection e 
-                                - A: gotdate matcha ! : user preferred e = first date , 
-                                    - se posso aspettare il matrix (canwait) perche rapido , aspetto di caricare il matrix  con start date = first date e poi 
-                                        quindi recupero il matrix con fromdate=firstreq() e costruisco il selector sul day fromdate : rispondero : oh scegli l'orario 
-                                        case 1 ( gotdate)
-                                        - prompt : la data e' disponibile, scegli orario  (tendenzialmente lo posso fare a mano o con duckling ma e' meglio iniettare il 'oggi' cosi il duckling sa che si riferisce ad oggi )
-                                        - next status= 2 ( available hours proposed on a day )
-                                        - prompt ok abbiamo alcune hour disponobili scegli ...
-
-                                    - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
-                                            ..........
-
-                                - B: : gotdate non matcha ! 
-                                    - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
-                                        recupero il matrix con datefrom il maggiore tra se e il desidered user e costruisco il selector su 3 available days 
-                                        case ....
-                                        - promptando : 'non ho disonibilita ma in futuro si ', o ' si ho slot disponibili per il desidered day'  e do 3 date 
-                                        - next status= 1 (3 date proposed )
-
-                                    - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
-                                            ..........
-
-                             - se non ho recuperato il first 
-                                    - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
-                                    - C: recupero il matrix e 
-                                        case 21 come B ma 
-                                        - prompto con : ' ecco 3 date disponibili ,scegli data e preferred time' 
-
-                                
-                            // next = await firstReq(1, gotdate);// fill the slot matrix x the performer choosen using qq.ctl starting from preferred date time 
-
-                            // todo : calc firstReq param from each case 
-
-                            // the user select performer and did NOT ASKED a PREFERRED DATE  
-                            // so so here  return the first available date and ask for a preferred hour  and a new date time
-                            //  in the meanwile justrecover the available  datetime slot ( aspettando o eventualmente  rendilo disponibile via desDtatTime)
-
-                            //  - se ho recuperato il first date 
-                            //      - se posso aspettare il matrix (canwait) perce rapido , aspetto di caricare il matrix  con start date = first date e poi 
-                            //          case D
-                            //          - next status 1 
-                            //          - prompt : ecco le prime 3 date disponbili 
-
-                            //      - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
-                            //              next status -5  
-                            //              -  H1 ho il first date  do la prima data disponibile e chiedo se va bene e se si di darmi il preferred hour, se no  di dare altro preferred day
-                            //              -  H2 no ho il first date chiedo di dare il preferred quando risponde sono in status -5 e vedo la disponibilita con slot  matrix che spero nel frattempo aver raccolto  
-
-                            //  - se non ho recuperato il first date 
-                            //      - se posso aspettare : come case D
-
-
-                            //      - se non posso aspettare il return del matrix (troppo lento ) faccio partire il recupero del matrix e intanto vado con dialogo interlocutorio 
-                            //              next status -5  
-                            //              -  D2 no ho il first date chiedo di dare il preferred quando risponde sono in status -5 e vedo la disponibilita con slot  matrix che spero nel frattempo aver raccolto  
-
-
-
-                            // next = await firstReq(2);// fill the slot matrix x the performer choosen using qq.ctl , case 2 
-
-
-
-
-                            // new : here because firstdate is not availabe 
-
-                            if (!desDtatTime) {
-                                detcaseprompt=4;// use didnt ask preferred , so get slots from current time then propose first 3 date
-                                // desDtatTime will be set cur time 
-                            }else{
-                                detcaseprompt=5;// fromdate is desDtatTime so get slots from  desDtatTime  then check if 
-                                                // - we got  desDtatTime so propose hour selection 
-                                                // - dont got so ask selecting 3 deys after 
-                            }
-                        }
-
-                        */
-
-
-                    /* so after mapping each case in action param + fromdate we call 
-
-                        -  (V) firstReq(0) ( just load the slot matrix to be checked after in in status -5 )+ interlocutory_dialog() ( next template/routings : complete=....);
-                            .... todo 
-                        -  (W) firstReq(sel,detcaseprompt,) ( complete=....);
-                            implemented !
-
-                            > summary SWY :
-                            - desDtatTime is user preference but revise if 
-                                - is missing choose firstDate , if is still missing it will be set current date 
-                                - is < firstDate  reset to firstDate 
-                            - sel (how to build the selector ):
-                                2 select 3 days  
-                                1 alredy got the date so  select hours in a day
-                                3: we need to get slots then see if desDtatTime is matched (first rel bookable is 0)
-                            - detcaseprompt (flags on template x the selector items list prompt ) as before set 
-                                    ( nb sel is 1 if detcaseprompt is 1,
-                                                 2 if detcaseprompt is 2,4, 
-                                                 3 if detcaseprompt is 3 or 5)
-                                 prompt : 
-                                 // cases when first date available 
-                                1: la data e' disponibile, scegli orario 
-                                2:  des date is impossible  propose  first date and following 
-                                3:  des date e' dopo first available  so get slot from   desDtatTime then check 
-                                    - if à disponibile if so do hour sel , otherwise give 3 days
-
-                                // cases when no first date available 
-                                4: no des date : le prime date disponibili sono  
-                                5: (like 3 ?) get slots from  desDtatTime  then check if first slot got fromdate  
-                                    - if meet  desDtatTime : ci sono posti per il giorno richiesto ecco gli orari  
-                                    - if dont : la  giorno richiesto non è disponobile le prime date disponibili sono  
-
-                                >>>  quando attendo il matrix download (solution coded ) firstdate serve solo a settare il fromdate 
-                                        fromdate : desidered if firstday <  desidered
-                                                    firstday se firstday >  desidered
-                                                    curdate if  both firstday and  desidered misses
-                                  , poi guardando il primo relative day mi accorgo se il desidered è meet o no 
-
-                        next = await firstReq(sel,caseprompt,gotdate);// 
-                                >>>> idea : in irstReq map detcaseprompt in template context flags : group.ctx.th_book_geit
-                    */
-
-                        //fromdate=desDtatTime;// ok?
-
-                        //ctl=Object.assign({},qq.ctl,func_ctl_) ;// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
-
-                        qq.ctl.slotMat={};// add metadata obj x building slot query , it will be added as query is created in firstReq{...start();...}
-                        if(qq.ctl&&!qq.ctl.f){console.error('f not alredy set , ctl is null :',ctl==null);
-                        func_ctl_=Object.assign({rows:null,ctl:qq.ctl},func_ctl);// make rows and ctl available to func, rows will be added as query is created in firstReq{...start();...}
-                        ctl=Object.assign(qq.ctl,{f:func_ctl_});// =slotHelpers extend ctl with helpers working on slotmatrix metadata slotMat
-                        }
-                        // so ctl is exended qq.ctl . NEVER do like ctl=something  if plan to reuse qq.ctl . in this case : ctl=qq.ctl=something
-
-
-                        next = // await firstReq(fromDate,desDtatTime,gotdate);// us local time, desDtatTime can be null , fromDate can be null (if desDtatTime is null) so wil be set as currentdate
-                        await firstReq(fromDate,desDtatTime,prefDay,prefHour,prefHM,gotdate)
-
-                        if (next == 2) {// .....// manage result of firstReq ??
-
-
-                        }
-
-
-                    }
-                    else {// update matrix , to do 
-                        return null;// the aiax will not change model , no match 
-                    }
-
-
-
-                } else if (selStat == 0) {// DELETE   ! .the ctl has alredy set the event structure query.ctl={eventSt}, and choosed the service and the performer .now build the multiturn model datetime/slot matrix and itsstructure on ctl.
+        } else if (selStat == 0) {// DELETE   ! .the ctl has alredy set the event structure query.ctl={eventSt}, and choosed the service and the performer .now build the multiturn model datetime/slot matrix and itsstructure on ctl.
                     // OLD AVOID using 
                     // if (selAction == 0) 
                     if (match) {
@@ -2758,8 +2830,40 @@ if(qq){// 042021
                 //  - select service > simple static list  to select 
                 //  and 
                 //  - performer  >  select after a query to make more restricted he selection 
-                await getEvent(session,form_wheres, qs, rest);
+                await getEvent(session,form_wheres, qs, rest);// will set qq
             }
+
+function getOption()   {
+ // search param in vars :
+ let dyncfg,user;
+if(vars.start_ctx){// old, no more 
+dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
+
+} else if(vars.qs_parrucchieri){
+    dyncfg=vars.start_ctx=='enloc';//(a dialog parametrization injected on first cmd start (triggering )using adapter
+
+    
+
+}else if(session){
+
+// search in vars.session
+
+    if(session.start_ctx){// auto embedded from 	 %%embed_start_ctx-enloc; , see XXFGRY : see in master_df_builder...
+    if (typeof (session.start_ctx) === 'string'){
+    dyncfg=session.start_ctx=='enloc';
+    }
+    else{
+        dyncfg=session.start_ctx.start_ctx=='enloc';
+    }
+} else    if(session.qs_parrucchieri){// auto embedded from %%embed_qs_parrucchieri-
+{
+        dyncfg=session.qs_parrucchieri.start_ctx=='enloc';
+        user=session.qs_parrucchieri.user;
+        // other params ......
+    }
+}}
+return {dyncfg,user};
+}
 function dontMHelper() {// dont match 
 
 
@@ -3364,7 +3468,7 @@ function dontMHelper() {// dont match
             selStat = -10;// initial status on the fsm recover a event (service/performer)  structure 
 
             // so as done x query model book_res_child , filled by a matcher with url refearring to this ctl  
-            qq = await getEvents(session.simplybook_endpoint);// build ctl structure , fill simple query model . simplybook_endpoint the not std (sermovox) simplybook endpoint 
+            qq = await getEvents(session);// build ctl structure , fill simple query model . simplybook_endpoint the not std (sermovox) simplybook endpoint 
 
             if(qq){
             let qc = qq.ctl;// the ctl status injected on query model 
@@ -3376,17 +3480,57 @@ function dontMHelper() {// dont match
         async function setPerformerSel(form_wheres, qs, rest) {// after coming back with a selected service , build the performer selector with the same status  query.ctl.eventSt
             selStat = -8;// initial status on the fsm recover a event (service/performer)  structure 
 
+            // ???????????? opn={dyncfg,user};
+            let opn=getOption() // run time option x 2nd level customization, see case in getoption()
+            , dyncfg;
+            if(opn.dyncfg)dyncfg=opn.dyncfg;
+
+            else dyncfg=EnLoc;// static default cfg param : true means filter prestatori by location, can be run time overriden by a user
 
             const qc = qq.ctl;// the ctl status injected on query model 
+
+            // JHHU :
+
+            if(qc.clientId&&qc.clientSt&&session.qs_parrucchieri){// se ho settato client su classe customizzata sermovox_parrucchieri allora faccio la personalizzazione relativa
+                
+                if(qc.clientSt.providers){
+                   let prefunit=Object.values(qc.clientSt.providers)[0];// first item 
+                   let instance=qc.clientSt.unit_map[prefunit];// basic view fields={id,value/name , descr }+  bl/relations  of entity item
+                   instance.value=instance.patt=instance.name;instance.descr=instance.description;// add std value ,patt (unused because not to be selected ) and descr
+                                                            // can add req_client:qc.clientId
+                    let rows=[];rows.push(instance);
+
+                    // qq=QueryM() ;   // template, to be completed by : 
+                    // qq.match=qc.clientId;,,,,,,,,,
+
+                    // or : 
+                   qq={
+                    objMod:true,// mandatory because the interface if see this flag will assume to receive qq in std  query/params format 
+                    match:instance.value,
+                    matched:'match',
+                    instance,
+                    vmatch:instance.value,// qc.clientSt.description
+                    ctl :qc,
+                    param:{// cursor:{},,,,
+                            },// means its a entity complex model  type , void as its alredy matched 
+                    rows// not a [], ust 1 row, the selected item 
+
+                }
+
+                // usefull ??
+                ctl.unitObj = {};ctl.unitObj[prefunit]=qq.instance// {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3
+                ctl.unitL = [];ctl.unitL.push(prefunit);//[{id:'1',,,,,},,,,,]
+            }
+            }else{
 
             // so as done x query model book_res_child , filled by a matcher with url refearring to this ctl  
             qq = await getPerfs(form_wheres, qc,dyncfg);// build ctl structure , fill simple query model ,dyncfg=true/false (according to EnLoc/enloc) : dynamic config custom code parametrization 
 
-
+            }
 
 
             qc.selStat = -7;// -9 .ctl.event filled , service query model filled for seletion 
-            sc = qq.rows.length;
+            sc = qq.rows.length;// must be >0 to return something 
 
 
             chroot = 'th_PerfSel';// set routings to the th/ask to select the query model returned (peformer list)
@@ -3432,9 +3576,9 @@ function dontMHelper() {// dont match
         // { query,dayspan,dayBookable,daysc,totSlot,pref_day_slot,bookDays,fromDate,fromDay,fromHour} 
         // LOAD multi turn selectable query model
 
-            let { date_, time, date,curDate } = curdatetime();// YYYY-MM-DD  , 19:57 , current new Date()
+            let { date_, time, date,curDate } = curdatetime();//   YYYY-MM-DD  , 19:57 , calendar day , current date :new Date() 
             if (!fromDate) {// set currenttime
-            const iso = date.toISOString();
+            const iso = curDate.toISOString();
 
             // or, simpler :
             // const iso =  new Date().toISOString();
@@ -3841,9 +3985,11 @@ if(qq){
         let templ,cri;
         //if(qq.group.ctx.th_book_geit&&!isNaN(qq.group.ctx.th_book_geit.meetDes))templ=qq.group.ctx.th_book_geit.meetDes;
         //if(qq.group.ctx.th_book_geit&&!isNaN(qq.group.ctx.th_book_geit.meetDes))templ=qq.group.ctx.th_book_geit.meetDes;
-        if(qq.group.ctx.th_book_geit&&qq.group.ctx.th_book_geit)templ=qq.group.ctx.th_book_geit.meetDes;
-        if(qq.group.ctl&&qq.ctl.slotMat)cri=qq.ctl.slotMat.curRelInDay;
-        console.log('\n  simplybook: Return .  sc: ',sc,' ,routing template to prompt selector(.complete) chroot: ',chroot,'  selStat:', qq.ctl.selStat,' selector prompts: ',qq.cursor.medSyntL,' template reason flags (meetDes: why we are asking this selector): ',templ,
+        if(qq.group){
+        if(qq.group.ctx&&qq.group.ctx.th_book_geit)templ=qq.group.ctx.th_book_geit.meetDes;
+        if(qq.ctl.slotMat)cri=qq.ctl.slotMat.curRelInDay;
+}       let selp;if(qq.cursor)selp=qq.cursor.medSyntL;
+        console.log('\n  simplybook: Return .  sc: ',sc,' ,routing template to prompt selector(.complete) chroot: ',chroot,'  selStat:', qq.ctl.selStat,' selector prompts: ',selp,' template reason flags (meetDes: why we are asking this selector): ',templ,
         ' current 3days startfrom ',cri);
 
 }
@@ -3910,7 +4056,7 @@ if(qq){
 
     }
 
-    function curdatetime() {
+    function curdatetime() {// get cur date + (date_,time, cal day) as string
 
         let date_ob = new Date();
 
@@ -3937,14 +4083,17 @@ if(qq){
         let date_ = year + "-" + month + "-" + date,
             time = hours + ":" + minutes;
 
-        return { date_, time, date,curDate:date_ob };// YYYY-MM-DD  , 19:57 , calendar day , current new Date() ??
+        return { date_, time, date,curDate:date_ob };// YYYY-MM-DD  , 19:57 , calendar day , current date :new Date() 
     }
 
-    function QueryM() {
+    function QueryM() {// see below : return the thisInstance template ( a query formatted to be matched/selected by framework)  on std complex  model !
+                        //      ( rows are entity mapped with view fields (id,name/value,description)+ bl fields  ) 
+                        // WARNING when set query model ,x, in matches query will be put on param ( not a beautifull name !!!) :
+                        // matches.x={params:thisInstance,,,,,,}
         /*
-            {
+            thisInstance={
                 objMod: true,// return the std complex query  model : 
-                rows: [// event list across days and hours 
+                rows: [// items, ex : event list across days and hours 
                 ],
                 cursor: {// this is a runtime build from some case cursor template (selects day, select slot hour)!!!
                     resModel: {// will point to rows[x].value 
@@ -3965,11 +4114,13 @@ if(qq){
                 group: {
                     sel: {
                         item: null, match: null// will be set by convo $$desidere:>
-                    }//group={sel:{item:this.intents[0]}
+                    },//group={sel:{item:this.intents[0]}
+                ctx:{th_book_geit:{meetSer_length:null,meetDes:null}},
+                param:null// bl x template
                 }
         
             };*/
-        this.objMod = true;// return the std complex query  model : 
+        this.objMod = true;// return the std complex query  model so this complex model has std field structure: 
         this.rows = [// event list across days and hours 
         ];
         this.cursor = {// this is a runtime build from some case cursor template (selects day, select slot hour)!!!
@@ -4008,13 +4159,68 @@ if(qq){
 
 
 
-            param:null// bl x template
+            param:null// bl x template NB is not the
         };
 
 
     }
 
-    QueryM.prototype.addRow = function addRow(row, selItem, prompt, sep) {// add a item in query model , and related simply std selector model item resModel //stdT is the value field ! row.value 
+    QueryM.prototype.addRow = function addRow(row, selItem, prompt, sep) {// add a item in query model , and related simply std selector model item resModel //stdT is the value field ! row.value :
+
+        /*
+                let row = {
+                    value: sname,// std datetime duck is "2021-01-04T13:00:00.000-08:00"  so take as our def : "2021-01-04T13:00:00"
+                    patt: pattt_,// 
+                    vname: vname[outlist[index]],// the prompt x item 
+                    id:provxServiceL[outlist[index]].id // >>>>>>>>>>>>>>>>>>>>>>>  CHECKit 
+                };
+
+                // set selector data to use in selector (put in query.cursor.resModel):
+                // - sname  
+                let selItem = {// the value in rows
+                    vname: prompt_[outlist[index]],// row.vname,// the v name prompt== medSyntL ?
+                    patt: patt_  // item selector match,  is the name or its attribute used to select the item  
+                };
+
+
+                // on current query obj (this ):
+                    	this=query=    {
+							objMod: true,// return the std complex query  model : 
+							rows: [// event list across days and hours 
+							    ],
+							cursor: {// this is a runtime build from some case cursor template (selects day, select slot hour)!!!
+							    resModel: {// will point to rows[x].value 
+							        },
+							    medSyntL: [],// the list of voice name ( to list the items to user x matching ) item to test  MUST be ON SYNC with rows ( can use medSync) !!!!!
+							    medSync: []// the resModel key of the item to test.  for associated resolver row index , 
+							    } ,
+							group: {
+							    sel: {
+								    item: null, 
+                                    match: null// will be set by convo $$desidere:>
+							        },//group={sel:{item:this.intents[0]}
+							    param:null// bl x template
+							    }
+                            }
+
+                    will :
+                        - rows.push(row);
+                        - cursor.medSync.push(row.value)
+                        - cursor.medSyntL.push(  prompt + sep);
+                        - cursor.resModel[row.value] = selItem
+
+
+
+
+        */
+
+
+
+
+
+
+
+
         // selItem minimum is :{vname,patt}
         // functions wont be persistant on status save!!! 
         // TODO aggingere l'espansione della data in  :  23 dicembre 2020 

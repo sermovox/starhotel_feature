@@ -2156,7 +2156,8 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                                 }
                                 // get func in firsr /..../  . example  :service//plugins.pippo/nome?polo=max    il qs lo butto in form e cerco il servizio plugins.pippo !  
                                 // GENERAL RULE if the result do not have .reason  embedd it !!! 
-                                mr = await myf(form);
+                                mr = await myf(form);// in case of query model : mr.rows is the query copied in matches.querymodel.param in matches.querymodel
+                                                    // probably  in case of intent model : mr.rows is the intent copied in matches.intentmodel.intent in matches.intentmodel
 
                                 if (mr) {
                                     // check format 
@@ -2248,7 +2249,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         // so make the run_jrest  returns a std return. probably take intents matcher case the standard format : param , so :
 
                     // in case of std format check if exists  rows and is  array so add cursor x selection if find a flag formObj.sel_ctx
-                    let mm; if (mr.reason == 'runned' && mr.rows.objMod && mr.rows.rows.length > 1) {// is probably  query matcher ( seldom entity) 
+                    let mm; if (mr.reason == 'runned' && mr.rows.objMod && mr.rows.rows.length >= 1) {// is probably  query matcher ( seldom entity) 
 
                         // rows must be a array 
 
@@ -2257,7 +2258,7 @@ function DynServHelperConstr(fwHelpers,fwCb_,db_,ai_,rest_,dynJs_){// db & http 
                         mm = 'match';// ?? 
 
 
-                        if (isQuery&&(formObj.sel_ctx||dbSelector)) {// add selector only if requested or we are using db service
+                        if (isQuery&&(formObj.sel_ctx||dbSelector)) {// add selector only if requested or we are using db service.usually false
                             /*
                             if form.sel_ctx:true , build a ctx model for a selector thread (could be done in restAdapter2Mongodb_ too )
 

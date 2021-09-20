@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quickstart demo</title>
+  <script src="//cdn.voximplant.com/edge/voximplant.min.js"></script>
+</head>
+<body>
+  <button id="jsMakeCall">Make call</button>
+<script>
+  const sdk = VoxImplant.getInstance();
+
+
+
+
+async function myFetch(){
+
+try {
+ await voximplant.init({
+ micRequired: true,
+ progressTone: true,
+ progressToneCountry: "US"
+});
+ // SDK initialized
+ voximplant.addEventListener(VoxImplant.Events.ConnectionClosed, () => {
+   // Connection was closed
+ });
+ try {
+   await voximplant.connect();
+   // Connection was established successfully
+ } catch (e) {
+   // Connection failed
+ }
+} catch (e) {
+ // SDK init failure
+}
+try {
+ // Change "appname" and "accname" to names of your application and account,
+ // "username" and "password" to name and password of user created via
+ // the control panel.
+ await voximplant.login("luigi@cc.luigimarson.voximplant.com",
+   "voximplantvoximplant");
+ // Authorization success
+} catch (e) {
+ // Authorization failure
+}
+
+}
+
+
+
+myFetch()
+.catch(e => {
+  console.log('There has been a problem with your fetch operation: ' + e.message);
+});
+/*
+      voximplant.on(VoxImplant.Events.IncomingCall, (e) => {
+        e.call.answer();
+        console.log('You can hear audio from the cloud');
+        e.call.on(VoxImplant.CallEvents.Disconnected, () => console.log('The call has ended'));
+        e.call.on(VoxImplant.CallEvents.Failed, (e) => console.log(`Call failed with the ${e.code} error`));
+      });
+    })
+    .catch((e)=>{
+      console.log(e);
+    });
+  */
+</script>
+</body>
+</html>

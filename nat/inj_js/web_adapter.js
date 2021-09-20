@@ -208,6 +208,9 @@ console.log(' Web Adapter,  receiving '+payload);
                 logger(message,channel,true);
                 if (channel === 'websocket') {
                     // If this turn originated with a websocket message, respond via websocket
+
+                        // just to test :  let text=message.text; if(text)text=text.replace(/(<.*?>)|(\n)|(\\n)/gs'');//Regex.Replace(mesage.text,"<.*?>",string.Empty);
+
                     var ws = clients[activity.recipient.id];
                     if (ws && ws.readyState === 1) {
                         try {

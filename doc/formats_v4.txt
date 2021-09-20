@@ -366,6 +366,8 @@ MATCH STATUS VAR SUMMARY  05112020
 	usually matches.complexmodel  has :
 
 	complexmodel=entity/query-param/intent//  (read:param or in future query)contains the model taken as context model, the major model on wich the child will work
+	
+	currently :complexmodel=entity/param/intent/       so param means query model !
 
 		lastly we decide to use param not query : check not using query !!!!!
 

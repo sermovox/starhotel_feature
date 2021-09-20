@@ -4,6 +4,7 @@ dynJs=require('./models.js'),// dynJs=comands={cmddir,cmd2dir,,,,} , db and http
 
 // should be also controller.plugin.vCtl.appWrap
 fwOnC;// injected on the init of this module , require('./onChange.js'),//fw onChange to register, can also be passed when create the module !
+    // fwOnC=controller.plugins.vCtl;// is vCtl= require('./onChange.js')
 
 let db,rest,Schema,ai;
 let controller;
@@ -479,10 +480,21 @@ oo
              let script=convo.script;// see conversation runBefore 
 
 
-            // ********     so never extend again in this Multidialog Status Chain ******
+            // ********  quando injected[myscript_]==true   do not extend again in this Multidialog Status Chain ******
 
             let injected=convo.vars.convoCont= convo.vars.convoCont||{};
             if(!injected[myscript_]){
+
+                // 092021 summary . here, as app=require('./nat/app.js'), we fill :  
+                //  vars.direc,
+                //  appWrap=vars.app=(fwOnC=require('onChange.js')).getappWrap(bot,convo,trigApp=app(null,rest,appcfg,null,myscript_) ), 
+                //      //  - have a express endpoint .begin_def that prepare a routing ctl that can be served using a .post endpoint 
+                //      //  inform server endpoint a major comand is requesting ( so call .begin_def  a request to express service to use a routing ctl)
+                //      appWrap.begin_def(myscript_,usrAppSt);// inform app server we start a new convo so prepare/continue serving and the new context is usrAppSt  
+                //      appWrap.post('register',{user:convo.vars.user,data:usrAppSt,service:myscript_});// a db query will set user data on session.user={name,property1,,,}to goon this convo
+                //  vars.excel=extension of  directive.excel . nb :directive = (dynJs=model.js())[cmd];// directive={a,b,c,excel,} 
+                //  vars.direc=extension of directive.direc
+
 
                 if(directive.excel)appcfg=directive.excel.appinit;
 
@@ -494,7 +506,7 @@ oo
                     // - set a filter on the dialog the cms can trigger (set the incontext )
                     // OR , better, 
                     // - CCDD : JUST manage the triggering of (all dialog related to) a app in a 'controller  dialog' ( level 0)
-                    //      so when triggered cmd ' order' we attach order app and launch the order controller entry dialog cmd='order' (level 1) that will promt used for a action on order app
+                    //      so when triggered cmd ' order' we attach order app and launch the order controller entry dialog cmd='order' (level 1) that will promt user for a action on order app
                     //       so we can do some order action and when finished we :
                     //          - do not COMPLETE the dialog : because we let the base cmd triggering only to controller dialog  only 
                     //          - but goto the order cmd that will trigger other action using condition match
@@ -938,7 +950,7 @@ function buildF(ask_th,ftext){
 // register bank (dynJs) function onChange x script/dynfield-key bound to dynJs[myscript]
 module.exports =function (cnt,db_,schema,ai_,rest_,app_){
     controller=cnt;
-    fwOnC=controller.plugins.vCtl;// is vCtl
+    fwOnC=controller.plugins.vCtl;// is vCtl=require('onChange.js')
     db=db_;
     ai=ai_;
     rest=rest_;
