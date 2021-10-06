@@ -861,6 +861,8 @@ async function client(qspar){// 082021 : qspar=session.qs_parrucchieri .    old:
     }
     }
 if (clientSt)return {clientSt,clientId};// clientId= really the name or id depending on simplyboox portal or proxy , now is the name 
+                                        // >>>>>> 102021 : (really the registered name in lista book_endpoint di .env , cioe' il tel number senza + o sip name )
+                                        //                  suggerimento : come nome cliente usare temp il clientSt.description !!!
 }
 
 
@@ -1179,6 +1181,7 @@ const fromDate = new Date(dateFromAPI);// assume dateFrom in local time,   fromD
 // nb as first bookable day dayspan[0] can be >=0 and the first relative  desidered day can be <=0
 
                 ctl.slotMat = {// updates ctl , reassign slotMat    *CTL 
+                    // todo add toDate so in template we know the date from and to so the user will knows the span to choose
                     curDate:curdate.toISOString(),
                     dayspan:dayspan_ , daysc: daysc_ , dayBookable:dayBookable_, totSlot:0, bookDays:0,
                     curRelInDay:curRelInDay_ , relDayInd:relDayInd_, pref_day_slot:pref_day_slot_,
@@ -4300,14 +4303,35 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
             /* >>>>  Search/selection Strategy 
          like in qea and mongo/sqllight text matching db ,
          after first master wheres (service+location) ( wheres can be sql or text matching fields (where concept are probabilistic ) )
+         we got a list (current whered set)
         > (ZZ) prompt :  we found many performers x 
-                    PPO: service you choose and preferred properties (ASW list of wheres matched on current selected set : mached wheres or wheres not matched but = for the current selected set , ex: location) here a sample list
-            ... 3 item with some prop (better discriminating ) also different each iten
-            please exit/retry or choose by name ( or some characteristic listed)  or general not listed char/property like type and size (if are discriminant , the other where are listed on ASW)
+                    PPO: - service you choose and preferred properties (ASW list of wheres matched on current selected set : mached wheres or wheres not matched but = for the current selected set , ex: location) here a sample list
+                           >>> abbiamo molte info x l'opera in esame che riguarda l'autore  
+                            ... 3 item with some prop (can be the better discriminating in matched list  ) 
+                            >>> es dove e' nato  pippo   (sono short descr)
+                                    quando pippo fatto opera 
 
-        > run wheres still not matched (so not ASW), get the current selected set (sql will exclude items from set, or best match will add points every item with a match in property where, then choose some best)
+                            also different each item (???)
+                            >>> please exit/retry or choose by name /short desc 
+                            ( or some characteristic listed )
+                            or general not listed char/property like type and size 
+                            >>> o abbiamo performer di tipo blulook o newwave
+                            (if are discriminant we can find them in .......  , the other where are listed on ASW , so a new where will find a single match, 
+
+                            >>>  o info sulle implicazioni con tema sociale # discrim
+                                o molte (# molte so refine next turm ) info su prop1/2 (table in rel con prop2 opera=def/autore/...) commissionata eseguita (rel con opera) nato pagato (in rel con autore
+                                    es commissionata si rif ad opera e ne ho molte una per ogni item che ha tale table es dove quando quanto ) 
+
+                             or also we can list some where common with most item , we can find them in ....., so we can do a new where query to iterate the process)
+
+        > run wheres still not matched (so not ASW), get the current selected set (sql will exclude items from current set, or best match will add points every item with a match in property where, then choose some best)
             and run fts/qea on name/short description/questions field of that set : each item have a score (name score + not ASW where score)
             > so name/short description/questions is a large keywords/concepts container that associates item with its concepts . well do fts or bestmatch and multiply * field/property weight
+
+                prompt   we got manyitems with location rome and size 45
+                                                autore (pippo) 
+                                
+
 
         > if best has distinguish score say we got a best item .... as PPO you can confirm that or see other result 
         > so success or iterate on ZZ
@@ -4345,7 +4369,7 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
         
         
                             
-                            discriminatory selection ( select on all items of a discrim var, or jus disambiguate from 2 val of the var or )
+                            discriminatory selection ( select on all items of a discrim var, or just disambiguate from 2 val of the var or )
 
 
                             nb added to better explain :
@@ -4356,8 +4380,10 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
                                                 'per sceliere un provider nella seguente lista puoi  scegliere anche keyvaluelist')
                                                     >> see  prompt_,patt,
             
-                                - con disambiguate si vuol indicare che lo space coperto da un  where/concept e' piccolo cosi vale la pena matcharlo per dimezzare il numero di items da selezionare
-                                    quindi promptero : 'preferisci il concept x sia disambiguate1 o disambiguate2 ?'
+                                - con disambiguate si vuol indicare che lo space coperto da un  where/concept e' piccolo 
+                                        es ci sono solo 2 tipi di provider (tipo blulook e newwave ) con molti items ciascuno ,
+                                    cioe ci sono pochi valori cosi vale la pena matcharlo per dimezzare il numero di items da selezionare nel prossimo turno 
+                                    quindi promptero : 'preferisci il concept(tipo) x sia blulook  o newwave ?'
 
 
 
@@ -4395,7 +4421,7 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
                                             o sviluppo parzalmente  le dimensioni di , e vado a preselezionare il testo su cui cercare il best match con regex che estrae il concept meglio 
 
 
-                                            cjhi/come quando                autore/opera            temi comuni         answer
+                                            chi/come quando                autore/opera            temi comuni         answer
 
 
 
@@ -4418,7 +4444,7 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
                                              quindi ho tabelle opera e autore  e sue righe da immettere  piuttosto che matrice[opera/autore,chi/cosa/come]
                                              
                                              
-                                             in ogni caso come in book   cerchero di evitare di listare tutti gli items diro solo i piu frequenti e poi diro che i dsicriminanti sono opera autore e chi/come/quando/dove !!!!!
+                                             in ogni caso come in book   cerchero di evitare di listare tutti gli items diro solo i piu frequenti e poi diro che i dicriminanti sono opera autore e chi/come/quando/dove !!!!!
 
 
                                         -------
@@ -4446,8 +4472,10 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
 
                                     wheres[j]= nome del jesimo where, es wheres[1]=città
 
-                                    values = [j][z]=roma,   (values[1][3]=roma in almeno un  item da listare  e' stato trovato il where  jesimo(primo) con valore roma , è il  zesimo (terzo) valore di jesimo where trovato) 
-                                    count  = [j][z]= 3 , il zesimo valore di where trovato e' stato trovato in 3 item
+                                    values[j][z]=roma,  il where  jesimo con valore roma è il z-esimo valore trovato in almeno un item da listare  
+                                        or 
+                                        (values[1][3]=roma : in almeno un  item da listare e' stato trovato il where  jesimo(primo) con valore roma , è il  zesimo (terzo) valore di jesimo where trovato) 
+                                    count [j][z]= 3 , il zesimo valore di where jesimo trovato e' stato trovato in 3 item da listare
                                     discr = [j][i]=z    nel iesimo prompted list item è stato trovato il zesimo where jesimo . il valore è roma ed e' stato trovato in complessivi 3 items (questo + altri 2 items)
  
                                     analisi degli items i nei riguardi dei wheres jesimi:
@@ -4458,17 +4486,25 @@ return Math.floor(((date2.getTime() - date1.getTime())/ (1000 * 3600 * 24)));//t
 
                                         se invece count >= (scan / 3) alora la wheres jesima permette di disambiguare (la lista e' caratterizzata da 2 valori di wheres da disambiguare )
                                     disamb[j]  e somma dei count[j][discr[j][i]])). cioe e' il jesimo where ha determinazioni che sono in molti items
-                                        es discr[1]=[1,0,-1,1] la prima wheres enegli item 0 con un valore values[1,1]=roma nel item 1 con values[1,0] = milano  nel item 3 con values[1,1]=roma 
+                                        es discr[1]=[1,0,-1,1] la prima wheres è negli item 0 con un valore values[1,1]=roma nel item 1 con values[1,0] = milano  nel item 3 con values[1,1]=roma 
                                             
-                                            count[1,0]=1 (valore milano), count[1,1]=2 (valore roma), wheres[1]=città  
+                                            count[1,0]=1 (nel where 1 il 0-esimo item(con valore milano)è presente in 1 riga della lista, count[1,1]=2 (valore roma), wheres[1]=città  
                                             ora per il j=1 wheres (città)
                                             ci sono elementi   che hanno  promo wheres con z=count> scan/3   es scan=4 ( lista di 4 items)
-                                                i=0  count=2 > 4/3=1,3
-                                                i=1  count=1 !> 1,3
-                                                i=2  none
-                                                i=3  count=2 > 4/3=1,3
+ 
+                                            j=1 : where 1  , where[1]='città'
 
 
+                                                row    count                valore di where     indice z          
+                                                i=0  count=2 > 4/3=1,3      roma
+                                                i=1  count=1 !> 1,3         milano
+                                                i=2  none                   -
+                                                i=3  count=2 > 4/3=1,3      roma
+
+                                                items/valori trovati 
+                                                z       values[1,z]]
+                                                0       roma
+                                                1       milano
                                                 disamb[j] = 2,6  , 
                                                 disamb1[j] = (max dei count del jesimo where)=2; disamb1v[1]=roma,  disamb1v[1]=milano 
                                                     puo valere la pena di inserirlo nel prompt che precede la lista degli items : ' molti items si riferiscono a milano e roma , scegli'

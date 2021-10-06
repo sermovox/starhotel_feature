@@ -4,15 +4,13 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "type": "node",
+        {   "type": "node",
             "request": "launch",
-            "outputCapture": "std",
-            ////"console": "integratedTerminal" ,
+            // "outputCapture": "std",// normal but without map, instead of console.....
+            //"console": "integratedTerminal" ,
             "name": "Launch Program",
-            "program": "${workspaceFolder}/bot.js",
-            "sourceMaps": false
-        
+            "program": "${workspaceFolder}/bot.js"
+            ,"sourceMaps": false
         }
     ]
 }

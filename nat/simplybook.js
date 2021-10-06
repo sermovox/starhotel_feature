@@ -22,12 +22,12 @@ const SimplyBook = function (name_, t1_, t2_, user_, pass_) {// constructor
         'sermovox', // the book portal resource/site
         '58d46aa077c75410c89b7289816cbd5894d01f7b42c1da142ae62772738270ef',// token that identofy the resources to be auth 
         'be29914b99aa6ce55808c02cae3eccb5e7986c9ff4c230b064e8ff62fa6de5c7',
-        'admin',// admin user name  to connect for ask the auth
+        'admin',// admin user name  to connect for ask the auth 
         'luigiDOluigi');// password , its non correct but we already have the token ! should  correspond
 
 
 
-        this proxy , using the same interface of simplybook library will connect the portal name_ to the bot  , managing conection permission 
+        this proxy , using the same interface of simplybook library will connect the portal name_ data to the bot  , managing conection permission 
 
         from portal name the proxy can tell the portal to connect , recovering some connection info/params (set in bookendpoint)
         in case book cms portal , that is a portal that just give/send info required by the interface to the  portal (2 banks: main and demo)
@@ -56,7 +56,7 @@ const SimplyBook = function (name_, t1_, t2_, user_, pass_) {// constructor
 
         ) {// better if the site name compete to bookcms site 
 
-
+                let credentials=process.env.gCalCredent||'credentials.json';
             //bookendpoint = { sermovox: 
                 bookendpoint[name_]=
 
@@ -67,11 +67,21 @@ book_proxy_adminpass=xyz1
                 */
 
                {// for a endpoint named sermovox that are the data to connnect the server: url, the name of admin user and its passord and the token to use book server api
+
+                // 092021 : review
+                // in pratica queste info servono per connettersi a un server di aut che permette di dare le info al responsabile dei dati del site name_ affinche possa autorizzare l'accesso
+                //  da parte di questo proxy
+                // in realtà gia conosciamo il token x l'accesso a tutti i dati di book cms , ma in effetti manca il token x l'acceso ai slot dei provider via gcal.
+                // forniamo quindi a book cms le credenziali x farsi che gCal possa connettersi al server oauth2 
+
                     url: process.env.book_proxy_url,// main api server domine
                     users: {
-                        admin: { pass: process.env.book_proxy_adminpass, token: process.env.book_proxy_token }// token is for api to get services,performers and slot matrix, 
+                        admin: { pass: process.env.book_proxy_adminpass, token: process.env.book_proxy_token }// token is for api to get services,performers and slot matrix, on a site in bookcms repository
                                                                     // pass is to connect admin users to set book data for a endpoint (passord put in .env) and get the token
-                        ,gcal:{credentials:'cred_file,future use'}
+                        ,gcal:{credentials}// really credential must be associated direcly in book cms because all performers defined in a resource :
+                                            // resource = this.name;// the book site name
+                                            //  must be supported by a gCal that has a specific google account access to gCal data via 
+                                            //  the google account credentials allows gCal to call oath2 server to access to gcal user that give the server its permission
                     }
                 }
 
@@ -92,7 +102,7 @@ book_proxy_adminpass=xyz1
 
                 manages:
                 - token process for simplybook/proxy  according to simplybook rules
-                - token to gt book cms resource according trivial cms book token ( is a password) rules
+                - token to get book cms resource according trivial cms book token ( is a password) rules
                 - token to get oth2 access from gcal x slot access x authorizing user. can use credential set in simplybook vars 
 
 
@@ -123,7 +133,7 @@ book_proxy_adminpass=xyz1
                 //  - give a library token_ (token_ = 'T.....')to the library user that will be used here  as register entry to give the service on authorized bookcms resources (using token ) when it will send following api request
                 //      so if in following api library AAA call , the AAA handlers endpoint (getUnitList,...)  recognize the token_  so  we know the token to use in  bookcms api to get the info available for that token
                 //              a token will make available some resouces x the caller ( user that asked acces x some resources in a time slot )
-                if ((mu = eP.users[this.user])) {// portal (cms or simplybook portal) admin user. the user declared to the librry correspond to the user in portal/proxy
+                if ((mu = eP.users[this.user])) {// portal (cms or simplybook portal) admin user. the user declared to the library correspond to the user in portal/proxy
                     if (mu.pass == this.pass) {// user password check he simulate a book portal auth rervice call to get the token x the site 
 
                         token = 'T' + Math.random();// some admin call will get the token (but here we used a previous saved released token ) that access a url server that 1:knowing the token give a specific site data or 2:here we add site to server api 
@@ -180,7 +190,7 @@ book_proxy_adminpass=xyz1
 
                     }
                 })(),
-                getStartTimeMatrix: (function () {
+                getStartTimeMatrix: (function () {// can be extended to pass some parrucchieri customization field
                     return async function (datefrom, dateto, serviceId, performerId, qty) {
                         let result = await apiRequest(user, 'getstarttimematrix', params = { datefrom, dateto, serviceId, performerId, qty }, 'POST');
                         if (result) return { success: 'true', data: result };// data= {1:{id:'1',,,,,},,,,,}// 1 or '1' ?  , 1 is a string ! ST3

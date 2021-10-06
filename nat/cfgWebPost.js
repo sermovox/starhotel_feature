@@ -8,6 +8,19 @@ this ends point can also call directly the bot ( as a fw web adapter module) . b
 
 */
 
+
+
+// events definition for df1 post ctl (see ev_1_Param):
+let events={// register the class 1 events fields , will be found as msg fields
+  booked:['service','performer','datetime','dfdata_response']// usually dfdata_.....   can be set also as field of msg following the message that declare the events msg.df_exit
+};
+events.oper=events['n/a']=events.booked;
+
+
+
+
+
+
 let querystring=require('querystring');
 // fw config
 
@@ -43,7 +56,7 @@ let  startStrat=0;// see  SAWETWG: at wellcom event match:
 
 
     // 2nd level of customization (case based , in future use registered cb)
-let lev2Custom={'qs_parrucchieri':function(sb_st){
+let lev2Custom={'qs_parrucchieri':function(sb_st){// say if apply a customization process from embed param read
   // main use is : in welcome intent updates the std init param used x env     generic simplybook_st(cfgparamtouseInTemplatetoPasstoStartingCmd) param : see SBSTDEF
   if(sb_st.substring(8,23)=='qs_parrucchieri')//     '%%embed_qs_parrucchieri')
     return true;else return false;
@@ -229,30 +242,32 @@ wserv.get('/someuri', (req, res) => {
 
 
           function res_json_(jt) {// see requDF1()
-            // the bot calls 
+            // the bot calls back to give bot response to user
         /* jt=
-            [{"type":"message","text":"ciao sono l'assistente del favoloso hotel cinque stelle <br> oggi grande festa della amicizia alle 20 tutti in piscina! <br> Puoi fare domande su dove come quando  u
+            [
+              {"type":"message","text":"ciao sono l'assistente del favoloso hotel cinque stelle <br> oggi grande festa della amicizia alle 20 tutti in piscina! <br> Puoi fare domande su dove come quando  u
             sufruire dei nostri molti servizi interni ed esterni.\n <br> ad esempio puoi domandare dove e quando fare  colazione , andare al ristorante,  come contattare la portineria  o usufruire della l
             avanderia , puoi anche chiedere l'elenco dei servizi e chiedere poi cosa desideri sapere o prenotare","urgenza_f":"testato","thread":"default","key":"urgenza","outCtx":["mod_Serv/th_serv_relay
             "],"matches":[],"askmatches":[]
           
                                   ++++  fields set on js scripts using channelData.field1=.....    
                                   usually :
-                                    channelData.parameters={book:'fail'};
-                                    channelData.action='BYE';
+                                    ,channelData:{parameters:{book:'fail'},
+                                                  action:'BYE'}
                 
           
-          }]
+              } 
+            ,,,]
           */
               if(!(jt&&jt[0]))return;
                 let text = jt[0].text,iu,ii,qs,resp1,parameters,
                 channelData=jt[0].channelData;
-                if((iu=text.indexOf('%%phone_exit-')) >= 0){
+                if((iu=text.indexOf('%%phone_exit-')) >= 0){// avoid embedded
                   ii=text.substring(iu+13).indexOf(';');
                   if(ii>0)qs=text.substring(iu+13,iu+13+ii);
                 
 
-                // TODO add all exit end point !!!!!!!!!
+                // TODO add all exit end point apart %%phone_exit- !!!!!!!!!
 
                 if (
                   // (exit_=text.match(exitregex))// too time consuming
@@ -274,7 +289,7 @@ wserv.get('/someuri', (req, res) => {
                 }
 
                 }}
-                if(!resp1&&channelData){// if cant set response from embedded in text %%phone_exit-.....
+                if(!resp1&&channelData){// if cant set response from embedded in text %%phone_exit-..... use 
                           // try using channelData
                   if(channelData.action){
 
@@ -567,9 +582,9 @@ else {// df1
      ctxName = [],// ctx names
 
       turnsC,//turnsC in case we have to add
-      askoperatorC,// the outputcontext to set params  when bot returns succfffully booking 
+      askoperatorC,// the outputcontext to set params  when bot returns successfully booking , so is item set in ctx_out
       centroserviziC, datetimeC,// service context: centroservizi will expose csWhatService, datetime will expose df intent bookparam (one turn single try df booking intent) 
-      phoneC,// phone ctx , need to pass operator transfert 
+      phoneC,// phone ctx , need to pass operator transfert .???? seems not a good thing todo , phone will be regenerated at each turn !
       ctx_out = [],// when pass to bot control active context will be turns, and ctx_out context is set to be used when end bot  ( next outcontext: askoperator) returning on df control 
       askOpLocation,// debug : template for askoperator outcontext parameters to set as  result of bot booking 
       askOpDateTime;// debig : template for askoperator outcontext parameters to set as  result of bot booking 
@@ -834,7 +849,7 @@ else {// df1
               if (!isAsk) askoperatorC = new Ctx(nam);// generated copyng 
               //ctxName.push(turns);
               // ctx.push(turnsC);
-              el_out = Object.assign({}, el); el_out.lifespanCount = 1;// el_out=new Ctx(nam,1,el.parameters);
+              el_out = Object.assign({}, el); el_out.lifespanCount = 2;//1;// el_out=new Ctx(nam,1,el.parameters);
 
             } else if (mnam == turns) {
               isTurns = true;
@@ -882,25 +897,29 @@ else {// df1
               // array.forEach(element => {  });
 
               el.lifespanCount = 1;
-
+              if(!askoperatorC){// 092021 : correction : only if is not already found
               let
                 nam = el.name.substring(0, ictx) + askoperator;
-              askoperatorC = new Ctx(nam);// generated copyng 
+              askoperatorC = new Ctx(nam);// generated copyng . correction : only if is not already found
+              askoperatorC.lifespanCount = 2;
+            }
               //ctxName.push(turns);
               // ctx.push(turnsC);
               el_out = Object.assign({}, el); el_out.lifespanCount = 0;// el_out=new Ctx(nam,1,el.parameters);
 
             } else if (mnam == askoperator) {
               isAsk = true;
-              el.lifespanCount = 0;//0?, keep present but set 1
-              askoperatorC = el_out = Object.assign({}, el); el_out.lifespanCount = 1;// el_out=new Ctx(nam,1,el.parameters);
+              // 092021   to mantain memory must be >0 !!!!!!!, so set to 1
+              el.lifespanCount = 1;//0;//0?, keep present but set 1
+              // override anyway
+              askoperatorC = el_out = Object.assign({}, el); el_out.lifespanCount = 2;//1;// el_out=new Ctx(nam,1,el.parameters);
             } else {
               if (mnam.substring(0, 2) != '__') el.lifespanCount = 0;// dont change sys param
             }
 
             ctxName.push(mnam);
-            ctx.push(el);
-            ctx_out.push(el_out);
+            ctx.push(el);// push into context set x continuing 'turnscontinue' loop
+            ctx_out.push(el_out);// push into context set to exit loop
 
           });
 
@@ -908,8 +927,8 @@ else {// df1
             // turnsC.parameters.acc="accetto";
             ctxName.push(askoperator);
             ctx_out.push(askoperatorC);
-            let el_out = Object.assign({}, askoperatorC); el_out.lifespanCount = 0;
-            ctx.push(el_out);
+            let el_o = Object.assign({}, askoperatorC); el_o.lifespanCount = 1;//0;
+            ctx.push(el_o);
           }
 
         } else if (intent == 'centro') {
@@ -1008,8 +1027,9 @@ else {// df1
                  if(//   no : !preStartCSonWELCOME&&
                   //simplybook_st&&simplybook_st.substring(0,23)=='%%embed_qs_parrucchieri'//     if (preStartCSonWELCOME) ){
                   // second level of customization change cs procedure x this custom case qs_parrucchieri
-                  lev2Custom.qs_parrucchieri(simplybook_st)
-                  ){startStrat=2; 
+                  lev2Custom.qs_parrucchieri(simplybook_st)// check if apply a 'qs_parrucchieri' customization process
+                  ){
+                    startStrat=2; // use a bot cmd to set welcome prompt  
                   preStartCSonWELCOME=false;
                  }
 
@@ -1090,7 +1110,26 @@ else {// df1
             // ML-D : according with bot response returns fulfillment with the right ctx 
 
         // local functions:
-        function res_json_(jt) {// see requDF1()
+        function res_json_(jt) {// see 
+                  /* jt=[   
+                            {// first msg
+                              "type":"message","text":"ciao sono l'assistente del favoloso hotel cinque stelle <br> oggi grande festa della amicizia alle 20 tutti in piscina! <br> Puoi fare domande su dove come quando  u
+                          sufruire dei nostri molti servizi interni ed esterni.\n <br> ad esempio puoi domandare dove e quando fare  colazione , andare al ristorante,  come contattare la portineria  o usufruire della l
+                          avanderia , puoi anche chiedere l'elenco dei servizi e chiedere poi cosa desideri sapere o prenotare","urgenza_f":"testato","thread":"default","key":"urgenza","outCtx":["mod_Serv/th_serv_relay
+                          "],"matches":[],"askmatches":[]
+                        
+                                                ++++  fields set on js scripts using channelData.field1=.....    
+                                                usually fields added to msg:  are 
+                                                              - df_exit(he action or the DF routing event ) 
+                                                              + business fields passed as 
+                                                                - event params  to set event param in response template  of intent associated with event 
+                                                                - injected context params to be used in DF dialog fired by the event
+
+                              
+                        
+                            } 
+                          ,,,]
+                        */
           //res_json(resp1);
           let ctx_, exit_, nextEv = null, qs;
           if (intent == 'Default Welcome Intent' ) {
@@ -1193,45 +1232,74 @@ else {// df1
               // const exitregex=/(?:^|\s)%%exit-((\w|=|-)+)/i   ;// ex: text='... %%exit-qs;...'  will recover qs='city=pordenone-colore=giallo'   and obj is recovered with querystring.parse(qs.replace(/-/g,'&'))
               // .......
 
-              let parm, prompted = jt.length - 1;// the last
+              let parm={}, prompted = jt.length - 1;// the last
 
               let text, iu, ii, qs;
               const embed = false;// use embedded cmd %%.....
 
               let y, eventTr, event = -1;// =reason, event -1 NA, >=0 : 0 fail,event 1 book!
-              for (y = 0; y < jt.length; y++) {
-                if (jt[y].df_exit) {
-                  prompted = y;// df_exit param is really an expected event 
+              let dfdata=false;// after found a event at msg of index yi , scan all following msg (y>yi) to add event param (? better supposing to naming such fields starting with : 'dfdata_.......')
+              for (y = 0; y < jt.length; y++) {// >>> scan any msgs and search x action/event eventTr/event to pass to DF an event, its param and some context props
+                prompted=y;// no reason , just x fun 
+                text = jt[prompted].text;
+                if(!dfdata){
+                if (jt[y].df_exit) {// found event data directly in  msg field
+                 //  prompted = y;// df_exit param is really an expected event 
 
                   eventTr = jt[y].df_exit;
                 }
 
-                text = jt[prompted].text;
-                if (eventTr) {// some event to exame found, see if registered 
-                  if (eventTr == 'booked') {// event=book , so run handler
-                    event = 1;
-                    parm = {};
-                    parm.service = jt[prompted].service;
-                    parm.performer = jt[prompted].performer;
-                    parm.datetime = jt[prompted].datetime;
+                if (eventTr) {// >>>>  some event to exame found, see if registered , set eventTr and its code(=event var = 0,1,2,3,...) and its param
+
+                  if (/*
+                    eventTr == 'booked'// event 1 class events 
+                    ||eventTr == 'n/a'
+                    ||eventTr == 'oper'*/
+                    (event=ev_1_Param(eventTr,jt[prompted],parm))>=0// is registered and some param are loaded , event=1
+                  
+                  ) {// >>>  event=booked , so run handler using some specific params added with channelData.field1  
+                                            // these params can be added as DF event params to b eused in result template or as some context params to be used 
+                                            //  on future intent after the event triggered intent  
+                                            // usually as is difficolt to compose text on DF template is best to build part of the bot response here , so can in response 
+                                            //  template we add the prompt for goon on DF dialogue
+                    // event = 1;// the code for 'booked' ,  'n/a', 'oper'
+                    //parm = {};
+                    // params to use if want to build response in df response template:
+                    /*if(jt[prompted].service)parm.service = jt[prompted].service;
+                    if(jt[prompted].performer)parm.performer = jt[prompted].performer;
+                    if(jt[prompted].datetime)parm.datetime = jt[prompted].datetime;
+                    // param with bot related response build here  or in bot ask custom field setting channelData
+                    if(jt[prompted].response)parm.response=jt[prompted].response;*/
+                    //ev_1_Param(eventTr,jt[prompted],parm);
                     console.log(' bot webhook : on turn msg n# ', y, ' detected event field .df_exit of value: ', eventTr, ' with param: ', parm);
                   // }if (eventTr == 'interrupted') {event=2;
                   } else 
                     if (eventTr == 'started') {// after we return from client prompt cmd
-                      event = 2;
-                      parm = {};
+                      event = 2;// class 2 
+                      //parm = {};
                       parm.operator= jt[prompted].operator;
 
                       console.log(' bot webhook : on turn msg n# ', y, ' detected event field .df_exit of value: ', eventTr, ' with param: ', parm);
                     // }if (eventTr == 'interrupted') {event=2;
-                    } else event = 0;// fail
+                    /*
+                    } else if(eventTr == 'n/a'){// book not available (error on booking process)
+                    event = 3;// fail event 
+                    }else if(eventTr == 'oper'){// user abandon the book process
+                    event = 4;
+                    */
+                    }else 
+                    event = 0;// residual
+                    
                 }
 
                 console.log(' bot webhook : received event as channelData field .df_exit of value: ', eventTr, ' bot response to turnscontinue intent, there are (many) messages, the number is: ', jt.length);
  
-                if (embed && event < 0)// avoid , here alternatively search in embedded instead of using msg param
-                {
-                  if ((iu = text.indexOf('%%df_exit-')) >= 0) {
+                if (embed && event < 0)// old, avoid , not mantained  , here alternatively search in embedded instead of using msg param
+                {/* text = .....
+                          %%df_exit-reason={{vars.matches.ccai_bookret.match}}£datetime={{vars.matches.ccai_bookret.instance.datetime}}£performer={{vars.matches.ccai_bookret.instance.performer}}£service={{vars.matches.ccai_bookret.instance.service}};              
+                          .....
+                  */
+                  if ((iu = text.indexOf('%%df_exit-')) >= 0) {// found event data embedded on text field
                     ii = text.substring(iu + 7).indexOf(';');
                     if (ii > 0) qs = text.substring(iu + 7, iu + 7 + ii);
 
@@ -1249,7 +1317,10 @@ else {// df1
                             // TODO 
                             if (attr == 'booked') {// this rooting reason point to even event_oper
                               event = 1;
-                            } else event = 0;
+                            } 
+                            
+                            // .................
+                            else event = 0;
 
                           } else if (x == 'service') {
                             parm.service = attr;
@@ -1272,22 +1343,34 @@ else {// df1
 
                   }
                 }
-                if (event >= 0) break;
+                if (event >= 0) dfdata=true;//break;
+              }else{// just add event param that is set on msg following the msg in which the event is declared , dfdata=true
+
+                // class 1:
+                if(event==1)ev_1_Param(eventTr,jt[prompted],parm);// try to complete ? dfdata_....  (class=event 1) eventTr fields 
+
+
+              }
+
+
               }
 
 
 
-              if (event >= 0) {
+              if (event >= 0) {// >>> event was fount . from eventTr, its code(event) and its param 
+                              // calc :
+                              // the DF  event (usually from eventTr), its param and some context props 
                 // ctx_ = ctx_out;
 
-                if (event == 1) {// book
+                if (event == 1) {// booked ,,  'n/a', 'oper'
                   ctx_ = ctx_out;
+                  // set context param
                   askoperatorC.parameters=askoperatorC.parameters||{};
-                  askoperatorC.parameters["oper_prompt"] = "";// the prmpt to add if then i choose to talk to oper
-                  askoperatorC.parameters["exit_prompt"] = "";
+                  askoperatorC.parameters["oper_prompt"] = "tbd";// the prmpt to add if then i choose to talk to oper
+                  askoperatorC.parameters["exit_prompt"] = "tbd";
 
                   nextEv = {// fulfillmentMessages will be ignored , the prompt will be given by the event triggered intent (a ask with nogoon)
-                    name: "event_oper"
+                    name: "event_oper"// DF event associated to bot eventTr='booked', 'n/a', 'oper'
                     /*,parameters: {
                       "parameter-name-1": "parameter-value-1",
                       "parameter-name-2": "parameter-value-2"
@@ -1298,13 +1381,18 @@ else {// df1
                   };
 
                 } else if (event == 2) {// started
-                  console.log(' bot webhook : received event started , do nothing now,  in future add operator transfer number to askoperator context ');
+                  console.log(' bot webhook : handling  event started , do nothing now,  in future add operator transfer number to askoperator context ');
  
                   // ctx= 
                   // todo just check askoperator is in ctx then add the param , ex operator, to it if needed 
                   // ex: ctxoperator=findctx(ctx,'askoperator');
                   // ctxoperator.parameters.operator=parm.operator;// added a param got from bot(querried bookcms site to get client data or set manually in the started event ) in one askoperator parameters !!!!
-  
+                /*
+                } else if (event == 3) {// n/a
+                  console.log(' bot webhook : handling event ',eventTr);
+                } else if (event == 4) {// oper
+                  console.log(' bot webhook : handling event ',eventTr);
+                  */
                   } else{// fail
 
                   nextEv = {// fulfillmentMessages will be ignored , the prompt will be given by the event triggered intent (a ask with nogoon)
@@ -1397,6 +1485,21 @@ else {// df1
             console.log(' sending json at',new Date().toUTCString());
             res.json = res_json;
             res.json(resp1);
+
+
+
+            function ev_1_Param(event,msg,parm){// events of class 1 
+             
+              
+              if(events[event]){
+                events[event].forEach((fil)=>{
+                  // if (fil.substring(,,)=='dfdata_')   //  try to complete dfdata_....  (class=event 1) eventTr fields 
+                  if(msg[fil])parm[fil]= msg[fil];
+                });
+                return 1;// the  event belongs to class 1, some  params are filled 
+              }
+                return -1;
+          }
           
         }
         function res_end_(x) {
@@ -1561,7 +1664,7 @@ else {// df1
       // - if got intent turnscontinue just pass the text transparently
 
       // returning from bot will be managed in res_json_ :
-      //  - pass bot response text + add params (use qs format ?) to pass some context param (xml to operators) to continue dialog 
+      //  - pass bot response text + add params (use qs format  in embedd %%....   or in msg params) to pass some context param (xml to operators) to continue dialog 
       //  - set the return context ( turns context to continue pass to bot or other context to let df to route (match)  next intent):
       //       the df can trigger the fallback intent turnscontinue or 
       //       trigger turnsoff if we want df to 
@@ -1684,7 +1787,7 @@ else {// df1
 
 
           // put welcome param to context to find it later in other intent to goon with bot 
-          if (!oCtx.lifespanCount) oCtx.lifespanCount = 1;
+          if (!oCtx.lifespanCount||oCtx.lifespanCount<2) oCtx.lifespanCount = 2;//1;
           oCtx.parameters = oCtx.parameters || {};
           oCtx.parameters.endpoint = cs_endpoint;//this flag mean that cs has activated on welcome intent thanks to a phone param 
           oCtx.parameters.simplybook_st=simplybook_st;// can have clientId too
@@ -1709,9 +1812,10 @@ else {// df1
             if(x=='opTelNumb'){// rooting info , extract other context or event to trigger 
               let attr=pars[x];
               // if first char is number add + 
-              if(attr&&!isNaN(attr.charAt(0))){
-              oCtx.parameters.operator='+'+attr;
-              if(phoneC)phoneC.parameters.operator=oCtx.parameters.operator;// too , that surely can be recovered as bot returns to DF
+              if(attr){
+                if(!isNaN(attr.charAt(0)))attr='+'+attr;
+              oCtx.parameters.operator=attr;
+              if(phoneC)phoneC.parameters.operator=oCtx.parameters.operator;// too , that surely can be recovered as bot returns to DF. seems not , phone seems will be regeneratted at each turn
               }
           }
         }
@@ -1824,7 +1928,8 @@ else {// df1
 
             // no info about a prestarted bot so start a bot seeing to current text and context parameters / entities
             //start_ += oCtx.parameters.endpoint + ';';//=cs_endpoint=cs_endpoint
-            text = '%%resetDial-xx; ' + start_ + oCtx.parameters.endpoint + ';';// sermovox bot can be prestarted so reset dialogs
+            //092021 text = '%%resetDial-xx; ' + start_ + oCtx.parameters.endpoint + ';';// sermovox bot can be prestarted so reset dialogs
+            start='customtriggernonaggiunto '+x.queryResult.queryText;
           }
         } else {
           // ???

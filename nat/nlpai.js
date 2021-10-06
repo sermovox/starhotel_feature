@@ -197,7 +197,7 @@ module.exports=// copy of db part of  refImplementation
                       }
                       else {
                         // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
-                          console.log('answer found ', answ);
+                          console.log('nlpai: answer found on simplybooking : ', answ);
 
                         // ????? 
                         //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
@@ -227,7 +227,7 @@ module.exports=// copy of db part of  refImplementation
                               }
                               else {
                                 // answ={chroot:'thechtoroote/action',query:[{value:datetime,date,time,,},,,]} / std with inflated details of main ent
-                                  console.log('answer found on book  ', answ);
+                                  console.log('nlpai: answer found on book  ', answ);
         
                                 // ????? 
                                 //let intent=new Intent(answ,wheres);// build intent (2 intents,one best intent and the second chance) with format x the caller ( int matcher, witai intent format + // role can pe put as wheref if is in wheres ?
