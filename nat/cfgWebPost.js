@@ -56,11 +56,24 @@ let  startStrat=0;// see  SAWETWG: at wellcom event match:
 
 
     // 2nd level of customization (case based , in future use registered cb)
-let lev2Custom={'qs_parrucchieri':function(sb_st){// say if apply a customization process from embed param read
-  // main use is : in welcome intent updates the std init param used x env     generic simplybook_st(cfgparamtouseInTemplatetoPasstoStartingCmd) param : see SBSTDEF
-  if(sb_st.substring(8,23)=='qs_parrucchieri')//     '%%embed_qs_parrucchieri')
-    return true;else return false;
-}};
+let lev2Custom = {
+  'qs_parrucchieri': function (sb_st) {// say if apply a customization process from embed param read
+    // main use is : in welcome intent updates the std init param used x env     generic simplybook_st(cfgparamtouseInTemplatetoPasstoStartingCmd) param : see SBSTDEF
+    if (sb_st.substring(8, 23) == 'qs_parrucchieri')//     '%%embed_qs_parrucchieri')
+    // return true;else return false;
+    {
+      let cli = sb_st.indexOf('&descr='), cli_;
+      if (cli > 0) {
+        cli_ = sb_st.substring(cli+7, cli + 9);
+        if (cli_&&cli_ != 'NA')// some performer associated to user of 'qs_parrucchieri' app , performer is not NA
+         { sb_st=sb_st.replace('NA','gentile cliente');
+           return 2;}
+        else return 1;// performer NA is a dummy performer and the prompt is def here not as a start cmd prompt. nb 'NA' is not listed on the book cms client list 
+      } else return 1;// same as NA
+
+    } else return 0;// no parrucchieri customiz
+  }
+};
 
 
 const fs = require('fs');
@@ -1002,6 +1015,8 @@ else {// df1
         } else
           if (intent == 'Default Welcome Intent') {// if welcome we can prestart the bot to meet a intermediate intene , and come back to df without waiting the bot answer!
 
+            console.log(' cfgWebPost ,  ML-C : PRESTART of bot phase , welcome got ');
+
             // ASWES
             if (start_ctx == 'sermovox') {// def serving do not need to change the df def response text . if welcome dont came from phone anyway will be : start_ctx == 'sermovox'
               console.log(' cfgWebPost ,  PRESTART of bot for Welcome intent, start_ctx =sermovox. bot webhook : reset stack :res.end called immediately with null fulfill  , so let the df  wellcome prompt');
@@ -1017,21 +1032,29 @@ else {// df1
               if (start_ctx == 'cs') {// cs serving . if we start bot dialog to avoid timeout we anticipate the bot triggered thread response as a df fulfillment response and manage next intent as df intent that finally will pass to bot x goon with dialog turns 
                 let promptServ;
 
+
+                // WARNING WARNING 102021 set these defaults x welcome , will be used in requ
+                preStartCSonWELCOME=true;startStrat=0;
+
                 /*
                  tipicamente promptServ= 
                  ' puoi procedere chiedendo servizi di prenotazione del tuo centro servizi ' + // parte che triggera il bot intent/thread/child pronotare
                  'o farti passare un operatore o uscire ';// parte che triggera intent df 
 
                 */
+               let parr_cust=lev2Custom.qs_parrucchieri(simplybook_st);
 
                  if(//   no : !preStartCSonWELCOME&&
                   //simplybook_st&&simplybook_st.substring(0,23)=='%%embed_qs_parrucchieri'//     if (preStartCSonWELCOME) ){
                   // second level of customization change cs procedure x this custom case qs_parrucchieri
-                  lev2Custom.qs_parrucchieri(simplybook_st)// check if apply a 'qs_parrucchieri' customization process
-                  ){
-                    startStrat=2; // use a bot cmd to set welcome prompt  
+                  parr_cust>1// check if apply a 'qs_parrucchieri' customization process
+                  ){// there is client associated so a specific start cmd to trigger to get the prompr 
+                    // nb if parr_cust= 'none' we will have a start cmd x all (gives the prompt to match the bot trigger ) client with no performer associated on book cms client list  
+                    startStrat=2; // use a bot cmd to set welcome prompt  , def =0
                   preStartCSonWELCOME=false;
                  }
+
+                 console.log(' cfgWebPost ,  ML-C : PRESTART of bot phase , welcome got , cs customizatione set strategy ',startStrat,' prestart set : ',preStartCSonWELCOME,' , parr_cust: ',parr_cust);
 
                  if (startStrat == 2)// let the bot to forward the prompt that will set the df and df bot transfer ( tied to csWhatService intent ) intents prompt
                  //  csWhatService will get all bot intents to trigger !
@@ -1039,11 +1062,19 @@ else {// df1
                     // goon as usual return the bot prompt
                    }else{// fulfill using df prompt + here calculated prompt 
 
-                if (startStrat == 0) promptServ = fulfilledText;// df welcome prompt intent is not changed  , molto simile a ASWES ma qui si modificano anche i context ?
-                else if (startStrat == 1) {
+                if (startStrat == 0) {
+                  if(parr_cust==1){// parrucchieri cust: provide the prompt using here def propt or using a cfg param 
+                    promptServ = ' ciao puoi fissare un appuntamento di un  servizio presso uno dei parrucchieri di fiducia oppure puoi parlare con il call center di parrucchieri punto it . cosa ti interessa? ';
+                  }else
+                  promptServ = fulfilledText;//, def,  df welcome prompt intent is not changed  , molto simile a ASWES ma qui si modificano anche i context ?
+                          //  o un simplybook_st......
+
+
+
+                }else if (startStrat == 1) {
                   promptServ = fulfilledText;
                   if (start_ctx == 'cs')// sure
-                    promptServ += ' o anche chiedere servizi di prenotazione facile prenotare cs'
+                    promptServ += ' o anche chiedere servizi di prenotazione facile prenotare cs';// o un = o un simplybook_st......
                 } 
 
                 console.log('  cfgWebPost ,  PRESTART of bot for Welcome intent, start_ctx =cs  . bot webhook : reset stack :this adapter will update/substitute/add  the Welcome PROMPT immediately (it will add/update centroservizi outcontex prompting for centroservizi bot service): ', promptServ, '\n context: ', JSON.stringify(ctx, null, 4));
@@ -1769,10 +1800,11 @@ else {// df1
 
 
          // if(simplybook_st&&simplybook_st.substring(0,23)=='%%embed_qs_parrucchieri'){//     if (preStartCSonWELCOME) ){
-           if( lev2Custom.qs_parrucchieri(simplybook_st)){
+           if( lev2Custom.qs_parrucchieri(simplybook_st)>1){// a star cmd will triggered 
             // second level of customization change cs procedure x this custom case qs_parrucchieri
             // set text to trigger the cmd cid:clientId that will give the right prompt x customer 
             start='%%cid:'+caller_id;//
+            if(simplybook_st&&cs_endpoint )start += '; %%simplybook-'+ cs_endpoint +'; '+ simplybook_st;// 10/2021
             preStartCSonWELCOME=false;
           }else{
           // yes  dynCmd  is responsability of user to set the trigger to entry bot dialog 
@@ -1895,9 +1927,11 @@ else {// df1
                 }
               });
 
+              text = '%%resetDial-xx; ' + start;// reset all dialog , text+='%%resetDial-xx; fammi echo';
+
             }
 
-          } else if (oCtx.parameters.started == 'sermovox') {// istruzioni per entrare nel bot cmd associato a 'sermovox' 
+          } else if (oCtx.parameters.started == 'sermovox') {// to review !. istruzioni per entrare nel bot cmd associato a 'sermovox' 
 
             // anche qui sia che uso dynCmd o no usualmnte riprendo con un ripeti o provo a procedere col testo !!!
 
@@ -1931,11 +1965,13 @@ else {// df1
             //092021 text = '%%resetDial-xx; ' + start_ + oCtx.parameters.endpoint + ';';// sermovox bot can be prestarted so reset dialogs
             start='customtriggernonaggiunto '+x.queryResult.queryText;
           }
+
+
         } else {
           // ???
         }
 
-        text = '%%resetDial-xx; ' + start;// reset all dialog , text+='%%resetDial-xx; fammi echo';
+       // 06102021  alredy done :  text = '%%resetDial-xx; ' + start;// reset all dialog , text+='%%resetDial-xx; fammi echo';
 
         if(debuglog){
           if (oCtx.parameters.isstarted) {
